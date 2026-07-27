@@ -113,25 +113,38 @@ jobs:
       - name: Build iOS Safe scheme
         working-directory: mobile-app/ios
         run: |
+          mkdir -p build/results
           xcodebuild \
+            -quiet \
             -workspace MallDemoMobile.xcworkspace \
             -scheme MallDemoMobileSafe \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData-Safe \
+            -resultBundlePath build/results/Safe.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             build
       - name: Build iOS DemoFaults scheme
         working-directory: mobile-app/ios
         run: |
           xcodebuild \
+            -quiet \
             -workspace MallDemoMobile.xcworkspace \
             -scheme MallDemoMobileDemoFaults \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             -derivedDataPath build/DerivedData-DemoFaults \
+            -resultBundlePath build/results/DemoFaults.xcresult \
             CODE_SIGNING_ALLOWED=NO \
             build
+      - name: Upload iOS build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ios-xcresults
+          path: mobile-app/ios/build/results
+          if-no-files-found: warn
+          retention-days: 7
 
   static-checks:
     runs-on: ubuntu-latest
