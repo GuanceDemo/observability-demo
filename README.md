@@ -65,7 +65,7 @@ DataKit 需要开启 `container`、`ddtrace`、`statsd` 和 `profile` inputs，�
 
 ## EKS Workshop：分步安装 DataKit 与 Demo
 
-DataKit 和应用保持为两个独立 Helm Release。教程会展示 DataKit 的真实配置；应用直接拉取公开 GHCR `latest` 镜像，不需要 Maven、Docker build 或镜像仓库登录。正式复现和问题排查仍可改用不可变的 SemVer tag。
+DataKit 和应用保持为两个独立 Helm Release。教程会展示 DataKit 的真实配置；应用直接拉取 `pubrepo.jiagouyun.com/demo` 公开项目中的 `latest` 镜像，不需要 Maven、Docker build 或镜像仓库登录。正式复现和问题排查仍可改用不可变的 SemVer tag。
 
 ### 0. 准备信息并声明参数
 
@@ -156,7 +156,7 @@ done
 
 Chart 会在 `demo-observability-demo` Secret 中自动生成 Demo 内部 MySQL 密码。
 
-Chart 默认拉取 `ghcr.io/truewatchtech/observability-demo-{gateway,order,inventory,payment}-service:latest`，并使用 `imagePullPolicy: Always`。四个 GHCR Package 均为 Public，最终用户不需要执行 `docker login`。
+Chart 默认拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:latest`，并使用 `imagePullPolicy: Always`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。如需临时回退 GHCR，可通过 `--set-string image.registry=ghcr.io --set-string image.owner=truewatchtech` 覆盖。
 
 ### 4. 获取外部 URL
 
@@ -246,7 +246,9 @@ helm lint charts/observability-demo
 scripts/secret-scan.sh
 ```
 
-仓库仅保留三个 workflow：CI、SemVer 镜像发布和 CodeQL。推送 SemVer tag 会生成 `linux/amd64`、`linux/arm64` 镜像，同时发布不可变版本标签和 Workshop 使用的 `latest`，并生成 SBOM、provenance 和漏洞报告。
+仓库仅保留三个 workflow：CI、SemVer 镜像发布和 CodeQL。推送 SemVer tag 会生成 `linux/amd64`、`linux/arm64` 镜像，同时发布到 GHCR 和 `pubrepo.jiagouyun.com/demo`，生成不可变版本标签、次版本标签和 Workshop 使用的 `latest`，并生成 SBOM、provenance 和漏洞报告。
+
+Harbor 发布使用 `demo` 项目中具备 Repository Pull/Push 权限的机器人账号。需要在 GitHub 仓库的 Actions Secrets 中配置 `HARBOR_USERNAME` 和 `HARBOR_PASSWORD`；不要把机器人 Secret 写入 Workflow、values 或仓库文件。没有配置这两个 Secret 时，Release images Workflow 会在构建前明确失败。
 
 ## License
 

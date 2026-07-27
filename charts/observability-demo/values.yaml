@@ -1,8 +1,8 @@
 replicaCount: 1
 
 image:
-  registry: ghcr.io
-  owner: truewatchtech
+  registry: pubrepo.jiagouyun.com
+  owner: demo
   tag: latest
   pullPolicy: Always
 
