@@ -945,15 +945,12 @@
       });
     }
 
-    async function waitForRumSession(timeoutMs = 1500) {
-      if (!window.DATAFLUX_RUM?.getInternalContext) return null;
-      const deadline = Date.now() + timeoutMs;
-      while (Date.now() < deadline) {
-        const context = window.DATAFLUX_RUM.getInternalContext();
-        if (context?.session_id) return context;
-        await new Promise((resolve) => window.setTimeout(resolve, 50));
+    function getRumSessionId() {
+      try {
+        return window.DATAFLUX_RUM?.getInternalContext?.()?.session?.id || '';
+      } catch (_) {
+        return '';
       }
-      return null;
     }
 
     function initBrowserLogs(config) {
@@ -1025,9 +1022,8 @@
           allowedTracingOrigins: [window.location.origin],
           beforeSend: enrichRumEvent,
         });
-        const rumContext = await waitForRumSession();
-        if (window.DATAFLUX_RUM.getInternalContext && !rumContext?.session_id) {
-          throw new Error('RUM session was not created');
+        if (window.DATAFLUX_RUM.startSessionReplayRecording) {
+          window.DATAFLUX_RUM.startSessionReplayRecording();
         }
         if (window.DATAFLUX_RUM.setGlobalContextProperty) {
           window.DATAFLUX_RUM.setGlobalContextProperty('project', PROJECT_NAME);
@@ -1037,16 +1033,14 @@
           window.DATAFLUX_RUM.setGlobalContextProperty('preview_mode', state.previewMode);
           window.DATAFLUX_RUM.setGlobalContextProperty('preview_url', PREVIEW_DISPLAY_URL);
         }
-        if (window.DATAFLUX_RUM.startSessionReplayRecording) {
-          window.DATAFLUX_RUM.startSessionReplayRecording();
-        }
         state.rumReady = true;
         applyPreviewObservabilityContext();
+        const rumSessionId = getRumSessionId();
         console.info('[RUM] initialized', {
           service,
           env: body.env || 'test',
           version: body.version || '1.0.0',
-          sessionId: rumContext?.session_id || 'unavailable',
+          sessionId: rumSessionId || 'pending',
         });
         postToParent('rum-status', { status: 'ready', service, env: body.env || 'test', version: body.version || '1.0.0' });
         log(t('shopLogRumInit', { service, env: body.env || 'test', version: body.version || '1.0.0' }), {

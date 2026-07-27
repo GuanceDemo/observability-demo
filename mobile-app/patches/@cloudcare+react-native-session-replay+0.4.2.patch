@@ -1,0 +1,204 @@
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/build.gradle b/node_modules/@cloudcare/react-native-session-replay/android/build.gradle
+index 00d05bf..f197b07 100644
+--- a/node_modules/@cloudcare/react-native-session-replay/android/build.gradle
++++ b/node_modules/@cloudcare/react-native-session-replay/android/build.gradle
+@@ -3,7 +3,6 @@ buildscript {
+   repositories {
+     mavenCentral()
+     google()
+-    jcenter()
+     gradlePluginPortal()
+   }
+
+@@ -121,7 +120,9 @@ android {
+       }
+
+       if (reactNativeMajorVersion == 0) {
+-        if (reactNativeMinorVersion >= 80) {
++        if (reactNativeMinorVersion >= 86) {
++          java.srcDirs += ['src/rn86/java']
++        } else if (reactNativeMinorVersion >= 80) {
+           java.srcDirs += ['src/rn80/java']
+         } else if (reactNativeMinorVersion >= 79) {
+           java.srcDirs += ['src/rn79/java']
+@@ -147,7 +148,6 @@ android {
+
+ repositories {
+   mavenCentral()
+-  jcenter()
+   google()
+   maven {
+     url 'https://mvnrepo.jiagouyun.com/repository/maven-releases'
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/extensions/ComputedBorderRadiusExt.java b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/extensions/ComputedBorderRadiusExt.java
+new file mode 100644
+index 0000000..1dcc0f8
+--- /dev/null
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/extensions/ComputedBorderRadiusExt.java
+@@ -0,0 +1,38 @@
++package com.ft.sdk.reactnative.sessionreplay.extensions;
++
++import com.facebook.react.uimanager.style.ComputedBorderRadius;
++import com.facebook.react.uimanager.style.ComputedBorderRadiusProp;
++import com.facebook.react.uimanager.style.CornerRadii;
++
++public final class ComputedBorderRadiusExt {
++  private ComputedBorderRadiusExt() {}
++
++  public static float getAverage(ComputedBorderRadius computedBorderRadius) {
++    if (computedBorderRadius == null) {
++      return 0f;
++    }
++    return (
++        getAverageForProp(
++            computedBorderRadius,
++            ComputedBorderRadiusProp.COMPUTED_BORDER_TOP_RIGHT_RADIUS)
++        + getAverageForProp(
++            computedBorderRadius,
++            ComputedBorderRadiusProp.COMPUTED_BORDER_TOP_LEFT_RADIUS)
++        + getAverageForProp(
++            computedBorderRadius,
++            ComputedBorderRadiusProp.COMPUTED_BORDER_BOTTOM_RIGHT_RADIUS)
++        + getAverageForProp(
++            computedBorderRadius,
++            ComputedBorderRadiusProp.COMPUTED_BORDER_BOTTOM_LEFT_RADIUS)
++        ) / 4f;
++  }
++
++  private static float getAverageForProp(
++      ComputedBorderRadius computedBorderRadius,
++      ComputedBorderRadiusProp prop) {
++    CornerRadii borderRadius = computedBorderRadius.get(prop);
++    return borderRadius == null
++        ? 0f
++        : (borderRadius.getVertical() + borderRadius.getHorizontal()) / 2f;
++  }
++}
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java
+new file mode 100644
+index 0000000..dec5ca9
+--- /dev/null
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java
+@@ -0,0 +1,123 @@
++/*
++ * React Native 0.86 removed CSSBackgroundDrawable and made its replacement
++ * internal. Keep the replay integration isolated from that internal class by
++ * reading the stable rendering fields through the SDK reflection helper.
++ */
++package com.ft.sdk.reactnative.sessionreplay.utils;
++
++import android.graphics.Canvas;
++import android.graphics.Color;
++import android.graphics.ColorFilter;
++import android.graphics.PixelFormat;
++import android.graphics.drawable.Drawable;
++import android.graphics.drawable.InsetDrawable;
++import android.graphics.drawable.LayerDrawable;
++
++import com.facebook.react.uimanager.style.ComputedBorderRadius;
++import com.ft.sdk.reactnative.sessionreplay.extensions.ComputedBorderRadiusExt;
++import com.ft.sdk.reactnative.sessionreplay.mappers.Pair;
++import com.ft.sdk.sessionreplay.model.ShapeBorder;
++import com.ft.sdk.sessionreplay.model.ShapeStyle;
++
++public class ReactViewBackgroundDrawableUtils extends DrawableUtils {
++  private static final String BACKGROUND_DRAWABLE =
++      "com.facebook.react.uimanager.drawable.BackgroundDrawable";
++  private static final String COMPUTED_BORDER_RADIUS_FIELD = "computedBorderRadius";
++  private static final String BACKGROUND_COLOR_FIELD = "backgroundColor";
++  private final ReflectionUtils reflectionUtils;
++
++  public ReactViewBackgroundDrawableUtils() {
++    this(new ReflectionUtils());
++  }
++
++  public ReactViewBackgroundDrawableUtils(ReflectionUtils reflectionUtils) {
++    this.reflectionUtils = reflectionUtils;
++  }
++
++  public static class BackgroundDrawableWrapper extends Drawable {
++    public final String backgroundColor;
++    public final float cornerRadius;
++
++    public BackgroundDrawableWrapper(String backgroundColor, float cornerRadius) {
++      this.backgroundColor = backgroundColor;
++      this.cornerRadius = cornerRadius;
++    }
++
++    @Override
++    public void draw(Canvas canvas) {}
++
++    @Override
++    public void setAlpha(int alpha) {}
++
++    @Override
++    public void setColorFilter(ColorFilter colorFilter) {}
++
++    @Override
++    public int getOpacity() {
++      return PixelFormat.OPAQUE;
++    }
++  }
++
++  @Override
++  public Pair<ShapeStyle, ShapeBorder> resolveShapeAndBorder(
++      Drawable drawable,
++      float opacity,
++      float pixelDensity) {
++    BackgroundDrawableWrapper wrapper = toWrapper(drawable);
++    if (wrapper == null) {
++      return new Pair<>(null, null);
++    }
++    return new Pair<>(
++        new ShapeStyle(wrapper.backgroundColor, opacity, wrapper.cornerRadius),
++        null);
++  }
++
++  @Override
++  public Drawable getReactBackgroundFromDrawable(Drawable drawable) {
++    BackgroundDrawableWrapper direct = toWrapper(drawable);
++    if (direct != null) {
++      return direct;
++    }
++    if (drawable instanceof InsetDrawable) {
++      return getReactBackgroundFromDrawable(((InsetDrawable) drawable).getDrawable());
++    }
++    if (drawable instanceof LayerDrawable) {
++      LayerDrawable layers = (LayerDrawable) drawable;
++      for (int index = 0; index < layers.getNumberOfLayers(); index++) {
++        BackgroundDrawableWrapper layer = toWrapper(layers.getDrawable(index));
++        if (layer != null) {
++          return layer;
++        }
++      }
++    }
++    return null;
++  }
++
++  private BackgroundDrawableWrapper toWrapper(Drawable drawable) {
++    if (drawable instanceof BackgroundDrawableWrapper) {
++      return (BackgroundDrawableWrapper) drawable;
++    }
++    if (drawable == null || !BACKGROUND_DRAWABLE.equals(drawable.getClass().getName())) {
++      return null;
++    }
++    Integer backgroundColor = getBackgroundColor(drawable);
++    if (backgroundColor == null) {
++      backgroundColor = Color.TRANSPARENT;
++    }
++    ComputedBorderRadius radius = getComputedBorderRadius(drawable);
++    return new BackgroundDrawableWrapper(
++        ColorUtils.formatAsRgba(backgroundColor),
++        radius == null ? 0f : ComputedBorderRadiusExt.getAverage(radius));
++  }
++
++  private Integer getBackgroundColor(Object drawable) {
++    Object value = reflectionUtils.getDeclaredField(drawable, BACKGROUND_COLOR_FIELD);
++    return value instanceof Integer ? (Integer) value : null;
++  }
++
++  private ComputedBorderRadius getComputedBorderRadius(Object drawable) {
++    Object value =
++        reflectionUtils.getDeclaredField(drawable, COMPUTED_BORDER_RADIUS_FIELD);
++    return value instanceof ComputedBorderRadius ? (ComputedBorderRadius) value : null;
++  }
++}

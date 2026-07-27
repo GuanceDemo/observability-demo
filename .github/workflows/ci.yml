@@ -27,6 +27,111 @@ jobs:
           cache: maven
       - run: mvn --batch-mode verify
 
+  mobile-js:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          cache: npm
+          cache-dependency-path: mobile-app/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test -- --runInBand
+      - run: npm run lint
+      - name: Generate React Native SourceMaps
+        run: |
+          npm run bundle:android
+          npm run bundle:ios
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-javascript-sourcemaps
+          path: mobile-app/build/sourcemaps
+          if-no-files-found: error
+
+  mobile-android:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          cache: npm
+          cache-dependency-path: mobile-app/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - run: npm ci
+      - name: Build Android Safe and DemoFaults APKs
+        working-directory: mobile-app/android
+        run: ./gradlew assembleSafeRelease assembleDemoFaultsRelease
+      - name: Verify Android Session Replay reflection contract
+        run: |
+          npm run verify:android-replay -- \
+            android/app/build/outputs/apk/safe/release/app-safe-release.apk \
+            android/app/build/outputs/apk/demoFaults/release/app-demoFaults-release.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mobile-android-apks-and-symbols
+          path: |
+            mobile-app/android/app/build/outputs/apk
+            mobile-app/android/app/build/outputs/mapping
+            mobile-app/android/app/build/outputs/native-debug-symbols
+          if-no-files-found: warn
+
+  mobile-ios:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: mobile-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.14.0"
+          cache: npm
+          cache-dependency-path: mobile-app/package-lock.json
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          working-directory: mobile-app
+      - run: npm ci
+      - name: Install iOS pods
+        working-directory: mobile-app/ios
+        run: bundle exec pod install
+      - name: Build iOS Safe scheme
+        working-directory: mobile-app/ios
+        run: |
+          xcodebuild \
+            -workspace MallDemoMobile.xcworkspace \
+            -scheme MallDemoMobileSafe \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData-Safe \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Build iOS DemoFaults scheme
+        working-directory: mobile-app/ios
+        run: |
+          xcodebuild \
+            -workspace MallDemoMobile.xcworkspace \
+            -scheme MallDemoMobileDemoFaults \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData-DemoFaults \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
   static-checks:
     runs-on: ubuntu-latest
     steps:
@@ -146,7 +251,7 @@ jobs:
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].spec.securityContext.runAsUser}')" = "10001"
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].metadata.labels.project}')" = "mall-demo"
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=mysql -o jsonpath='{.items[0].metadata.labels.project}')" = "mall-demo"
-          test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].spec.containers[0].env[?(@.name=="DD_TAGS")].value}')" = "project:mall-demo"
+          test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].spec.containers[0].env[?(@.name=="DD_TAGS")].value}')" = 'project:mall-demo,pod_name:$(POD_NAME),pod_namespace:$(POD_NAMESPACE),host:$(NODE_NAME),container_name:$(CONTAINER_NAME)'
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=gateway-service -o jsonpath='{.items[0].spec.automountServiceAccountToken}')" = "false"
           log_annotation="$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].metadata.annotations.datakit/logs}')"
           grep -q '"source":"java_selfheal_demo"' <<<"${log_annotation}"

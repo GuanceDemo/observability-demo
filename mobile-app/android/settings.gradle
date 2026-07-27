@@ -1,0 +1,13 @@
+pluginManagement { includeBuild("../node_modules/@react-native/gradle-plugin") }
+plugins { id("com.facebook.react.settings") }
+extensions.configure(com.facebook.react.ReactSettingsExtension){ ex -> ex.autolinkLibrariesFromCommand() }
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url = uri("https://mvnrepo.jiagouyun.com/repository/maven-releases") }
+    }
+}
+rootProject.name = 'MallDemoMobile'
+include ':app'
+includeBuild('../node_modules/@react-native/gradle-plugin')

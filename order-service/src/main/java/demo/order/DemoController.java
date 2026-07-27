@@ -40,8 +40,10 @@ class DemoController {
               "browser",
               "client",
               "按钮点击触发未捕获 JS 异常，展示 RUM Error、Browser Log 和用户行为。",
+              "RUM Error 与点击 Action 在同一 View 中出现，并可关联 Browser Log。",
               0,
-              true),
+              true,
+              List.of("web")),
           new FaultScenario(
               "frontend_slow_resource",
               "前端资源加载慢",
@@ -51,8 +53,10 @@ class DemoController {
               "browser",
               "client",
               "浏览器发起慢资源请求，展示 RUM Resource 慢加载。",
+              "RUM Resource 出现高 duration，并与触发它的 Action 关联。",
               0,
-              true),
+              true,
+              List.of("web")),
           new FaultScenario(
               "frontend_sourcemap_error",
               "SourceMap 源码定位错误",
@@ -62,8 +66,88 @@ class DemoController {
               "assets/checkout-sourcemap-fault.min.js",
               "client",
               "按钮点击触发压缩 JS 中的空指针错误，上传 SourceMap 后展示源码文件与原始行号。",
+              "RUM Error 还原到原始源码文件、函数和行号。",
               0,
-              true),
+              true,
+              List.of("web")),
+          new FaultScenario(
+              "mobile_white_screen",
+              "移动端白屏",
+              "frontend",
+              "white_screen",
+              "mall-mobile",
+              "react-native-root",
+              "client",
+              "商城根视图短时渲染为空白，故障标签同时隐藏，随后自动恢复。",
+              "RUM View/Action 与自定义 Error 记录白屏开始和自动恢复。",
+              0,
+              true,
+              List.of("android", "ios")),
+          new FaultScenario(
+              "mobile_js_error",
+              "React Native JS 异常",
+              "frontend",
+              "javascript_error",
+              "mall-mobile",
+              "javascript-runtime",
+              "client",
+              "在 React Native JavaScript 线程触发未捕获异常。",
+              "RUM Error 可关联当前 View、Action、Log 和 SourceMap。",
+              0,
+              true,
+              List.of("android", "ios")),
+          new FaultScenario(
+              "mobile_native_crash",
+              "移动端 Native Crash",
+              "runtime",
+              "native_crash",
+              "mall-mobile",
+              "native-main-thread",
+              "client",
+              "通过平台原生桥触发真实未捕获异常，App 将退出。",
+              "重启后上传 Native Crash，符号化堆栈指向 DemoFaultModule。",
+              0,
+              true,
+              List.of("android", "ios")),
+          new FaultScenario(
+              "mobile_android_anr",
+              "Android ANR",
+              "runtime",
+              "anr",
+              "mall-mobile",
+              "android-main-thread",
+              "client",
+              "Android 原生主线程短时阻塞，触发卡顿或 ANR 观测。",
+              "RUM Long Task/ANR 记录包含主线程阻塞现场。",
+              0,
+              true,
+              List.of("android")),
+          new FaultScenario(
+              "mobile_ios_freeze",
+              "iOS Freeze",
+              "runtime",
+              "freeze",
+              "mall-mobile",
+              "ios-main-thread",
+              "client",
+              "iOS 原生主线程短时阻塞，产生 Freeze 观测。",
+              "RUM Freeze 记录包含主线程阻塞现场。",
+              0,
+              true,
+              List.of("ios")),
+          new FaultScenario(
+              "mobile_slow_network",
+              "移动端慢网络",
+              "network",
+              "slow_resource",
+              "mall-mobile",
+              "/api/demo/slow-resource",
+              "client",
+              "App 发起可控延迟的 Gateway 请求，模拟真实慢资源。",
+              "RUM Resource 出现高 duration，并关联 DDTrace 与业务请求头。",
+              0,
+              true,
+              List.of("android", "ios")),
           new FaultScenario(
               "order_slow",
               "订单入口慢响应",
@@ -73,8 +157,10 @@ class DemoController {
               "order-service",
               "order_slow",
               "订单入口 sleep，展示入口服务慢 Span 与接口响应慢。",
+              "App Resource 与 gateway/order-service 慢 Span 通过 Trace 关联。",
               300,
-              false),
+              false,
+              List.of("web", "android", "ios")),
           new FaultScenario(
               "inventory_redis_timeout",
               "库存 Redis 超时",
@@ -84,8 +170,10 @@ class DemoController {
               "redis",
               "redis_timeout",
               "库存服务阻塞等待 Redis，展示依赖层故障和错误 Span。",
+              "库存错误 Span、Redis 依赖耗时与订单失败日志出现在同一 Trace。",
               300,
-              false),
+              false,
+              List.of("web", "android", "ios")),
           new FaultScenario(
               "payment_slow",
               "支付慢方法",
@@ -95,8 +183,10 @@ class DemoController {
               "payment-service",
               "payment_slow",
               "支付服务 sleep，展示慢 Span、慢接口和 Profile。",
+              "支付慢 Span、接口耗时与 Profile 热点可相互跳转。",
               300,
-              false),
+              false,
+              List.of("web", "android", "ios")),
           new FaultScenario(
               "payment_error",
               "支付 5xx 错误",
@@ -106,8 +196,10 @@ class DemoController {
               "payment-service",
               "payment_error",
               "支付服务返回 5xx，展示错误率、日志和失败 Span。",
+              "App Error/Resource、网关 5xx、支付错误 Span 与日志通过业务 ID 关联。",
               300,
-              false),
+              false,
+              List.of("web", "android", "ios")),
           new FaultScenario(
               "payment_cpu_burn",
               "支付 CPU 繁忙",
@@ -117,8 +209,10 @@ class DemoController {
               "payment-service",
               "payment_cpu_burn",
               "支付服务短时 CPU burn，展示 JVM/进程层资源异常。",
+              "支付服务 CPU、JVM、Profile 与受影响 Trace 在同一时间窗出现。",
               180,
-              false));
+              false,
+              List.of("web", "android", "ios")));
 
   private final RestTemplate restTemplate;
   private final String orderUrl;
@@ -131,6 +225,11 @@ class DemoController {
   private final String rumEnv;
   private final String rumVersion;
   private final String rumService;
+  private final boolean mobileRumEnabled;
+  private final String mobileRumAndroidApplicationId;
+  private final String mobileRumIosApplicationId;
+  private final String mobileRumService;
+  private final boolean mobileRumSessionReplayEnabled;
   private final String datakitProvider;
   private final String observabilityConsoleUrl;
   private final String observabilityWorkspaceId;
@@ -149,6 +248,12 @@ class DemoController {
       @Value("${rum.env:${DD_ENV:demo}}") String rumEnv,
       @Value("${rum.version:${DD_VERSION:1.0.0}}") String rumVersion,
       @Value("${rum.service:mall-h5}") String rumService,
+      @Value("${rum.mobile.enabled:false}") boolean mobileRumEnabled,
+      @Value("${rum.mobile.android-application-id:}") String mobileRumAndroidApplicationId,
+      @Value("${rum.mobile.ios-application-id:}") String mobileRumIosApplicationId,
+      @Value("${rum.mobile.service:mall-mobile}") String mobileRumService,
+      @Value("${rum.mobile.session-replay-enabled:true}")
+          boolean mobileRumSessionReplayEnabled,
       @Value("${demo.datakit-provider:guance}") String datakitProvider,
       @Value("${demo.observability-console-url:}") String observabilityConsoleUrl,
       @Value("${demo.observability-workspace-id:}") String observabilityWorkspaceId,
@@ -167,6 +272,16 @@ class DemoController {
     this.rumEnv = defaultIfBlank(rumEnv, "demo");
     this.rumVersion = defaultIfBlank(rumVersion, "1.0.0");
     this.rumService = defaultIfBlank(rumService, "mall-h5");
+    this.mobileRumAndroidApplicationId =
+        mobileRumAndroidApplicationId == null ? "" : mobileRumAndroidApplicationId.trim();
+    this.mobileRumIosApplicationId =
+        mobileRumIosApplicationId == null ? "" : mobileRumIosApplicationId.trim();
+    this.mobileRumEnabled =
+        mobileRumEnabled
+            && (!this.mobileRumAndroidApplicationId.isBlank()
+                || !this.mobileRumIosApplicationId.isBlank());
+    this.mobileRumService = defaultIfBlank(mobileRumService, "mall-mobile");
+    this.mobileRumSessionReplayEnabled = mobileRumSessionReplayEnabled;
     this.datakitProvider = normalizeDatakitProvider(datakitProvider);
     this.observabilityConsoleUrl =
         trimTrailingSlash(
@@ -229,6 +344,32 @@ class DemoController {
     return response;
   }
 
+  @GetMapping("/mobile-config")
+  Map<String, Object> mobileConfig() {
+    Map<String, Object> applicationIds = new LinkedHashMap<>();
+    applicationIds.put("android", mobileRumAndroidApplicationId);
+    applicationIds.put("ios", mobileRumIosApplicationId);
+
+    Map<String, Object> sampleRates = new LinkedHashMap<>();
+    sampleRates.put("session", 1.0);
+    sampleRates.put("sessionOnError", 1.0);
+    sampleRates.put("trace", 1.0);
+    sampleRates.put("replay", 1.0);
+
+    Map<String, Object> response = new LinkedHashMap<>();
+    response.put("enabled", mobileRumEnabled);
+    response.put("applicationIds", applicationIds);
+    response.put("project", project);
+    response.put("service", mobileRumService);
+    response.put("env", rumEnv);
+    response.put("version", rumVersion);
+    response.put("datakitPath", rumDatakitOrigin);
+    response.put("sampleRates", sampleRates);
+    response.put("sessionReplayEnabled", mobileRumSessionReplayEnabled);
+    response.put("traceType", "ddtrace");
+    return response;
+  }
+
   private String defaultIfBlank(String value, String fallback) {
     return value == null || value.isBlank() ? fallback : value;
   }
@@ -249,8 +390,9 @@ class DemoController {
     response.put("scenario", scenario.toMap());
     response.put("timestamp", Instant.now().toString());
     if (scenario.clientSide()) {
-      response.put("handledInBrowser", true);
-      response.put("message", "client side scenario should be triggered by the browser");
+      response.put("handledOnClient", true);
+      response.put("handledInBrowser", scenario.platforms().contains("web"));
+      response.put("message", "client-side scenario must be triggered by a supported client");
       return response;
     }
 
@@ -470,8 +612,10 @@ record FaultScenario(
     String target,
     String mode,
     String description,
+    String expectedObservation,
     long ttlSeconds,
-    boolean clientSide) {
+    boolean clientSide,
+    List<String> platforms) {
   Map<String, Object> toMap() {
     Map<String, Object> response = new LinkedHashMap<>();
     response.put("id", id);
@@ -482,8 +626,11 @@ record FaultScenario(
     response.put("target", target);
     response.put("mode", mode);
     response.put("description", description);
+    response.put("expectedObservation", expectedObservation);
     response.put("ttlSeconds", ttlSeconds);
     response.put("clientSide", clientSide);
+    response.put("execution", clientSide ? "client" : "server");
+    response.put("platforms", platforms);
     return response;
   }
 }

@@ -1749,7 +1749,7 @@
     const I18N = window.SelfhealI18n;
     const apiPrefix = window.location.pathname.startsWith('/selfheal') ? '/selfheal' : '';
     const STATUS_REFRESH_INTERVAL_MS = 60000;
-    const SHOP_BUILD_ID = '20260724-rum-iframe-v30';
+    const SHOP_BUILD_ID = '20260724-rum-session-v31';
     const DEMO_THEME_STORAGE_KEY = 'mall-demo-theme';
     const DEMO_THEMES = new Set(['colorful', 'white']);
     const LAYOUT_STORAGE_KEYS = {
@@ -2627,7 +2627,10 @@
       try {
         const { response, body } = await requestJson('/api/demo/faults');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        state.faults = Array.isArray(body.items) ? body.items : [];
+        state.faults = Array.isArray(body.items)
+          ? body.items.filter((scenario) =>
+              !Array.isArray(scenario.platforms) || scenario.platforms.includes('web'))
+          : [];
         renderFaultCatalog();
         renderActiveFault(state.faultMode);
       } catch (error) {

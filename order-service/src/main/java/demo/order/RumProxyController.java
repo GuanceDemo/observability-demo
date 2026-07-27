@@ -35,7 +35,12 @@ class RumProxyController {
           "trailer",
           "accept-encoding");
   private static final java.util.Set<String> ALLOWED_PATHS =
-      java.util.Set.of("/v1/write/rum", "/v1/write/rum/replay", "/v1/write/logging");
+      java.util.Set.of(
+          "/v1/write/rum",
+          "/v1/write/rum/replay",
+          "/v1/write/rum/replay_assets",
+          "/v1/check/rum/replay_assets",
+          "/v1/write/logging");
 
   private final RestTemplate restTemplate;
   private final String datakitRumUrl;
@@ -44,10 +49,11 @@ class RumProxyController {
   RumProxyController(
       RestTemplate restTemplate,
       @Value("${datakit.rum.url:http://127.0.0.1:9529}") String datakitRumUrl,
-      @Value("${rum.enabled:false}") boolean enabled) {
+      @Value("${rum.enabled:false}") boolean rumEnabled,
+      @Value("${rum.mobile.enabled:false}") boolean mobileRumEnabled) {
     this.restTemplate = restTemplate;
     this.datakitRumUrl = datakitRumUrl.replaceAll("/+$", "");
-    this.enabled = enabled;
+    this.enabled = rumEnabled || mobileRumEnabled;
   }
 
   @RequestMapping("/**")

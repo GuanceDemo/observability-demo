@@ -9,12 +9,14 @@
 ```mermaid
 flowchart LR
   B["浏览器商城<br/>RUM / Logs / Replay"] --> G["gateway-service"]
+  A["Android / iOS App<br/>RUM / Logs / Trace / Replay"] --> G
   G --> O["order-service"]
   O --> M[("MySQL")]
   O --> I["inventory-service"]
   I --> R[("Redis")]
   O --> P["payment-service"]
   B -. "同源 /rum-proxy" .-> O
+  A -. "Gateway /rum-proxy" .-> O
   O -. "节点 IP:9529" .-> D["DataKit DaemonSet"]
   G -. "Trace / JVM / Profile / Logs" .-> D
   I -. "Trace / JVM / Profile / Logs" .-> D
@@ -22,7 +24,7 @@ flowchart LR
   D --> DW["DataWay"]
 ```
 
-更多细节见 [架构与数据流](docs/architecture.md) 和 [可观测信号与字段](docs/observability.md)。
+更多细节见 [架构与数据流](docs/architecture.md)、[可观测信号与字段](docs/observability.md) 和 [React Native 移动端 RUM Demo](docs/mobile-rum.md)。
 
 ## 本地预览（Docker Compose）
 
@@ -142,6 +144,7 @@ helm upgrade --install demo charts/observability-demo \
   --set rum.enabled=true \
   --set-string rum.applicationId="$RUM_APPLICATION_ID" \
   --set-string datakit.provider="$DATAKIT_PROVIDER" \
+  --set-string observability.clusterName="$EKS_CLUSTER_NAME" \
   --set-string observabilityConsole.workspaceId="$OBSERVABILITY_WORKSPACE_ID"
 
 unset RUM_APPLICATION_ID OBSERVABILITY_WORKSPACE_ID
@@ -231,10 +234,13 @@ scripts/install-obs-agent-eks-node-demo.sh --cleanup
 
 RUM 使用 DataKit Origin，通过同源 `/rum-proxy` 上报，不需要 Public DataWay client token。配置和 SourceMap 步骤见 [RUM、Replay 与 SourceMap](docs/rum-sourcemap.md)；client token 的适用范围见 [官方说明](https://docs.truewatch.com/en/management/client-token/)。
 
+仓库同时包含 `mobile-app/` React Native 0.86 原生商城。Android/iOS 分别使用 RUM App ID，并通过 Gateway 的 `/rum-proxy` 上报；移动 RUM 默认关闭，真实 Native Crash/ANR/Freeze 只在 DemoFaults 内部构建启用。运行、构建、符号和验收步骤见 [移动端文档](docs/mobile-rum.md)。
+
 ## 开发与发布检查
 
 ```bash
 mvn verify
+cd mobile-app && npm ci && npm run typecheck && npm test -- --runInBand
 for script in scripts/*.sh; do bash -n "$script"; done
 helm lint charts/observability-demo
 scripts/secret-scan.sh

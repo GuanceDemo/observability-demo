@@ -21,3 +21,5 @@ scripts/package-rum-sourcemap.sh
 产物位于 `dist/observability-demo-rum-sourcemap.zip`，`dist/` 不进入 Git。上传 SourceMap 时，service、env、version 和线上资源路径必须与 RUM 事件一致；本 Demo 默认 service 为 `mall-h5`，version 来自 `DD_VERSION` 或镜像 tag。
 
 验证顺序：启用 RUM，打开商城，确认 View 与 Browser Log；启动 Replay 后产生交互；触发 `frontend_sourcemap_error`，检查错误栈是否还原到 `assets/src/checkout-sourcemap-fault.js`；最后确认前端 Resource 与后端 DDTrace 使用同一个业务请求上下文。
+
+React Native 使用独立的 Android/iOS App ID、SourceMap、R8 mapping、Native 符号和 dSYM，不与 Web application ID 混用。移动配置、构建和验收见 [React Native 移动端 RUM Demo](mobile-rum.md)。

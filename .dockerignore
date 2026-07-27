@@ -6,4 +6,5 @@ dist
 docs
 charts
 observability
+mobile-app
 *.log

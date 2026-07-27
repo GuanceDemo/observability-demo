@@ -1,9 +1,16 @@
+{{- if and .Values.rum.mobile.enabled (empty .Values.rum.mobile.androidApplicationId) (empty .Values.rum.mobile.iosApplicationId) -}}
+{{- fail "at least one of rum.mobile.androidApplicationId or rum.mobile.iosApplicationId is required when rum.mobile.enabled=true" -}}
+{{- end -}}
 {{- $services := list
   (dict "name" "gateway-service" "port" 8080)
   (dict "name" "order-service" "port" 8080)
   (dict "name" "inventory-service" "port" 8081)
   (dict "name" "payment-service" "port" 8082)
 -}}
+{{- $ddTags := printf "project:%s,pod_name:$(POD_NAME),pod_namespace:$(POD_NAMESPACE),host:$(NODE_NAME),container_name:$(CONTAINER_NAME)" .Values.observability.project -}}
+{{- if .Values.observability.clusterName -}}
+{{- $ddTags = printf "%s,cluster_name_k8s:%s" $ddTags .Values.observability.clusterName -}}
+{{- end -}}
 {{- range $index, $service := $services }}
 {{- if $index }}
 ---
@@ -64,8 +71,6 @@ spec:
               value: {{ $.Values.environment | quote }}
             - name: DD_VERSION
               value: {{ $.Values.image.tag | quote }}
-            - name: DD_TAGS
-              value: {{ printf "project:%s" $.Values.observability.project | quote }}
             - name: PROJECT_TAG
               value: {{ $.Values.observability.project | quote }}
             - name: DD_AGENT_HOST
@@ -102,6 +107,8 @@ spec:
                   fieldPath: spec.nodeName
             - name: CONTAINER_NAME
               value: {{ $service.name | quote }}
+            - name: DD_TAGS
+              value: {{ $ddTags | quote }}
             {{- if eq $service.name "gateway-service" }}
             - name: ORDER_URL
               value: http://{{ include "observability-demo.fullname" $ }}-order-service:8080
@@ -129,6 +136,16 @@ spec:
               value: {{ if $.Values.rum.enabled }}{{ required "rum.applicationId is required when rum.enabled=true" $.Values.rum.applicationId | quote }}{{ else }}""{{ end }}
             - name: RUM_SERVICE
               value: {{ $.Values.rum.service | quote }}
+            - name: MOBILE_RUM_ENABLED
+              value: {{ $.Values.rum.mobile.enabled | quote }}
+            - name: MOBILE_RUM_ANDROID_APPLICATION_ID
+              value: {{ $.Values.rum.mobile.androidApplicationId | quote }}
+            - name: MOBILE_RUM_IOS_APPLICATION_ID
+              value: {{ $.Values.rum.mobile.iosApplicationId | quote }}
+            - name: MOBILE_RUM_SERVICE
+              value: {{ $.Values.rum.mobile.service | quote }}
+            - name: MOBILE_RUM_SESSION_REPLAY_ENABLED
+              value: {{ $.Values.rum.mobile.sessionReplayEnabled | quote }}
             - name: DATAKIT_RUM_URL
               value: http://$(DD_AGENT_HOST):9529
             - name: DATAKIT_PROVIDER

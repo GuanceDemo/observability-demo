@@ -21,6 +21,9 @@ environment: demo
 
 observability:
   project: mall-demo
+  # Set this to the DataKit cluster_name_k8s value so JVM StatsD metrics can
+  # be correlated with Kubernetes monitor views.
+  clusterName: ""
 
 # This labels which platform the connected DataKit writes to and selects the
 # default console deep-link domain. DataKit's dataway_url must match it.
@@ -46,6 +49,12 @@ rum:
   enabled: false
   applicationId: ""
   service: mall-h5
+  mobile:
+    enabled: false
+    androidApplicationId: ""
+    iosApplicationId: ""
+    service: mall-mobile
+    sessionReplayEnabled: true
 
 observabilityConsole:
   # Empty uses the provider default (Guance or TrueWatch). Set a URL to override it.

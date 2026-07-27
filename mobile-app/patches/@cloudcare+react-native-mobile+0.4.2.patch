@@ -1,0 +1,174 @@
+diff --git a/node_modules/@cloudcare/react-native-mobile/android/build.gradle b/node_modules/@cloudcare/react-native-mobile/android/build.gradle
+index 1967b38..50df1db 100644
+--- a/node_modules/@cloudcare/react-native-mobile/android/build.gradle
++++ b/node_modules/@cloudcare/react-native-mobile/android/build.gradle
+@@ -3,7 +3,6 @@ buildscript {
+   repositories {
+     mavenCentral()
+     google()
+-    jcenter()
+   }
+
+   dependencies {
+@@ -107,7 +106,6 @@ android {
+
+ repositories {
+   mavenCentral()
+-  jcenter()
+   google()
+
+   def found = false
+diff --git a/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTLogImpl.java b/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTLogImpl.java
+index f6efd37..a8782d0 100644
+--- a/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTLogImpl.java
++++ b/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTLogImpl.java
+@@ -24,6 +24,8 @@ public class FTLogImpl {
+     ArrayList<Object> logTypeReadArr = (ArrayList<Object>) map.get("logLevelFilters");
+     Boolean enableLinkRumData = (Boolean) map.get("enableLinkRumData");
+     Boolean enableCustomLog = (Boolean) map.get("enableCustomLog");
++    Boolean enableConsoleLog = (Boolean) map.get("enableConsoleLog");
++    String consoleLogPrefix = (String) map.get("consoleLogPrefix");
+     HashMap<String, Object> globalContext = (HashMap<String, Object>) map.get("globalContext");
+     Integer logCacheLimitCount = ReactNativeUtils.convertToNativeInt(map.get("logCacheLimitCount"));
+
+@@ -74,6 +76,14 @@ public class FTLogImpl {
+       logConfig.setEnableCustomLog(enableCustomLog);
+     }
+
++    if (enableConsoleLog != null) {
++      if (consoleLogPrefix != null && !consoleLogPrefix.isEmpty()) {
++        logConfig.setEnableConsoleLog(enableConsoleLog, consoleLogPrefix);
++      } else {
++        logConfig.setEnableConsoleLog(enableConsoleLog);
++      }
++    }
++
+     if (globalContext != null) {
+       for (Map.Entry<String, Object> entry : globalContext.entrySet()) {
+         logConfig.addGlobalContext(entry.getKey(), entry.getValue().toString());
+diff --git a/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTRUMImpl.java b/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTRUMImpl.java
+index 390df71..0773f49 100644
+--- a/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTRUMImpl.java
++++ b/node_modules/@cloudcare/react-native-mobile/android/src/main/java/com/ft/sdk/reactnative/FTRUMImpl.java
+@@ -33,6 +33,8 @@ public class FTRUMImpl {
+
+     Boolean enableNativeUserAction = (Boolean) map.get("enableNativeUserAction");
+     Boolean enableNativeUserView = (Boolean) map.get("enableNativeUserView");
++    Boolean enableNativeUserViewInFragment =
++      (Boolean) map.get("enableNativeUserViewInFragment");
+     Boolean enableNativeUserResource = (Boolean) map.get("enableNativeUserResource");
+     Boolean enableResourceHostIP = (Boolean) map.get("enableResourceHostIP");
+     Boolean enableTrackNativeCrash = (Boolean) map.get("enableTrackNativeCrash");
+@@ -61,6 +63,9 @@ public class FTRUMImpl {
+     if (enableNativeUserView != null) {
+       rumConfig.setEnableTraceUserView(enableNativeUserView);
+     }
++    if (enableNativeUserViewInFragment != null) {
++      rumConfig.setEnableTraceUserViewInFragment(enableNativeUserViewInFragment);
++    }
+     if (enableNativeUserResource != null) {
+       rumConfig.setEnableTraceUserResource(enableNativeUserResource);
+     }
+diff --git a/node_modules/@cloudcare/react-native-mobile/ios/FTReactNativeLog.mm b/node_modules/@cloudcare/react-native-mobile/ios/FTReactNativeLog.mm
+index 3286645..47cdfdc 100644
+--- a/node_modules/@cloudcare/react-native-mobile/ios/FTReactNativeLog.mm
++++ b/node_modules/@cloudcare/react-native-mobile/ios/FTReactNativeLog.mm
+@@ -57,6 +57,9 @@ - (void)logConfig:(NSDictionary *)context resolve:(RCTPromiseResolveBlock)resolv
+   }
+   logger.enableCustomLog = [RCTConvert BOOL:context[@"enableCustomLog"]];
+   logger.enableLinkRumData = [RCTConvert BOOL:context[@"enableLinkRumData"]];
++  if ([context.allKeys containsObject:@"enableConsoleLog"]) {
++      logger.printCustomLogToConsole = [RCTConvert BOOL:context[@"enableConsoleLog"]];
++  }
+   if ([context.allKeys containsObject:@"logCacheLimitCount"]) {
+           logger.logCacheLimitCount = [RCTConvert int:context[@"logCacheLimitCount"]];
+   }
+@@ -76,4 +79,3 @@ - (void)logging:(NSString *)content logStatus:(double)logStatus property:(NSDict
+ }
+
+ @end
+-
+diff --git a/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_logger.d.ts b/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_logger.d.ts
+index 8581aeb..77ad1f6 100644
+--- a/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_logger.d.ts
++++ b/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_logger.d.ts
+@@ -20,6 +20,8 @@ export declare enum FTLogCacheDiscard {
+  * @param sampleRate sampling rate
+  * @param enableLinkRumData whether to link with RUM
+  * @param enableCustomLog whether to enable custom logs
++ * @param enableConsoleLog whether to collect Android console logs
++ * @param consoleLogPrefix Android console log prefix filter
+  * @param discardStrategy log discard strategy
+  * @param logLevelFilters log level filter
+  * @param globalContext custom global parameters
+@@ -29,6 +31,8 @@ export interface FTLogConfig {
+     sampleRate?: number;
+     enableLinkRumData?: boolean;
+     enableCustomLog?: boolean;
++    enableConsoleLog?: boolean;
++    consoleLogPrefix?: string;
+     discardStrategy?: FTLogCacheDiscard;
+     logLevelFilters?: Array<FTLogStatus>;
+     globalContext?: object;
+diff --git a/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_rum.d.ts b/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_rum.d.ts
+index f61a3b7..23ac90a 100644
+--- a/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_rum.d.ts
++++ b/node_modules/@cloudcare/react-native-mobile/lib/typescript/ft_rum.d.ts
+@@ -61,6 +61,7 @@ export declare enum IOSCrashMonitoringType {
+  * @param nativeFreezeDurationMs set the threshold for collecting Native Freeze, value range [100,), unit ms. iOS default 250ms, Android default 1000ms
+  * @param enableNativeUserAction whether to start Native Action tracking, Button click events, recommended to disable for pure react-native apps
+  * @param enableNativeUserView whether to start Native View auto tracking, recommended to disable for pure react-native apps
++ * @param enableNativeUserViewInFragment whether to start Android Fragment View auto tracking
+  * @param enableNativeUserResource whether to automatically collect react-native Resource
+  * @param enableResourceHostIP whether to collect network request Host IP (only for native http, iOS 13 and above)
+  * @param errorMonitorType error monitoring supplement type
+@@ -86,6 +87,7 @@ export interface FTRUMConfig {
+     nativeFreezeDurationMs?: number;
+     enableNativeUserAction?: boolean;
+     enableNativeUserView?: boolean;
++    enableNativeUserViewInFragment?: boolean;
+     enableNativeUserResource?: boolean;
+     enableResourceHostIP?: boolean;
+     errorMonitorType?: ErrorMonitorType;
+diff --git a/node_modules/@cloudcare/react-native-mobile/src/ft_logger.tsx b/node_modules/@cloudcare/react-native-mobile/src/ft_logger.tsx
+index 49b3c2d..81b953b 100644
+--- a/node_modules/@cloudcare/react-native-mobile/src/ft_logger.tsx
++++ b/node_modules/@cloudcare/react-native-mobile/src/ft_logger.tsx
+@@ -21,6 +21,8 @@ export enum FTLogCacheDiscard {
+  * @param sampleRate sampling rate
+  * @param enableLinkRumData whether to link with RUM
+  * @param enableCustomLog whether to enable custom logs
++ * @param enableConsoleLog whether to collect Android console logs
++ * @param consoleLogPrefix Android console log prefix filter
+  * @param discardStrategy log discard strategy
+  * @param logLevelFilters log level filter
+  * @param globalContext custom global parameters
+@@ -30,6 +32,8 @@ export interface FTLogConfig {
+   sampleRate?: number;
+   enableLinkRumData?: boolean;
+   enableCustomLog?: boolean;
++  enableConsoleLog?: boolean;
++  consoleLogPrefix?: string;
+   discardStrategy?: FTLogCacheDiscard;
+   logLevelFilters?: Array<FTLogStatus>;
+   globalContext?: object;
+diff --git a/node_modules/@cloudcare/react-native-mobile/src/ft_rum.tsx b/node_modules/@cloudcare/react-native-mobile/src/ft_rum.tsx
+index 496d343..e26688d 100644
+--- a/node_modules/@cloudcare/react-native-mobile/src/ft_rum.tsx
++++ b/node_modules/@cloudcare/react-native-mobile/src/ft_rum.tsx
+@@ -82,6 +82,7 @@ export enum IOSCrashMonitoringType {
+  * @param nativeFreezeDurationMs set the threshold for collecting Native Freeze, value range [100,), unit ms. iOS default 250ms, Android default 1000ms
+  * @param enableNativeUserAction whether to start Native Action tracking, Button click events, recommended to disable for pure react-native apps
+  * @param enableNativeUserView whether to start Native View auto tracking, recommended to disable for pure react-native apps
++ * @param enableNativeUserViewInFragment whether to start Android Fragment View auto tracking
+  * @param enableNativeUserResource whether to automatically collect react-native Resource
+  * @param enableResourceHostIP whether to collect network request Host IP (only for native http, iOS 13 and above)
+  * @param errorMonitorType error monitoring supplement type
+@@ -107,6 +108,7 @@ export interface FTRUMConfig {
+   nativeFreezeDurationMs?: number;
+   enableNativeUserAction?: boolean;
+   enableNativeUserView?: boolean;
++  enableNativeUserViewInFragment?: boolean;
+   enableNativeUserResource?: boolean;
+   enableResourceHostIP?: boolean;
+   errorMonitorType?: ErrorMonitorType;

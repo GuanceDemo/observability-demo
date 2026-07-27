@@ -211,6 +211,48 @@ class OrderControllerTest {
   }
 
   @Test
+  void mobileConfigUsesPlatformApplicationIdsAndContainsNoClientToken() throws Exception {
+    MockMvc mobileMvc =
+        MockMvcBuilders.standaloneSetup(
+                newDemoController("staging", "v1.2.3", "business-web"))
+            .build();
+
+    mobileMvc
+        .perform(get("/api/demo/mobile-config"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.enabled").value(true))
+        .andExpect(jsonPath("$.applicationIds.android").value("android_rum_demo"))
+        .andExpect(jsonPath("$.applicationIds.ios").value("ios_rum_demo"))
+        .andExpect(jsonPath("$.project").value("mall-demo"))
+        .andExpect(jsonPath("$.service").value("mall-mobile"))
+        .andExpect(jsonPath("$.env").value("staging"))
+        .andExpect(jsonPath("$.version").value("v1.2.3"))
+        .andExpect(jsonPath("$.datakitPath").value("/rum-proxy"))
+        .andExpect(jsonPath("$.sampleRates.session").value(1.0))
+        .andExpect(jsonPath("$.sessionReplayEnabled").value(true))
+        .andExpect(jsonPath("$.traceType").value("ddtrace"))
+        .andExpect(jsonPath("$.clientToken").doesNotExist())
+        .andExpect(jsonPath("$.site").doesNotExist());
+  }
+
+  @Test
+  void mobileConfigCanEnableOnlyTheConfiguredAndroidPlatform() throws Exception {
+    MockMvc androidOnlyMvc =
+        MockMvcBuilders.standaloneSetup(
+                newDemoControllerWithMobileApplicationIds(
+                    "observability_demo_android", ""))
+            .build();
+
+    androidOnlyMvc
+        .perform(get("/api/demo/mobile-config"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.enabled").value(true))
+        .andExpect(
+            jsonPath("$.applicationIds.android").value("observability_demo_android"))
+        .andExpect(jsonPath("$.applicationIds.ios").value(""));
+  }
+
+  @Test
   void storefrontEmbedsBookCoversForSessionReplay() throws Exception {
     byte[] sourceBytes;
     try (var source = getClass().getResourceAsStream("/static/assets/selfheal-i18n.js")) {
@@ -268,7 +310,8 @@ class OrderControllerTest {
         .contains("guance: 'https://static.guance.com'")
         .contains("truewatch: 'https://static.truewatch.com'")
         .contains("await ensureBrowserSdks(body.datakitProvider)")
-        .contains("RUM session was not created")
+        .contains("window.DATAFLUX_RUM?.getInternalContext?.()?.session?.id")
+        .contains("window.DATAFLUX_RUM.startSessionReplayRecording();")
         .contains("console.info('[RUM] initialized'")
         .contains("data-demo-theme=\"colorful\"")
         .contains("data-demo-theme=\"white\"")
@@ -282,9 +325,13 @@ class OrderControllerTest {
         .doesNotContain("data-store-route=\"technology\"")
         .doesNotContain("class=\"search\"")
         .doesNotContain("category-card")
+        .doesNotContain("waitForRumSession")
+        .doesNotContain("RUM session was not created")
         .doesNotContain("<script src=\"https://static.truewatch.com/browser-sdk/v3/dataflux-rum.js");
     assertThat(shopSource.split("sessionPersistence: BROWSER_SESSION_PERSISTENCE", -1))
         .hasSize(3);
+    assertThat(shopSource.indexOf("window.DATAFLUX_RUM.startSessionReplayRecording();"))
+        .isLessThan(shopSource.indexOf("const rumSessionId = getRumSessionId();"));
 
     assertThat(storefrontStyles)
         .contains("background: #fff2f0")
@@ -302,7 +349,8 @@ class OrderControllerTest {
         .doesNotContain(".storefront .page-back");
 
     assertThat(businessSource)
-        .contains("const SHOP_BUILD_ID = '20260724-rum-iframe-v30'")
+        .contains("const SHOP_BUILD_ID = '20260724-rum-session-v31'")
+        .contains("scenario.platforms.includes('web')")
         .contains(".preview-stage[data-view=\"mobile\"] .phone-statusbar")
         .contains("background: #ffffff;");
   }
@@ -354,11 +402,20 @@ class OrderControllerTest {
     demoMvc
         .perform(get("/api/demo/faults"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items.length()").value(8))
+        .andExpect(jsonPath("$.items.length()").value(14))
         .andExpect(jsonPath("$.items[0].id").value("frontend_click_error"))
         .andExpect(jsonPath("$.items[0].service").value("mall-h5"))
+        .andExpect(jsonPath("$.items[0].execution").value("client"))
+        .andExpect(jsonPath("$.items[0].platforms[0]").value("web"))
         .andExpect(jsonPath("$.items[2].id").value("frontend_sourcemap_error"))
-        .andExpect(jsonPath("$.items[4].id").value("inventory_redis_timeout"));
+        .andExpect(jsonPath("$.items[3].id").value("mobile_white_screen"))
+        .andExpect(jsonPath("$.items[3].platforms[0]").value("android"))
+        .andExpect(jsonPath("$.items[3].clientSide").value(true))
+        .andExpect(jsonPath("$.items[9].id").value("order_slow"))
+        .andExpect(jsonPath("$.items[10].id").value("inventory_redis_timeout"))
+        .andExpect(jsonPath("$.items[10].execution").value("server"))
+        .andExpect(jsonPath("$.items[10].platforms[2]").value("ios"))
+        .andExpect(jsonPath("$.items[10].expectedObservation").isNotEmpty());
   }
 
   @Test
@@ -409,9 +466,17 @@ class OrderControllerTest {
         .expect(requestTo("http://datakit.test:9529/v1/write/rum/replay?batch=1"))
         .andExpect(method(HttpMethod.POST))
         .andRespond(withSuccess("accepted", MediaType.TEXT_PLAIN));
+    server
+        .expect(requestTo("http://datakit.test:9529/v1/write/rum/replay_assets"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withSuccess("asset accepted", MediaType.TEXT_PLAIN));
+    server
+        .expect(requestTo("http://datakit.test:9529/v1/check/rum/replay_assets"))
+        .andExpect(method(HttpMethod.GET))
+        .andRespond(withSuccess("checked", MediaType.APPLICATION_JSON));
     MockMvc proxyMvc =
         MockMvcBuilders.standaloneSetup(
-                new RumProxyController(proxyTemplate, "http://datakit.test:9529/", true))
+                new RumProxyController(proxyTemplate, "http://datakit.test:9529/", true, false))
             .build();
 
     proxyMvc
@@ -421,11 +486,44 @@ class OrderControllerTest {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .content("replay-payload"))
         .andExpect(status().isOk());
+    proxyMvc
+        .perform(
+            post("/rum-proxy/v1/write/rum/replay_assets")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .content("replay-asset"))
+        .andExpect(status().isOk());
+    proxyMvc
+        .perform(get("/rum-proxy/v1/check/rum/replay_assets"))
+        .andExpect(status().isOk());
+    proxyMvc
+        .perform(post("/rum-proxy/v1/write/rum/not-authorized"))
+        .andExpect(status().isNotFound());
     server.verify();
+
+    RestTemplate mobileOnlyTemplate = new RestTemplate();
+    MockRestServiceServer mobileOnlyServer =
+        MockRestServiceServer.bindTo(mobileOnlyTemplate).build();
+    mobileOnlyServer
+        .expect(requestTo("http://datakit.test:9529/v1/write/rum"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withSuccess("mobile accepted", MediaType.TEXT_PLAIN));
+    MockMvc mobileOnlyProxyMvc =
+        MockMvcBuilders.standaloneSetup(
+                new RumProxyController(
+                    mobileOnlyTemplate, "http://datakit.test:9529", false, true))
+            .build();
+    mobileOnlyProxyMvc
+        .perform(
+            post("/rum-proxy/v1/write/rum")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .content("mobile-rum"))
+        .andExpect(status().isOk());
+    mobileOnlyServer.verify();
 
     MockMvc disabledProxyMvc =
         MockMvcBuilders.standaloneSetup(
-                new RumProxyController(new RestTemplate(), "http://datakit.test:9529", false))
+                new RumProxyController(
+                    new RestTemplate(), "http://datakit.test:9529", false, false))
             .build();
     disabledProxyMvc.perform(post("/rum-proxy/v1/write/rum")).andExpect(status().isNotFound());
     disabledProxyMvc.perform(post("/rum-proxy/actuator/health")).andExpect(status().isNotFound());
@@ -498,6 +596,42 @@ class OrderControllerTest {
       String datakitProvider,
       String consoleUrl,
       String workspaceId) {
+    return newDemoController(
+        restTemplate,
+        rumEnv,
+        rumVersion,
+        rumService,
+        datakitProvider,
+        consoleUrl,
+        workspaceId,
+        "android_rum_demo",
+        "ios_rum_demo");
+  }
+
+  private DemoController newDemoControllerWithMobileApplicationIds(
+      String androidApplicationId, String iosApplicationId) {
+    return newDemoController(
+        new RestTemplate(),
+        "test",
+        "1.0.0",
+        "mall-h5",
+        "guance",
+        "",
+        "",
+        androidApplicationId,
+        iosApplicationId);
+  }
+
+  private DemoController newDemoController(
+      RestTemplate restTemplate,
+      String rumEnv,
+      String rumVersion,
+      String rumService,
+      String datakitProvider,
+      String consoleUrl,
+      String workspaceId,
+      String androidApplicationId,
+      String iosApplicationId) {
     return new DemoController(
         restTemplate,
         "http://order-service.test",
@@ -510,6 +644,11 @@ class OrderControllerTest {
         rumEnv,
         rumVersion,
         rumService,
+        true,
+        androidApplicationId,
+        iosApplicationId,
+        "mall-mobile",
+        true,
         datakitProvider,
         consoleUrl,
         workspaceId,
