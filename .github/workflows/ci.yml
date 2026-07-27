@@ -103,6 +103,7 @@ jobs:
           cache-dependency-path: mobile-app/package-lock.json
       - uses: ruby/setup-ruby@v1
         with:
+          ruby-version: "3.3"
           bundler-cache: true
           working-directory: mobile-app
       - run: npm ci
