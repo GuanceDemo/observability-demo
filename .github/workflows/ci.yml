@@ -181,7 +181,23 @@ jobs:
             >/tmp/datakit-rendered.yaml
           grep -q 'project=mall-demo' /tmp/datakit-rendered.yaml
           grep -q 'GET /actuator/health' /tmp/datakit-rendered.yaml
+          grep -q 'route_class' /tmp/datakit-rendered.yaml
+          grep -q 'traffic_type' /tmp/datakit-rendered.yaml
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/datakit-rendered.yaml
+      - name: Verify Gateway observability fields
+        run: |
+          for properties in */src/main/resources/application.properties; do
+            grep -q 'route_class=%X{route_class}' "${properties}"
+            grep -q 'traffic_type=%X{traffic_type}' "${properties}"
+            grep -q 'client_ip=%X{client_ip}' "${properties}"
+            grep -q 'user_agent=%X{user_agent}' "${properties}"
+            grep -q 'referer=%X{referer}' "${properties}"
+          done
+          grep -q 'set_tag(route_class)' observability/platform-log-pipeline.p
+          grep -q 'set_tag(traffic_type)' observability/platform-log-pipeline.p
+          grep -q 'client_ip=%{DATA:client_ip}' observability/platform-log-pipeline.p
+          grep -q 'user_agent=%{DATA:user_agent}' observability/platform-log-pipeline.p
+          grep -q 'referer=%{GREEDYDATA:referer}' observability/platform-log-pipeline.p
       - name: Custom secret rules
         run: scripts/secret-scan.sh
       - name: Gitleaks

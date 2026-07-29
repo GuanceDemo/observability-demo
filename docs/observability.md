@@ -4,8 +4,8 @@
 | --- | --- | --- |
 | Kubernetes/容器指标 | DataKit container、kubernetesprometheus | `project`、`cluster_name_k8s`、`pod_name`、`container_name` |
 | eBPF 网络可观测性 | DataKit ebpf-net、ebpf-conntrack | `project`、`src_*`、`dst_*`、`direction`、`family`、NAT 与 HTTP/DNS 字段 |
-| APM Trace | DDTrace Java Agent | `project`、`trace_id`、`span_id`、`service`、`env`、`version` |
-| 应用日志 | stdout + `datakit/logs` Annotation | Trace 字段、业务字段、故障字段、进程/Pod/容器字段 |
+| APM Trace | DDTrace Java Agent | `project`、`trace_id`、`span_id`、`service`、`env`、`version`、Gateway 路由与来源字段 |
+| 应用日志 | stdout + `datakit/logs` Annotation | Trace 字段、业务字段、故障字段、进程/Pod/容器字段、Gateway 路由与来源字段 |
 | JVM 指标 | Java Agent → StatsD `8125` | `project`、`service`、`env`、JVM measurement |
 | Profiling | Java Agent → Profile `9529` | `project`、`service`、`env`、`version` |
 | RUM / Browser Logs / Replay | Browser SDK → `/rum-proxy` → DataKit | `project`、application、session、view、业务/故障上下文 |
@@ -18,8 +18,14 @@
 - 故障：`fault_id`、`fault_layer`、`fault_kind`、`fault_target`。
 - 链路：`trace_id`、`span_id`、`service`、`env`、`version`。
 - 运行身份：`process_id`、`host_process_id`、`container_process_id`、`host`、`host_name`、`pod_name`、`pod_namespace`、`container_name`、`container_id`。
+- Gateway 路由：`route_class`、`traffic_type`，在 Pipeline 中提升为低基数 Tag。
+- Gateway 来源：`client_ip`、`user_agent`、`referer`，保留为高基数字段；`client_ip` 依次使用 `X-Forwarded-For` 首项、`X-Real-IP` 和连接对端 IP。
 
 平台 Pipeline 的规则保存在 `observability/platform-log-pipeline.p`，用于 Workshop 中手工创建并测试中央 Pipeline。规则将业务正文提取到 `log_message`，不会覆盖完整的原始 `message`。
+
+Gateway Span 同步写入 `route_class`、`traffic_type`、`client_ip`、`user_agent` 和 `referer`。实际 DataKit 的 `inputs.ddtrace.customer_tags` 必须包含这些字段，才能在平台保存为可筛选的自定义 Span 属性。公网扫描告警可在限定 `service=gateway-service` 后追加 `route_class != "unmatched"`；日志监控器使用同名 Tag。
+
+`client_ip` 仅用于观测，不参与鉴权或访问控制。只有入口负载均衡覆盖而非追加外部传入的 `X-Forwarded-For` / `X-Real-IP` 时，该字段才能被视为可信客户端地址。
 
 `GET /api/demo/logs` 只接受应用生成的 `biz-...` 和 `ord-...` 格式，防止公开接口被用来用任意字符串扫描命名空间日志。只有 order-service 使用可读取 `pods` 与 `pods/log` 的 ServiceAccount；其他 Java Pod 不挂载 API token。
 

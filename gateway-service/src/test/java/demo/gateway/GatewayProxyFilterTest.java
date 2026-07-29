@@ -57,6 +57,7 @@ class GatewayProxyFilterTest {
                   .contains("public_route=unmatched")
                   .contains("route_class=unmatched")
                   .contains("traffic_type=internet_probe")
+                  .contains("client_ip=203.0.113.9")
                   .contains("peer_ip=198.51.100.20")
                   .contains("forwarded_for=203.0.113.9")
                   .contains("user_agent=scanner_source=fake agent")
@@ -66,9 +67,44 @@ class GatewayProxyFilterTest {
                   .containsEntry("public_route", "unmatched")
                   .containsEntry("route_class", "unmatched")
                   .containsEntry("traffic_type", "internet_probe")
-                  .containsEntry("peer_ip", "198.51.100.20");
+                  .containsEntry("client_ip", "203.0.113.9")
+                  .containsEntry("peer_ip", "198.51.100.20")
+                  .containsEntry("user_agent", "scanner_source=fake agent")
+                  .containsEntry("referer", "https://scanner.example/probe");
             });
     assertThat(MDC.get("route_class")).isNull();
+    assertThat(MDC.get("client_ip")).isNull();
+  }
+
+  @Test
+  void resolvesClientIpFromRealIpThenFallsBackToPeerIp() throws Exception {
+    GatewayProxyFilter filter =
+        new GatewayProxyFilter(new RestTemplate(), "http://order-service.test");
+    Logger logger = (Logger) LoggerFactory.getLogger(GatewayProxyFilter.class);
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    logger.addAppender(appender);
+
+    try {
+      MockHttpServletRequest realIpRequest =
+          new MockHttpServletRequest("GET", "/unknown-from-proxy");
+      realIpRequest.setRemoteAddr("10.0.0.8");
+      realIpRequest.addHeader("X-Real-IP", "198.51.100.88");
+      filter.doFilter(realIpRequest, new MockHttpServletResponse(), new MockFilterChain());
+
+      MockHttpServletRequest peerIpRequest =
+          new MockHttpServletRequest("GET", "/unknown-direct");
+      peerIpRequest.setRemoteAddr("198.51.100.89");
+      filter.doFilter(peerIpRequest, new MockHttpServletResponse(), new MockFilterChain());
+    } finally {
+      logger.detachAppender(appender);
+      appender.stop();
+    }
+
+    assertThat(appender.list)
+        .extracting(ILoggingEvent::getMDCPropertyMap)
+        .anySatisfy(context -> assertThat(context).containsEntry("client_ip", "198.51.100.88"))
+        .anySatisfy(context -> assertThat(context).containsEntry("client_ip", "198.51.100.89"));
   }
 
   @Test
@@ -123,7 +159,7 @@ class GatewayProxyFilterTest {
     request.addHeader("X-Business-Request-Id", "biz-gateway-1001");
     request.addHeader("X-Demo-Language", "en");
     request.addHeader("Host", "demo.example.com");
-    request.addHeader("X-Forwarded-For", "203.0.113.10");
+    request.addHeader("X-Forwarded-For", "203.0.113.10, 10.0.0.9");
     request.addHeader("User-Agent", "MallDemoTest/1.0");
     request.addHeader("Referer", "https://demo.example.com/shop.html?theme=colorful");
     request.setRemoteAddr("198.51.100.21");
@@ -154,15 +190,19 @@ class GatewayProxyFilterTest {
                   .contains("public_route=orders.create")
                   .contains("route_class=business_api")
                   .contains("traffic_type=public_demo")
+                  .contains("client_ip=203.0.113.10")
                   .contains("peer_ip=198.51.100.21")
-                  .contains("forwarded_for=203.0.113.10")
+                  .contains("forwarded_for=203.0.113.10, 10.0.0.9")
                   .contains("referer=https://demo.example.com/shop.html")
                   .doesNotContain("theme=colorful");
               assertThat(event.getMDCPropertyMap())
                   .containsEntry("language", "en")
                   .containsEntry("public_route", "orders.create")
                   .containsEntry("route_class", "business_api")
-                  .containsEntry("traffic_type", "public_demo");
+                  .containsEntry("traffic_type", "public_demo")
+                  .containsEntry("client_ip", "203.0.113.10")
+                  .containsEntry("user_agent", "MallDemoTest/1.0")
+                  .containsEntry("referer", "https://demo.example.com/shop.html");
             });
     server.verify();
   }

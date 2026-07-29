@@ -109,14 +109,15 @@ class GatewayProxyFilter extends OncePerRequestFilter {
       long startedAt = System.nanoTime();
       log.info(
           language.text(
-              "网关接入：方法={} 路径={} 下游={} 路由={} 路由分类={} 流量类型={} 对端IP={} XFF={} Host={} User-Agent={} Referer={} 关键请求={} 业务请求ID={}",
-              "Gateway request received: method={} path={} downstream={} public_route={} route_class={} traffic_type={} peer_ip={} forwarded_for={} host={} user_agent={} referer={} key_request={} biz_request_id={}"),
+              "网关接入：方法={} 路径={} 下游={} 路由={} 路由分类={} 流量类型={} 客户端IP={} 对端IP={} XFF={} Host={} User-Agent={} Referer={} 关键请求={} 业务请求ID={}",
+              "Gateway request received: method={} path={} downstream={} public_route={} route_class={} traffic_type={} client_ip={} peer_ip={} forwarded_for={} host={} user_agent={} referer={} key_request={} biz_request_id={}"),
           request.getMethod(),
           request.getRequestURI(),
           downstream,
           route.routeId(),
           route.routeClass(),
           route.trafficType(),
+          source.clientIp(),
           source.peerIp(),
           source.forwardedFor(),
           source.host(),
@@ -208,14 +209,15 @@ class GatewayProxyFilter extends OncePerRequestFilter {
     response.setHeader("X-Content-Type-Options", "nosniff");
     log.info(
         language.text(
-            "网关本地响应：方法={} 路径={} 状态={} 路由={} 路由分类={} 流量类型={} 对端IP={} XFF={} Host={} User-Agent={} Referer={}",
-            "Gateway local response: method={} path={} status={} public_route={} route_class={} traffic_type={} peer_ip={} forwarded_for={} host={} user_agent={} referer={}"),
+            "网关本地响应：方法={} 路径={} 状态={} 路由={} 路由分类={} 流量类型={} 客户端IP={} 对端IP={} XFF={} Host={} User-Agent={} Referer={}",
+            "Gateway local response: method={} path={} status={} public_route={} route_class={} traffic_type={} client_ip={} peer_ip={} forwarded_for={} host={} user_agent={} referer={}"),
         request.getMethod(),
         request.getRequestURI(),
         status,
         route.routeId(),
         route.routeClass(),
         route.trafficType(),
+        source.clientIp(),
         source.peerIp(),
         source.forwardedFor(),
         source.host(),
@@ -295,8 +297,11 @@ class GatewayProxyFilter extends OncePerRequestFilter {
         setTag(span, "public_route", route.routeId());
         setTag(span, "route_class", route.routeClass());
         setTag(span, "traffic_type", route.trafficType());
+        setTag(span, "client_ip", source.clientIp());
         setTag(span, "peer_ip", source.peerIp());
         setTag(span, "request_host", source.host());
+        setTag(span, "user_agent", source.userAgent());
+        setTag(span, "referer", source.referer());
       }
     } catch (ReflectiveOperationException | LinkageError ignored) {
       // Unit tests and local builds do not require the runtime tracing agent.
@@ -330,6 +335,7 @@ class GatewayProxyFilter extends OncePerRequestFilter {
     MDC.put("public_route", route.routeId());
     MDC.put("route_class", route.routeClass());
     MDC.put("traffic_type", route.trafficType());
+    MDC.put("client_ip", source.clientIp());
     MDC.put("peer_ip", source.peerIp());
     MDC.put("forwarded_for", source.forwardedFor());
     MDC.put("request_host", source.host());
@@ -361,6 +367,7 @@ class GatewayProxyFilter extends OncePerRequestFilter {
             "public_route",
             "route_class",
             "traffic_type",
+            "client_ip",
             "peer_ip",
             "forwarded_for",
             "request_host",
@@ -371,14 +378,35 @@ class GatewayProxyFilter extends OncePerRequestFilter {
   }
 
   private record RequestSource(
-      String peerIp, String forwardedFor, String host, String userAgent, String referer) {
+      String clientIp,
+      String peerIp,
+      String forwardedFor,
+      String host,
+      String userAgent,
+      String referer) {
     static RequestSource from(HttpServletRequest request) {
+      String peerIp = safeLogValue(request.getRemoteAddr());
+      String forwardedFor = safeLogValue(request.getHeader("X-Forwarded-For"));
+      String realIp = safeLogValue(request.getHeader("X-Real-IP"));
       return new RequestSource(
-          safeLogValue(request.getRemoteAddr()),
-          safeLogValue(request.getHeader("X-Forwarded-For")),
+          resolveClientIp(forwardedFor, realIp, peerIp),
+          peerIp,
+          forwardedFor,
           safeLogValue(request.getHeader("Host")),
           safeLogValue(request.getHeader("User-Agent")),
           safeReferer(request.getHeader("Referer")));
+    }
+
+    private static String resolveClientIp(String forwardedFor, String realIp, String peerIp) {
+      // Observability metadata only: an ingress or load balancer must overwrite forwarding headers
+      // before this value can be treated as an authenticated client address.
+      if (!"-".equals(forwardedFor)) {
+        String firstForwardedAddress = forwardedFor.split(",", 2)[0].trim();
+        if (!firstForwardedAddress.isEmpty()) {
+          return safeLogValue(firstForwardedAddress);
+        }
+      }
+      return "-".equals(realIp) ? peerIp : realIp;
     }
 
     private static String safeReferer(String value) {
