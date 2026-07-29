@@ -87,6 +87,11 @@ class PublicRoutePolicyTest {
                 "OPTIONS",
                 "/rum-proxy/v1/write/logging",
                 "browser-logs.write",
+                "rum_intake"),
+            new RouteExpectation(
+                "GET",
+                "/rum-proxy/v1/datakit/pull",
+                "rum.filters.pull",
                 "rum_intake"));
 
     for (RouteExpectation expected : routes) {
@@ -116,7 +121,7 @@ class PublicRoutePolicyTest {
             new RouteRequest("POST", "/business.html"),
             new RouteRequest("GET", "/assets/new-file.js"),
             new RouteRequest("GET", "/api/demo/new-endpoint"),
-            new RouteRequest("GET", "/rum-proxy/v1/datakit/pull"),
+            new RouteRequest("POST", "/rum-proxy/v1/datakit/pull"),
             new RouteRequest("GET", "/assets/%2e%2e/application.properties"));
 
     for (RouteRequest request : rejected) {

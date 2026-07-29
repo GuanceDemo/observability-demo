@@ -41,6 +41,11 @@ helm upgrade --install demo charts/observability-demo \
 
 `GET /api/demo/mobile-config` 返回平台 App ID、project、service、env、version、采样率、Replay 开关和相对 `datakitPath`。它不返回 client token。移动 RUM 默认关闭，开启时至少需要一个平台 App ID，App 只会在当前平台 App ID 存在时初始化 SDK。
 
+Android SDK 1.7.2 及以上版本会通过
+`GET /rum-proxy/v1/datakit/pull?filters=true` 拉取 DataKit 缓存的 RUM 与日志过滤规则。
+该只读端点与 RUM、日志和 Replay 写入端点一样通过 Gateway 和 order-service 的双层
+精确白名单转发；其他未知 `/rum-proxy` 路径仍返回 404。
+
 RUM、日志和 Trace 的采样率均为 100%。Android 原生 View、Fragment View、
 Resource、Action、UI Block、ANR、Crash、控制台日志、自定义日志、RUM 日志关联、
 DDTrace 自动追踪和 RUM Trace 关联全部启用。

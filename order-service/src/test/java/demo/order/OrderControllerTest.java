@@ -6,6 +6,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -474,6 +475,13 @@ class OrderControllerTest {
         .expect(requestTo("http://datakit.test:9529/v1/check/rum/replay_assets"))
         .andExpect(method(HttpMethod.GET))
         .andRespond(withSuccess("checked", MediaType.APPLICATION_JSON));
+    server
+        .expect(requestTo("http://datakit.test:9529/v1/datakit/pull?filters=true"))
+        .andExpect(method(HttpMethod.GET))
+        .andRespond(
+            withSuccess(
+                "{\"filters\":{\"rum\":[],\"logging\":[]},\"pull_interval\":\"30m\"}",
+                MediaType.APPLICATION_JSON));
     MockMvc proxyMvc =
         MockMvcBuilders.standaloneSetup(
                 new RumProxyController(proxyTemplate, "http://datakit.test:9529/", true, false))
@@ -495,6 +503,10 @@ class OrderControllerTest {
     proxyMvc
         .perform(get("/rum-proxy/v1/check/rum/replay_assets"))
         .andExpect(status().isOk());
+    proxyMvc
+        .perform(get("/rum-proxy/v1/datakit/pull").queryParam("filters", "true"))
+        .andExpect(status().isOk())
+        .andExpect(content().json("{\"pull_interval\":\"30m\"}"));
     proxyMvc
         .perform(post("/rum-proxy/v1/write/rum/not-authorized"))
         .andExpect(status().isNotFound());

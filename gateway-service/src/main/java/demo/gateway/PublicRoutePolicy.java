@@ -200,6 +200,12 @@ final class PublicRoutePolicy {
               "/rum-proxy/v1/write/logging",
               Action.FORWARD,
               "browser-logs.write",
+              "rum_intake"),
+          RouteRule.exact(
+              Set.of("GET"),
+              "/rum-proxy/v1/datakit/pull",
+              Action.FORWARD,
+              "rum.filters.pull",
               "rum_intake"));
 
   Decision evaluate(String method, String requestPath) {

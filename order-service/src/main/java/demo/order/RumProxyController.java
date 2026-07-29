@@ -40,7 +40,8 @@ class RumProxyController {
           "/v1/write/rum/replay",
           "/v1/write/rum/replay_assets",
           "/v1/check/rum/replay_assets",
-          "/v1/write/logging");
+          "/v1/write/logging",
+          "/v1/datakit/pull");
 
   private final RestTemplate restTemplate;
   private final String datakitRumUrl;
