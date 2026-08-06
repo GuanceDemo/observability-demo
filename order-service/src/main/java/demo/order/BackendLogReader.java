@@ -34,6 +34,15 @@ record BackendLogItem(
     String source, String service, String pod, String message, Instant timestamp) {
   private static final Pattern TRACE_ID = Pattern.compile("\\btrace_id=([0-9A-Fa-f]+)\\b");
 
+  static boolean isTraceLookupMessage(String value) {
+    String line = value == null ? "" : value;
+    return line.contains("路径=/api/demo/logs") || line.contains("path=/api/demo/logs");
+  }
+
+  boolean isTraceLookupRequest() {
+    return isTraceLookupMessage(message);
+  }
+
   Map<String, Object> toMap() {
     Map<String, Object> item = new LinkedHashMap<>();
     item.put("source", source);
@@ -73,6 +82,7 @@ class CompositeBackendLogReader implements BackendLogReader {
     for (BackendLogReader reader : readers) {
       matches.addAll(reader.recentMatchingLogLines(needles, limit));
     }
+    matches.removeIf(BackendLogItem::isTraceLookupRequest);
     matches.sort(
         Comparator.comparing(
             BackendLogItem::timestamp, Comparator.nullsLast(Comparator.naturalOrder())));
@@ -104,6 +114,7 @@ class FileBackendLogReader implements BackendLogReader {
         String service = source.replace(".log", "");
         lines
             .filter(line -> containsAny(line, needles))
+            .filter(line -> !BackendLogItem.isTraceLookupMessage(line))
             .forEach(
                 line -> {
                   matches.add(
@@ -262,7 +273,9 @@ class KubernetesBackendLogReader implements BackendLogReader {
       List<BackendLogItem> matches = new ArrayList<>();
       for (String rawLine : body.split("\\R")) {
         String line = rawLine.strip();
-        if (!line.isEmpty() && containsAny(line, needles)) {
+        if (!line.isEmpty()
+            && containsAny(line, needles)
+            && !BackendLogItem.isTraceLookupMessage(line)) {
           ParsedLogLine parsed = ParsedLogLine.from(line);
           matches.add(
               new BackendLogItem(

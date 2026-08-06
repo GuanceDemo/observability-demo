@@ -17,6 +17,8 @@ final class PublicRoutePolicy {
   private static final Set<String> RUM_METHODS = Set.of("GET", "POST", "PUT", "OPTIONS");
   private static final Pattern FAULT_ENABLE_PATH =
       Pattern.compile("^/api/demo/faults/[A-Za-z0-9_-]+/enable$");
+  private static final Pattern USAGE_GUIDE_SLIDE_PATH =
+      Pattern.compile("^/assets/guide-carousel/image2-slide-0[1-5]\\.png$");
 
   private static final Decision UNMATCHED =
       new Decision(Action.REJECT, "unmatched", "unmatched", "internet_probe");
@@ -84,6 +86,12 @@ final class PublicRoutePolicy {
               "/assets/storefront.css",
               Action.FORWARD,
               "asset.storefront-css",
+              "static_asset"),
+          RouteRule.regex(
+              READ_METHODS,
+              USAGE_GUIDE_SLIDE_PATH,
+              Action.FORWARD,
+              "asset.usage-guide-slide",
               "static_asset"),
           RouteRule.exact(
               READ_METHODS,

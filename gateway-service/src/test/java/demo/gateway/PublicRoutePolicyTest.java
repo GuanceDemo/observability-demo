@@ -43,6 +43,16 @@ class PublicRoutePolicyTest {
             new RouteExpectation(
                 "GET", "/assets/storefront.css", "asset.storefront-css", "static_asset"),
             new RouteExpectation(
+                "GET",
+                "/assets/guide-carousel/image2-slide-01.png",
+                "asset.usage-guide-slide",
+                "static_asset"),
+            new RouteExpectation(
+                "HEAD",
+                "/assets/guide-carousel/image2-slide-05.png",
+                "asset.usage-guide-slide",
+                "static_asset"),
+            new RouteExpectation(
                 "HEAD",
                 "/assets/src/checkout-sourcemap-fault.js",
                 "asset.checkout-fault-source",
@@ -120,6 +130,7 @@ class PublicRoutePolicyTest {
             new RouteRequest("POST", "/admin/fault/off"),
             new RouteRequest("POST", "/business.html"),
             new RouteRequest("GET", "/assets/new-file.js"),
+            new RouteRequest("GET", "/assets/guide-carousel/image2-slide-06.png"),
             new RouteRequest("GET", "/api/demo/new-endpoint"),
             new RouteRequest("POST", "/rum-proxy/v1/datakit/pull"),
             new RouteRequest("GET", "/assets/%2e%2e/application.properties"));

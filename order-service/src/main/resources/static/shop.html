@@ -22,14 +22,14 @@
       document.documentElement.dataset.demoTheme = supportedThemes.has(demoTheme) ? demoTheme : 'colorful';
     })();
   </script>
-  <script src="assets/checkout-sourcemap-fault.min.js?v=20260703-trace-link-v4"></script>
-  <script src="assets/selfheal-i18n.js?v=20260722-storefront-v29"></script>
-  <link rel="stylesheet" href="assets/storefront.css?v=20260722-storefront-v29" />
+  <script src="assets/checkout-sourcemap-fault.min.js?v=20260805-bookstore-v41"></script>
+  <script src="assets/selfheal-i18n.js?v=20260805-bookstore-v41"></script>
+  <link rel="stylesheet" href="assets/storefront.css?v=20260805-bookstore-v41" />
 </head>
 <body>
   <main class="shop-app storefront" id="storeHome" data-store-page="home">
-    <section class="appbar" aria-label="商城 Demo" data-i18n-aria-label="sceneBookstoreTitle">
-      <div class="brand">
+    <header class="appbar" aria-label="图书商城" data-i18n-aria-label="shopAppLabel">
+      <button class="brand" type="button" data-store-route="home" data-route-trigger="brand_home">
         <span class="store-mark" aria-hidden="true">
           <svg viewBox="0 0 40 40" focusable="false">
             <defs>
@@ -44,34 +44,47 @@
           </svg>
         </span>
         <div class="brand-text">
-          <strong data-i18n="sceneBookstoreTitle">商城 Demo</strong>
-          <span data-i18n="sceneBookstoreDescription">图书商城</span>
+          <strong id="brandTitle">可观测性书店</strong>
+          <span id="brandSubtitle">技术阅读空间</span>
         </div>
-      </div>
+      </button>
       <nav class="store-nav" aria-label="书城导航" data-i18n-aria-label="shopNavLabel">
-        <a class="active" href="#home" data-store-route="home" data-i18n="shopNavHome">首页</a>
-        <a href="#detail" data-store-route="detail" data-i18n="shopNavBook">本书</a>
-        <a href="#purchase" data-store-route="purchase">
-          <span data-i18n="shopNavBag">购物袋</span>
-          <span class="cart-badge" id="cartBadge" aria-label="购物袋内有 1 本书" hidden>1</span>
-        </a>
+        <a class="active" href="?page=home" data-store-route="home"><span data-store-copy="navHome">首页</span></a>
+        <a href="?page=path" data-store-route="path"><span data-store-copy="navPath">阅读路径</span></a>
       </nav>
-      <div class="shop-theme-picker" id="shopThemePicker" data-open="false">
-        <button class="shop-theme-trigger" id="shopThemeTrigger" type="button" aria-haspopup="menu" aria-expanded="false">
-          <span class="shop-theme-swatch colorful" id="currentThemeSwatch" aria-hidden="true"></span>
-          <span data-i18n="shopThemeTrigger">主题</span>
-          <span class="theme-chevron" aria-hidden="true"></span>
+      <label class="store-search" for="storeSearch">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
+        <input id="storeSearch" type="search" autocomplete="off" placeholder="搜索书名 / 作者 / 技术主题" />
+        <button id="clearSearch" type="button" aria-label="清空搜索" hidden>×</button>
+      </label>
+      <div class="header-actions">
+        <button class="language-toggle" id="languageToggle" type="button">EN</button>
+        <button class="header-cart-button" type="button" data-store-route="cart">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6.2"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>
+          <span data-store-copy="navCart">购物车</span>
+          <strong class="cart-badge" id="cartBadge" aria-label="购物车内有 1 本书" hidden>1</strong>
         </button>
-        <div class="shop-theme-menu" id="shopThemeMenu" role="menu" aria-label="选择主题" data-i18n-aria-label="shopThemeMenuLabel">
-          <button type="button" role="menuitemradio" data-demo-theme="colorful" aria-checked="true" title="绚彩" data-i18n-title="themeColorful">
-            <span class="shop-theme-swatch colorful" aria-hidden="true"></span><span data-i18n="themeColorful">绚彩</span>
+        <div class="shop-theme-picker" id="shopThemePicker" data-open="false" aria-hidden="true">
+          <button class="shop-theme-trigger" id="shopThemeTrigger" type="button" aria-haspopup="menu" aria-expanded="false" tabindex="-1">
+            <span class="shop-theme-swatch colorful" id="currentThemeSwatch" aria-hidden="true"></span>
+            <span data-i18n="shopThemeTrigger">主题</span>
+            <span class="theme-chevron" aria-hidden="true"></span>
           </button>
-          <button type="button" role="menuitemradio" data-demo-theme="white" aria-checked="false" title="黑白线条" data-i18n-title="themeWhite">
-            <span class="shop-theme-swatch white" aria-hidden="true"></span><span data-i18n="themeWhite">黑白线条</span>
-          </button>
+          <div class="shop-theme-menu" id="shopThemeMenu" role="menu" aria-label="选择主题" data-i18n-aria-label="shopThemeMenuLabel">
+            <button type="button" role="menuitemradio" data-demo-theme="colorful" aria-checked="true" title="绚彩" data-i18n-title="themeColorful">
+              <span class="shop-theme-swatch colorful" aria-hidden="true"></span><span data-i18n="themeColorful">绚彩</span>
+            </button>
+            <button type="button" role="menuitemradio" data-demo-theme="white" aria-checked="false" title="黑白线条" data-i18n-title="themeWhite">
+              <span class="shop-theme-swatch white" aria-hidden="true"></span><span data-i18n="themeWhite">黑白线条</span>
+            </button>
+          </div>
         </div>
+        <button class="account-button" type="button" tabindex="-1" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6"></path></svg>
+          <span data-store-copy="account">商城账户</span>
+        </button>
       </div>
-    </section>
+    </header>
 
     <div class="toast-region" aria-live="polite" aria-atomic="true">
       <div class="phone-toast" id="phoneToast" hidden>
@@ -95,107 +108,120 @@
       </div>
     </div>
 
-    <section class="store-page storefront-home" data-store-panel="home" aria-label="商城首页">
+    <section class="store-page storefront-home" id="homePanel" data-store-panel="home" aria-label="商城首页" data-i18n-aria-label="shopHomePageLabel">
       <div class="storefront-shell">
-        <section class="storefront-hero" aria-label="本周推荐">
-          <div class="home-book-cover" id="homeBookCover"></div>
-          <div class="home-product-copy" id="homeProduct"></div>
+        <section class="storefront-hero" aria-label="本周编辑推荐" data-i18n-aria-label="shopHeroLabel">
+          <div class="hero-copy" id="homeProduct"></div>
+          <div class="hero-visual">
+            <span class="signal-chip metrics"><i></i><span id="metricsSignal">指标与事件</span></span>
+            <span class="signal-chip traces"><i></i><span id="tracesSignal">分布式追踪</span></span>
+            <span class="signal-chip rum"><i></i><span id="rumSignal">真实用户体验</span></span>
+            <div class="home-book-cover" id="homeBookCover"></div>
+          </div>
         </section>
-
-        <section class="editorial-section" aria-labelledby="editorialTitle">
-          <div class="editorial-heading">
-            <h2 id="editorialTitle" data-i18n="shopEditorialTitle">为什么值得读</h2>
-            <p data-i18n="shopEditorialDescription">从概念到日常实践，建立一套能够解释复杂系统的共同语言。</p>
+        <section class="prototype-topic-strip" id="topicList" role="list" aria-label="可观测性主题分类" data-i18n-aria-label="shopTopicListLabel"></section>
+        <section class="catalog-section" aria-labelledby="catalogTitle">
+          <div class="section-heading">
+            <div class="prototype-section-title"><span class="section-title-mark" aria-hidden="true"></span><h2 id="catalogTitle"></h2><span id="catalogCount"></span></div>
+            <label class="sort-label"><span class="sr-only" id="sortLabel">排序方式</span><select id="sortControl"><option value="recommended">编辑推荐</option><option value="rating">评分最高</option><option value="price-asc">价格从低到高</option></select></label>
           </div>
-          <div class="editorial-grid">
-            <article class="editorial-card">
-              <span class="editorial-number">01</span>
-              <strong data-i18n="shopFeaturePracticeTitle">面向真实实践</strong>
-              <span data-i18n="shopFeaturePracticeDescription">连接指标、日志、链路、事件与团队协作，而不止停留在工具清单。</span>
-            </article>
-            <article class="editorial-card">
-              <span class="editorial-number">02</span>
-              <strong data-i18n="shopFeatureDebugTitle">改进调试方式</strong>
-              <span data-i18n="shopFeatureDebugDescription">从未知问题出发，学习如何提出问题、缩小范围并验证判断。</span>
-            </article>
-            <article class="editorial-card">
-              <span class="editorial-number">03</span>
-              <strong data-i18n="shopFeatureTeamTitle">适合技术团队</strong>
-              <span data-i18n="shopFeatureTeamDescription">为研发、SRE 和平台团队提供可以共同讨论的系统视角。</span>
-            </article>
-          </div>
+          <div class="book-grid" id="bookGrid"></div>
+          <div class="catalog-empty" id="catalogEmpty" hidden></div>
         </section>
       </div>
+    </section>
+
+    <section class="store-page storefront-path" id="pathPanel" data-store-panel="path" aria-label="阅读路径" data-i18n-aria-label="shopPathPageLabel">
+      <div class="storefront-shell" id="pathContent"></div>
     </section>
 
     <section class="store-page storefront-detail" id="detailPanel" data-store-panel="detail" aria-label="图书详情" data-i18n-aria-label="shopDetailPageTitle">
       <div class="storefront-shell">
-        <div class="page-header-row">
-          <div class="page-title">
-            <h1 data-i18n="shopDetailPageTitle">图书详情</h1>
-          </div>
-        </div>
         <div id="bookDetail"></div>
       </div>
     </section>
 
-    <section class="store-page storefront-purchase" id="purchasePanel" data-store-panel="purchase" aria-label="购物袋" data-i18n-aria-label="shopBagTitle">
+    <section class="store-page storefront-cart" id="purchasePanel" data-store-panel="cart" aria-label="购物车" data-i18n-aria-label="shopCartPageLabel">
       <div class="storefront-shell">
-        <div class="page-header-row">
-          <div class="page-title">
-            <h1 id="purchaseTitle" data-i18n="shopBagTitle">购物袋</h1>
-            <p data-i18n="shopBagDescription">确认选中的图书与金额，然后完成购买。</p>
-          </div>
-        </div>
-
-        <div class="empty-bag" id="bagEmpty">
-          <div class="empty-bag-copy">
+        <div class="cart-page-heading" id="cartHeading"></div>
+        <div class="cart-commerce-panel empty-bag" id="bagEmpty">
+          <div class="cart-page-empty empty-bag-copy">
             <span class="empty-bag-mark" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
                 <path d="M5 8.5h14l-1 11H6l-1-11Z"></path>
                 <path d="M9 9V6.5a3 3 0 0 1 6 0V9"></path>
               </svg>
             </span>
-            <h2 data-i18n="shopBagEmptyTitle">购物袋还是空的</h2>
-            <p data-i18n="shopBagEmptyDescription">先去看看本周推荐，把想读的书放进购物袋。</p>
-            <button type="button" data-store-route="detail" data-i18n="shopBagBrowse">去看本书</button>
+            <h2 id="cartEmptyTitle">购物车还是空的</h2>
+            <p id="cartEmptyHint">从首页或详情页加入一本想读的书吧。</p>
+            <button type="button" data-store-route="home" data-store-copy="continueShopping">继续选书</button>
           </div>
         </div>
 
-        <div class="bag-filled" id="bagFilled" hidden>
-          <div class="bag-layout">
-            <div class="bag-items">
-              <article class="bag-item" id="bagItem"></article>
+        <div class="bag-filled cart-page-layout" id="bagFilled" hidden>
+          <section class="cart-commerce-panel">
+            <div class="cart-table-head">
+              <input class="cart-checkbox" id="selectAllCart" type="checkbox" data-cart-select-all aria-label="全选商品" data-i18n-aria-label="shopSelectAllProductsLabel" />
+              <span id="cartProductLabel">商品信息</span>
+              <span id="cartUnitPriceLabel">单价</span>
+              <span id="cartQuantityHeader">数量</span>
+              <span id="cartSubtotalHeader">小计</span>
+              <span id="cartActionsLabel">操作</span>
             </div>
-            <aside class="order-summary" aria-label="订单汇总" data-i18n-aria-label="shopOrderSummary">
-              <h2 data-i18n="shopOrderSummary">订单汇总</h2>
-              <div class="summary-product">
-                <span data-i18n="shopSelectedLabel">已选图书</span>
-                <strong id="selectedProduct">可观测性工程</strong>
+            <div class="cart-page-items" id="bagItem"></div>
+            <div class="cart-list-footer cart-toolbar" id="cartToolbar"></div>
+          </section>
+          <aside class="order-summary cart-summary-card" aria-label="结算明细" data-i18n-aria-label="shopCheckoutSummaryLabel">
+              <div class="cart-promotion">
+                <svg class="cart-promotion-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16v13H4z"></path><path d="M8 7a4 4 0 0 1 8 0M8 12h8"></path></svg>
+                <span><strong id="cartPromotionTitle">购书优惠</strong><span id="cartPromotionDescription">满 99 元免配送费，专业技术书籍享正版保障。</span></span>
+              </div>
+              <h2 id="summaryTitle">结算明细</h2>
+              <div class="summary-line summary-product">
+                <span id="selectedBooksLabel">已选图书</span>
+                <strong id="selectedProduct">共 1 册</strong>
               </div>
               <div class="summary-line">
-                <span data-i18n="shopSubtotal">商品小计</span>
+                <span id="subtotalLabel">商品金额</span>
                 <strong id="bagSubtotal">￥99.00</strong>
               </div>
+              <div class="summary-line"><span id="shippingLabel">配送费</span><strong id="shippingValue">免费</strong></div>
               <div class="summary-total">
-                <span data-i18n="shopAmountLabel">应付金额</span>
+                <span id="totalLabel">应付合计</span>
                 <strong id="phoneTotal">￥99.00</strong>
               </div>
-              <button id="submitBtn" type="button" data-i18n="shopSubscribe">购买这本书</button>
+              <p class="cart-summary-note" id="cartSummaryNote">最终价格与配送方式将在提交订单前再次确认。</p>
+              <button id="submitBtn" type="button">去结算（1）</button>
+              <div class="summary-services cart-service-list" id="summaryServices"></div>
               <details class="demo-actions">
-                <summary data-i18n="shopDemoActionsTitle">演示操作</summary>
+                <summary id="demoActionsTitle">观测调试操作</summary>
                 <div class="demo-actions-body">
-                  <p data-i18n="shopDemoActionsDescription">用于一次生成多条观测链路，不影响正常购买流程。</p>
-                  <button class="secondary" id="trafficBtn" type="button" data-i18n="shopBatchSubscribe">连续购买 5 次</button>
+                  <p id="demoActionsHint">连续生成 5 条订单链路，保留当前选中书目与金额。</p>
+                  <button class="secondary" id="trafficBtn" type="button">连续下单 5 次</button>
                 </div>
               </details>
-            </aside>
-          </div>
+          </aside>
         </div>
         <input id="sku" type="hidden" value="sku-1001" />
         <input id="amountCent" type="hidden" min="1" value="9900" />
       </div>
     </section>
+
+    <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="移动端书城导航" data-i18n-aria-label="shopMobileNavLabel">
+      <button class="active" type="button" data-store-route="home">
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24"><path d="m4 10 8-7 8 7v10h-6v-6h-4v6H4V10Z"></path></svg></span>
+        <span data-store-copy="navHome">首页</span>
+      </button>
+      <button type="button" data-store-route="path">
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Z"></path><path d="M8 17h11M9 8h6M9 12h7"></path></svg></span>
+        <span data-store-copy="navPath">阅读路径</span>
+      </button>
+      <button type="button" data-store-route="cart">
+        <span class="mobile-nav-icon"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6.2"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg></span>
+        <span data-store-copy="navCart">购物车</span>
+        <strong class="mobile-cart-count" id="mobileCartBadge" hidden>0</strong>
+      </button>
+    </nav>
   </main>
 
   <script>
@@ -203,11 +229,12 @@
     let PROJECT_NAME = 'mall-demo';
     const apiPrefix = window.location.pathname.startsWith('/selfheal') ? '/selfheal' : '';
     const rumResourceContexts = [];
-    const PREVIEW_DISPLAY_URL = 'https://demo.local/bookstore';
+    const PREVIEW_DISPLAY_URL = 'https://demo.dataflux.cn';
     const DEMO_THEME_STORAGE_KEY = 'mall-demo-theme';
     const DEMO_THEMES = new Set(['colorful', 'white']);
-    const STORE_PAGES = new Set(['home', 'detail', 'purchase']);
-    const LEGACY_STORE_PAGE_ALIASES = Object.freeze({ categories: 'home', technology: 'detail' });
+    const STORE_PAGES = new Set(['home', 'path', 'detail', 'cart']);
+    const LEGACY_STORE_PAGE_ALIASES = Object.freeze({ categories: 'home', technology: 'detail', purchase: 'cart' });
+    const ORDER_BACKEND_SKU = 'sku-1001';
     const SWIPE_BACK_MIN_DISTANCE = 72;
     const SWIPE_BACK_MAX_VERTICAL_DISTANCE = 48;
     const SWIPE_BACK_MAX_DURATION_MS = 700;
@@ -216,12 +243,23 @@
       guance: 'https://static.guance.com',
       truewatch: 'https://static.truewatch.com',
     });
+    const TOPIC_ICONS = Object.freeze({
+      all: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"></path>',
+      foundation: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>',
+      tracing: '<circle cx="5" cy="17" r="2"></circle><circle cx="12" cy="7" r="2"></circle><circle cx="19" cy="15" r="2"></circle><path d="m6.5 15.5 4-6.5M13.8 8.3l3.5 5"></path>',
+      reliability: '<path d="M12 3 4 6v6c0 5 3.4 8 8 10 4.6-2 8-5 8-10V6l-8-3Z"></path><path d="m8.5 12 2.2 2.2 4.8-5"></path>',
+      team: '<circle cx="8" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M2.5 20a5.5 5.5 0 0 1 11 0M13 19a4.5 4.5 0 0 1 8.5 0"></path>',
+      systems: '<rect x="4" y="4" width="6" height="6" rx="1"></rect><rect x="14" y="4" width="6" height="6" rx="1"></rect><rect x="9" y="15" width="6" height="6" rx="1"></rect><path d="M7 10v2h10v-2M12 12v3"></path>',
+    });
     const initialPreviewParams = new URL(window.location.href).searchParams;
+    const initialBookId = I18N.bookById(initialPreviewParams.get('book')).id;
     const state = {
-      selectedSku: I18N.products[0].sku,
       busy: false,
       rumReady: false,
       browserLogsReady: false,
+      rumApplicationId: '',
+      rumViewId: '',
+      rumSessionId: '',
       activeClientFault: null,
       language: I18N.setLanguage(I18N.detectLanguage(), { updateUrl: true }),
       demoTheme: DEMO_THEMES.has(document.documentElement.dataset.demoTheme) ? document.documentElement.dataset.demoTheme : 'colorful',
@@ -231,16 +269,41 @@
       storeHistoryIndex: Number.isFinite(Number(window.history.state?.storeIndex)) ? Number(window.history.state.storeIndex) : 0,
       pendingHistoryTrigger: null,
       swipeBackStart: null,
-      cartQuantity: 0,
+      currentBookId: initialBookId,
+      query: '',
+      activeTopic: 'all',
+      sort: 'recommended',
+      detailTab: 'overview',
+      detailQuantity: 1,
+      cart: new Map([['observability-engineering', 1]]),
+      selectedCart: new Set(['observability-engineering']),
     };
 
     const els = {
       storeHome: document.getElementById('storeHome'),
       homeBookCover: document.getElementById('homeBookCover'),
       homeProduct: document.getElementById('homeProduct'),
+      brandTitle: document.getElementById('brandTitle'),
+      brandSubtitle: document.getElementById('brandSubtitle'),
+      storeSearch: document.getElementById('storeSearch'),
+      clearSearch: document.getElementById('clearSearch'),
+      languageToggle: document.getElementById('languageToggle'),
+      serviceStrip: document.getElementById('serviceStrip'),
+      catalogTitle: document.getElementById('catalogTitle'),
+      catalogCount: document.getElementById('catalogCount'),
+      topicList: document.getElementById('topicList'),
+      bookGrid: document.getElementById('bookGrid'),
+      catalogEmpty: document.getElementById('catalogEmpty'),
+      sortControl: document.getElementById('sortControl'),
+      pathContent: document.getElementById('pathContent'),
       bookDetail: document.getElementById('bookDetail'),
-      purchaseTitle: document.getElementById('purchaseTitle'),
+      cartHeading: document.getElementById('cartHeading'),
+      cartToolbar: document.getElementById('cartToolbar'),
+      cartEmptyTitle: document.getElementById('cartEmptyTitle'),
+      cartEmptyHint: document.getElementById('cartEmptyHint'),
       cartBadge: document.getElementById('cartBadge'),
+      mobileCartBadge: document.getElementById('mobileCartBadge'),
+      mobileBottomNav: document.getElementById('mobileBottomNav'),
       bagEmpty: document.getElementById('bagEmpty'),
       bagFilled: document.getElementById('bagFilled'),
       bagItem: document.getElementById('bagItem'),
@@ -265,6 +328,19 @@
 
     function t(key, params) {
       return I18N.t(key, params, state.language);
+    }
+
+    function s(key, params) {
+      return I18N.storeT(key, params, state.language);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
     }
 
     function setThemeMenuOpen(open) {
@@ -318,7 +394,10 @@
 
     function storePageUrl(page) {
       const url = new URL(window.location.href);
-      url.searchParams.set('page', normalizeStorePage(page));
+      const nextPage = normalizeStorePage(page);
+      url.searchParams.set('page', nextPage);
+      if (nextPage === 'detail') url.searchParams.set('book', state.currentBookId);
+      else url.searchParams.delete('book');
       return url;
     }
 
@@ -334,55 +413,121 @@
       }, '', storePageUrl(state.storePage));
     }
 
+    function localizedBook(book) {
+      return I18N.getBookText(book, state.language);
+    }
+
+    function formatPrice(amountCent) {
+      return I18N.formatPrice(amountCent, state.language);
+    }
+
+    function coverStyle(book) {
+      if (!book.cover) return '';
+      return `--cover-bg:${book.cover[0]};--cover-ink:${book.cover[1]};--cover-accent:${book.cover[2]};--cover-art:${book.cover[3]}`;
+    }
+
+    function coverMarkup(book, className = '') {
+      const text = localizedBook(book);
+      const image = book.image ? (state.language === 'en' && book.imageEn ? book.imageEn : book.image) : '';
+      if (image) {
+        return `<span class="book-cover ${className}"><img src="${image}" alt="${escapeHtml(text.title)}" loading="eager" decoding="async"></span>`;
+      }
+      return `<span class="book-cover css-cover ${className}" style="${coverStyle(book)}" role="img" aria-label="${escapeHtml(text.title)}">
+        <span class="cover-kicker">${escapeHtml(text.badge)}</span>
+        <strong class="cover-title">${escapeHtml(text.shortTitle).replaceAll('\n', '<br>')}</strong>
+        <span class="cover-author">${escapeHtml(text.authorShort)}</span>
+      </span>`;
+    }
+
+    function currentBook() {
+      return I18N.bookById(state.currentBookId);
+    }
+
+    function isInCart(bookId) {
+      return state.cart.has(bookId) && Number(state.cart.get(bookId)) > 0;
+    }
+
+    function tagLabel(tag) {
+      return I18N.topics.find((topic) => topic.id === tag)?.[state.language] || tag;
+    }
+
     function renderBookDetail() {
       if (!els.bookDetail) return;
-      const product = selectedProduct();
-      const text = selectedProductText();
-      const bullets = Array.isArray(text.bullets) ? text.bullets : [];
+      const book = currentBook();
+      const text = localizedBook(book);
+      const related = I18N.products.filter((item) => item.id !== book.id && item.tags.some((tag) => book.tags.includes(tag))).slice(0, 3);
+      const detailPanel = state.detailTab === 'chapters'
+        ? `<div class="chapter-list">${text.parts.map((item) => `<article class="chapter-group"><span class="chapter-index">${escapeHtml(item[0])}</span><span class="chapter-copy"><strong>${escapeHtml(item[1])}</strong><span>${escapeHtml(item[2])}</span></span></article>`).join('')}</div>`
+        : state.detailTab === 'audience'
+          ? `<div class="audience-grid">${text.audience.map((item) => `<article class="audience-card"><span class="audience-icon">◎</span><span><strong>${escapeHtml(item[0])}</strong><p>${escapeHtml(item[1])}</p></span></article>`).join('')}</div>`
+          : `<h2>${s('overview')}</h2><p class="tab-lead">${escapeHtml(text.description)}</p><div class="learn-grid">${text.learn.map((item, index) => `<article class="learn-card"><span>0${index + 1}</span><strong>${escapeHtml(item[0])}</strong><p>${escapeHtml(item[1])}</p></article>`).join('')}</div>`;
       els.bookDetail.innerHTML = `
-        <div class="storefront-detail-layout">
-          <div class="detail-book-cover">
-            <img src="${text.cover}" alt="${text.coverAlt || text.name}" loading="eager" decoding="async">
-          </div>
+        <nav class="detail-breadcrumb" aria-label="Breadcrumb">
+          <button type="button" data-store-route="home">${s('navHome')}</button><span>›</span><span>${s('detail')}</span><span>›</span><strong>${escapeHtml(text.title)}</strong>
+        </nav>
+        <section class="detail-product">
+          <div class="detail-cover-wrap">${coverMarkup(book, 'detail-product-cover')}</div>
           <div class="detail-copy">
-            <span class="store-eyebrow">${text.badge}</span>
-            <h1>${text.name}</h1>
-            <div class="detail-book-meta">
-              <span>${text.author || ''}</span>
-              <span>${text.edition || ''}</span>
-              <span>${product.icon}</span>
-            </div>
-            <div class="detail-section">
-              <strong>${t('shopDetailOverview')}</strong>
-              <p>${text.tagline}</p>
-            </div>
-            <div class="detail-section">
-              <strong>${t('shopDetailHighlights')}</strong>
-              <ul class="detail-highlights">
-                ${bullets.map((item) => `<li>${item}</li>`).join('')}
-              </ul>
-            </div>
-            <div class="detail-price">${text.price}</div>
-            <div class="detail-actions">
-              <button class="secondary" type="button" data-store-action="add-to-bag" aria-pressed="${state.cartQuantity === 1 ? 'true' : 'false'}">${state.cartQuantity === 1 ? t('shopAddedToBag') : t('shopAddToBag')}</button>
-              <button type="button" data-store-action="buy-now">${t('shopDetailBuy')}</button>
-            </div>
+            <span class="detail-label">${escapeHtml(text.badge)}</span>
+            <h1>${escapeHtml(text.title)}</h1>
+            <p class="detail-english-title">${escapeHtml(text.englishTitle)}</p>
+            <div class="detail-rating"><b>★★★★★</b><strong>${s('rating', { rating: book.rating })}</strong><span>${s('editorPick')}</span></div>
+            <p class="detail-description">${escapeHtml(text.description)}</p>
+            <p class="detail-author"><strong>${s('authorPrefix')}:</strong> ${escapeHtml(text.author)}</p>
+            <div class="detail-meta">${[[s('published'), text.published], [s('pages'), text.pages], [s('level'), text.level], [s('publisher'), text.publisher], [s('isbn'), text.isbn], ['SKU', `obs-${book.id}`]].map(([label, value]) => `<span class="detail-meta-item"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></span>`).join('')}</div>
           </div>
+          <aside class="purchase-panel">
+            <span class="purchase-format">${s('format')} · ${s('commerceProduct')}</span>
+            <div class="purchase-price">${formatPrice(book.amountCent)}</div>
+            <div class="purchase-benefit"><i>✓</i><span>${s('inStock')}</span></div>
+            <div class="purchase-benefit"><i>✓</i><span>${s('authenticity')}</span></div>
+            <div class="quantity-row"><span>${s('purchaseQuantity')}</span><div class="quantity-stepper"><button type="button" data-detail-quantity="-1" aria-label="${s('decrease')}">−</button><span>${state.detailQuantity}</span><button type="button" data-detail-quantity="1" aria-label="${s('increase')}">＋</button></div></div>
+            <div class="purchase-actions"><button class="primary-button" type="button" data-add-book="${book.id}">${isInCart(book.id) ? s('inCart') : s('addCart')}</button><button class="secondary-button" type="button" data-buy-book="${book.id}">${s('buyNow')}</button></div>
+          </aside>
+        </section>
+        <div class="detail-body">
+          <section class="detail-content-card">
+            <div class="detail-tabs" role="tablist"><button class="tab-button ${state.detailTab === 'overview' ? 'is-active' : ''}" type="button" data-detail-tab="overview">${s('overview')}</button><button class="tab-button ${state.detailTab === 'chapters' ? 'is-active' : ''}" type="button" data-detail-tab="chapters">${s('contents')}</button><button class="tab-button ${state.detailTab === 'audience' ? 'is-active' : ''}" type="button" data-detail-tab="audience">${s('audience')}</button></div>
+            <div class="tab-panel">${detailPanel}</div>
+          </section>
+          <aside class="detail-side">
+            <section class="detail-side-card"><h2>${s('suggestedPath')}</h2><div class="reading-path">${I18N.readingStages.map((stage, index) => { const stageText = stage[state.language] || stage.zh; return `<article class="reading-step"><span>${index + 1}</span><div><strong>${escapeHtml(stageText[0])}</strong><p>${escapeHtml(stageText[1])}</p></div></article>`; }).join('')}</div></section>
+            <section class="detail-side-card"><h2>${s('related')}</h2><div class="related-list">${related.map((item) => { const itemText = localizedBook(item); return `<button type="button" class="related-item" data-book-id="${item.id}">${coverMarkup(item, 'mini-cover')}<span><strong>${escapeHtml(itemText.title)}</strong><span>${escapeHtml(itemText.authorShort)}</span></span></button>`; }).join('')}</div></section>
+          </aside>
         </div>
       `;
+    }
+
+    function renderPath() {
+      if (!els.pathContent) return;
+      els.pathContent.innerHTML = `
+        <header class="path-hero"><span class="section-eyebrow">${s('pathEyebrow')}</span><h1>${s('pathTitle')}</h1><p>${s('pathDescription')}</p></header>
+        <div class="path-stages">${I18N.readingStages.map((stage, index) => {
+          const stageText = stage[state.language] || stage.zh;
+          return `<article class="path-stage">
+            <div class="stage-number">0${index + 1}</div>
+            <div class="stage-copy"><h2>${s('stage', { index: index + 1 })} · ${escapeHtml(stageText[0])}</h2><p>${escapeHtml(stageText[1])}</p></div>
+            <div class="stage-books">${stage.books.map((bookId) => {
+              const book = I18N.bookById(bookId);
+              const text = localizedBook(book);
+              return `<button type="button" data-book-id="${book.id}">${coverMarkup(book, 'stage-cover')}<span class="stage-book-copy"><strong>${escapeHtml(text.title)}</strong></span></button>`;
+            }).join('')}</div>
+          </article>`;
+        }).join('')}</div>`;
     }
 
     function renderStorePage(options = {}) {
       state.storePage = normalizeStorePage(state.storePage);
       els.storeHome.dataset.storePage = state.storePage;
-      if (els.storeNav) {
-        els.storeNav.querySelectorAll('[data-store-route]').forEach((link) => {
+      document.querySelectorAll('[data-store-route]').forEach((link) => {
           const active = link.dataset.storeRoute === state.storePage;
           link.classList.toggle('active', active);
           if (active) link.setAttribute('aria-current', 'page');
           else link.removeAttribute('aria-current');
-        });
-      }
+      });
+      renderStoreCopy();
+      if (state.storePage === 'home') renderHomeProduct();
+      if (state.storePage === 'path') renderPath();
       if (state.storePage === 'detail') renderBookDetail();
       renderCart();
       applyPreviewObservabilityContext();
@@ -396,6 +541,11 @@
     }
 
     function navigateStorePage(page, options = {}) {
+      if (options.bookId) {
+        state.currentBookId = I18N.bookById(options.bookId).id;
+        state.detailTab = 'overview';
+        state.detailQuantity = 1;
+      }
       const nextPage = normalizeStorePage(page);
       const previousPage = state.storePage;
       const historyMode = options.historyMode || (nextPage === previousPage ? 'replace' : 'push');
@@ -418,6 +568,10 @@
         trigger: options.trigger,
         track: options.track,
       });
+    }
+
+    function openBookDetail(bookId, trigger = 'open_book_detail') {
+      navigateStorePage('detail', { bookId, trigger });
     }
 
     function goBackStorePage(trigger = 'history_back') {
@@ -459,17 +613,24 @@
     function applyPreviewObservabilityContext() {
       document.documentElement.dataset.businessScene = state.businessScene;
       document.documentElement.dataset.previewMode = state.previewMode;
+      const cart = checkoutSnapshot();
       if (state.rumReady && window.DATAFLUX_RUM?.setGlobalContextProperty) {
         window.DATAFLUX_RUM.setGlobalContextProperty('business_scene', state.businessScene);
         window.DATAFLUX_RUM.setGlobalContextProperty('preview_mode', state.previewMode);
         window.DATAFLUX_RUM.setGlobalContextProperty('preview_url', PREVIEW_DISPLAY_URL);
         window.DATAFLUX_RUM.setGlobalContextProperty('store_page', state.storePage);
+        window.DATAFLUX_RUM.setGlobalContextProperty('book_id', state.currentBookId);
+        window.DATAFLUX_RUM.setGlobalContextProperty('cart_total_copies', cart.totalCopies);
+        window.DATAFLUX_RUM.setGlobalContextProperty('cart_amount_cent', cart.amountCent);
       }
       if (state.browserLogsReady && window.DATAFLUX_LOGS?.setGlobalContextProperty) {
         window.DATAFLUX_LOGS.setGlobalContextProperty('business_scene', state.businessScene);
         window.DATAFLUX_LOGS.setGlobalContextProperty('preview_mode', state.previewMode);
         window.DATAFLUX_LOGS.setGlobalContextProperty('preview_url', PREVIEW_DISPLAY_URL);
         window.DATAFLUX_LOGS.setGlobalContextProperty('store_page', state.storePage);
+        window.DATAFLUX_LOGS.setGlobalContextProperty('book_id', state.currentBookId);
+        window.DATAFLUX_LOGS.setGlobalContextProperty('cart_total_copies', cart.totalCopies);
+        window.DATAFLUX_LOGS.setGlobalContextProperty('cart_amount_cent', cart.amountCent);
       }
     }
 
@@ -499,24 +660,55 @@
     }
 
     function selectedProduct() {
-      return I18N.productBySku(state.selectedSku);
+      return currentBook();
     }
 
     function selectedProductText() {
       return I18N.getProductText(selectedProduct(), state.language, state.demoTheme);
     }
 
+    function selectedCartLines() {
+      return [...state.selectedCart]
+        .filter((bookId) => Number(state.cart.get(bookId) || 0) > 0)
+        .map((bookId) => {
+          const book = I18N.bookById(bookId);
+          const text = localizedBook(book);
+          const quantity = Math.max(1, Number(state.cart.get(bookId) || 1));
+          return { book, text, quantity, lineAmountCent: book.amountCent * quantity };
+        });
+    }
+
+    function checkoutSnapshot() {
+      const lines = selectedCartLines();
+      const totalCopies = lines.reduce((total, line) => total + line.quantity, 0);
+      const amountCent = lines.reduce((total, line) => total + line.lineAmountCent, 0);
+      return {
+        lines,
+        lineCount: lines.length,
+        totalCopies,
+        amountCent,
+        bookIds: lines.map((line) => line.book.id),
+        titles: lines.map((line) => line.text.title),
+        quantities: lines.map((line) => line.quantity),
+        productLabel: lines.map((line) => line.text.title).join(' / '),
+      };
+    }
+
     function currentAmountCent() {
-      const product = selectedProduct();
-      return Math.max(1, Number(product.amountCent || 1));
+      return Math.max(1, checkoutSnapshot().amountCent || selectedProduct().amountCent || 1);
     }
 
     function setBusy(value) {
       state.busy = value;
       [els.submitBtn, els.trafficBtn].forEach((button) => {
+        if (!button) return;
         button.disabled = value;
         button.setAttribute('aria-busy', value ? 'true' : 'false');
       });
+      if (!value && checkoutSnapshot().totalCopies === 0) {
+        els.submitBtn.disabled = true;
+        els.trafficBtn.disabled = true;
+      }
     }
 
     function showPurchaseLoading(title, detail) {
@@ -605,11 +797,14 @@
     function buildHeaders(keyRequestOverride) {
       const keyRequest = keyRequestOverride || selectedKeyRequest();
       const bizRequestId = newBizRequestId();
+      const cart = checkoutSnapshot();
       const baggage = [
         `project=${encodeURIComponent(PROJECT_NAME)}`,
         `key_request=${encodeURIComponent(keyRequest)}`,
         'biz_chain=selfheal_checkout',
         `biz_request_id=${encodeURIComponent(bizRequestId)}`,
+        `book_ids=${encodeURIComponent(cart.bookIds.join('|') || state.currentBookId)}`,
+        `book_copies=${encodeURIComponent(cart.totalCopies || 1)}`,
       ].join(',');
       return {
         bizRequestId,
@@ -618,6 +813,8 @@
           'X-Key-Request': keyRequest,
           'X-Business-Request-Id': bizRequestId,
           'X-Biz-Chain': 'selfheal_checkout',
+          'X-Book-Ids': cart.bookIds.join(',') || state.currentBookId,
+          'X-Book-Copies': String(cart.totalCopies || 1),
           baggage,
         },
       };
@@ -653,6 +850,8 @@
     }
 
     function enrichRumEvent(event) {
+      if (event?.view?.id) state.rumViewId = event.view.id;
+      if (event?.session?.id) state.rumSessionId = event.session.id;
       event.context = event.context || {};
       event.context.project = PROJECT_NAME;
       event.context.demo = 'selfheal-business';
@@ -660,12 +859,21 @@
       event.context.business_scene = state.businessScene;
       event.context.preview_mode = state.previewMode;
       event.context.preview_url = PREVIEW_DISPLAY_URL;
+      event.context.store_page = state.storePage;
+      event.context.book_id = state.currentBookId;
+      const cartSnapshot = checkoutSnapshot();
+      event.context.cart_total_copies = cartSnapshot.totalCopies;
+      event.context.cart_amount_cent = cartSnapshot.amountCent;
       const activeFaultContext = window.__activeFaultContext || {};
       if (activeFaultContext.fault_id && (event.type === 'error' || event.type === 'action')) {
         event.context.fault_id = event.context.fault_id || activeFaultContext.fault_id;
         event.context.fault_layer = event.context.fault_layer || activeFaultContext.fault_layer;
         event.context.fault_kind = event.context.fault_kind || activeFaultContext.fault_kind;
         event.context.fault_target = event.context.fault_target || activeFaultContext.fault_target;
+        if (activeFaultContext.fault_trigger_id) event.context.fault_trigger_id = event.context.fault_trigger_id || activeFaultContext.fault_trigger_id;
+        if (activeFaultContext.fault_triggered_at) event.context.fault_triggered_at = event.context.fault_triggered_at || activeFaultContext.fault_triggered_at;
+        if (activeFaultContext.rum_view_id) event.context.rum_view_id = event.context.rum_view_id || activeFaultContext.rum_view_id;
+        if (activeFaultContext.rum_session_id) event.context.rum_session_id = event.context.rum_session_id || activeFaultContext.rum_session_id;
         if (event.type === 'error') {
           event.context.biz_operation = event.context.biz_operation || activeFaultContext.operation || 'observe_frontend_error';
           event.context.error_type = event.context.error_type || activeFaultContext.error_type || 'frontend_null_pointer';
@@ -683,10 +891,18 @@
         if (rumContext.operation) event.context.biz_operation = rumContext.operation;
         if (rumContext.product) event.context.product = rumContext.product;
         if (rumContext.sku) event.context.sku = rumContext.sku;
+        if (rumContext.bookIds) event.context.book_ids = rumContext.bookIds;
+        if (rumContext.bookTitles) event.context.book_titles = rumContext.bookTitles;
+        if (rumContext.bookQuantities) event.context.book_quantities = rumContext.bookQuantities;
+        if (rumContext.cartLineCount != null) event.context.cart_line_count = rumContext.cartLineCount;
+        if (rumContext.cartTotalCopies != null) event.context.cart_total_copies = rumContext.cartTotalCopies;
+        if (rumContext.cartAmountCent != null) event.context.cart_amount_cent = rumContext.cartAmountCent;
         if (rumContext.faultId) event.context.fault_id = rumContext.faultId;
         if (rumContext.faultLayer) event.context.fault_layer = rumContext.faultLayer;
         if (rumContext.faultKind) event.context.fault_kind = rumContext.faultKind;
         if (rumContext.faultTarget) event.context.fault_target = rumContext.faultTarget;
+        if (rumContext.faultTriggerId) event.context.fault_trigger_id = rumContext.faultTriggerId;
+        if (rumContext.faultTriggeredAt) event.context.fault_triggered_at = rumContext.faultTriggeredAt;
       }
       return true;
     }
@@ -953,6 +1169,22 @@
       }
     }
 
+    function getRumViewId() {
+      try {
+        return window.DATAFLUX_RUM?.getInternalContext?.()?.view?.id || '';
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function currentRumCorrelation() {
+      return {
+        applicationId: state.rumApplicationId,
+        viewId: state.rumViewId || getRumViewId(),
+        sessionId: state.rumSessionId || getRumSessionId(),
+      };
+    }
+
     function initBrowserLogs(config) {
       if (!window.DATAFLUX_LOGS) {
         state.browserLogsReady = false;
@@ -991,6 +1223,7 @@
         const { response, body } = await requestJson('/api/demo/rum-config');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         PROJECT_NAME = body.project || PROJECT_NAME;
+        state.rumApplicationId = body.applicationId || '';
         if (!body.enabled || !body.applicationId) {
           postToParent('rum-status', { status: 'disabled' });
           return;
@@ -1064,119 +1297,212 @@
     }
 
     function renderProducts() {
+      renderStoreCopy();
       renderHomeProduct();
+      renderPath();
       renderBookDetail();
-      updateSelectedProduct(false);
       renderCart();
+    }
+
+    function renderStoreCopy() {
+      document.title = s('brandTitle');
+      if (els.brandTitle) els.brandTitle.textContent = s('brandTitle');
+      if (els.brandSubtitle) els.brandSubtitle.textContent = s('brandSubtitle');
+      document.querySelectorAll('[data-store-copy]').forEach((node) => {
+        node.textContent = s(node.dataset.storeCopy);
+      });
+      if (els.storeSearch) {
+        els.storeSearch.placeholder = s('searchPlaceholder');
+        els.storeSearch.setAttribute('aria-label', s('searchLabel'));
+        if (els.storeSearch.value !== state.query) els.storeSearch.value = state.query;
+      }
+      if (els.clearSearch) {
+        els.clearSearch.hidden = !state.query;
+        els.clearSearch.setAttribute('aria-label', state.language === 'en' ? 'Clear search' : '清空搜索');
+      }
+      if (els.languageToggle) {
+        els.languageToggle.textContent = state.language === 'zh' ? 'EN' : '中';
+        els.languageToggle.setAttribute('aria-label', s('switchLanguage'));
+        els.languageToggle.title = s('switchLanguage');
+      }
+      const sortLabel = document.getElementById('sortLabel');
+      if (sortLabel) sortLabel.textContent = s('sortLabel');
+      if (els.sortControl) {
+        els.sortControl.innerHTML = `<option value="recommended">${s('sortRecommended')}</option><option value="rating">${s('sortRating')}</option><option value="price-asc">${s('sortPrice')}</option>`;
+        els.sortControl.value = state.sort;
+      }
     }
 
     function renderHomeProduct() {
       if (!els.homeBookCover || !els.homeProduct) return;
-      const text = selectedProductText();
-      els.homeBookCover.innerHTML = `<img src="${text.cover}" alt="${text.coverAlt || text.name}" loading="eager" decoding="async">`;
+      if (els.clearSearch) els.clearSearch.hidden = !state.query;
+      const heroBook = I18N.bookById('observability-engineering');
+      const text = localizedBook(heroBook);
+      const heroTitleLines = s('heroTitleLines').split('|').filter(Boolean);
+      els.homeBookCover.innerHTML = coverMarkup(heroBook, 'hero-cover');
       els.homeProduct.innerHTML = `
-        <span class="store-eyebrow">${t('shopHomeEyebrow')}</span>
-        <h1>${t('shopHomeTitle')}</h1>
-        <span class="home-book-name">${text.name}</span>
-        <p>${t('shopHomeDescription')}</p>
-        <div class="home-book-meta">
-          <span>${text.author || ''}</span>
-          <span>${text.edition || ''}</span>
-          <span>${text.note || ''}</span>
-        </div>
-        <div class="home-price">${text.price}</div>
-        <div class="home-actions">
-          <button type="button" data-store-route="detail" data-route-trigger="home_view_book">${t('shopHomeViewBook')}</button>
-          <button class="secondary" type="button" data-store-action="add-to-bag" aria-pressed="${state.cartQuantity === 1 ? 'true' : 'false'}">${state.cartQuantity === 1 ? t('shopAddedToBag') : t('shopAddToBag')}</button>
+        <p class="hero-kicker">${s('heroEyebrow')}</p>
+        <h1 class="hero-title-lines">${heroTitleLines.map((line) => `<span>${escapeHtml(line)}</span>`).join('')}</h1>
+        <p>${s('heroDescription')}</p>
+        <div class="hero-meta"><span>${escapeHtml(text.authorShort)}</span><span>${s('edition')}</span><span>${s('format')}</span><span>${formatPrice(heroBook.amountCent)}</span></div>
+        <div class="hero-actions">
+          <button type="button" data-book-id="${heroBook.id}">${s('viewBook')}</button>
+          <button class="secondary" type="button" data-add-book="${heroBook.id}" aria-pressed="${isInCart(heroBook.id) ? 'true' : 'false'}">${isInCart(heroBook.id) ? s('inCart') : s('addCart')}</button>
         </div>
       `;
-    }
-
-    function updateSelectedProduct(announce = true) {
-      const product = selectedProduct();
-      const text = selectedProductText();
-      els.selectedProduct.textContent = text.name;
-      els.phoneTotal.textContent = text.price;
-      if (els.bagSubtotal) els.bagSubtotal.textContent = text.price;
-      els.sku.value = product.sku;
-      els.amountCent.value = String(currentAmountCent());
-      if (announce) {
-        setPhoneResult('info', t('shopStatusReady'), t('shopStatusSelected', { product: text.name }));
+      const metricsSignal = document.getElementById('metricsSignal');
+      const tracesSignal = document.getElementById('tracesSignal');
+      const rumSignal = document.getElementById('rumSignal');
+      if (metricsSignal) metricsSignal.textContent = s('metricsSignal');
+      if (tracesSignal) tracesSignal.textContent = s('tracesSignal');
+      if (rumSignal) rumSignal.textContent = s('rumSignal');
+      const normalizedQuery = state.query.trim().toLocaleLowerCase(state.language === 'en' ? 'en' : 'zh-CN');
+      const filtered = I18N.products.filter((book) => {
+        if (state.activeTopic !== 'all' && !book.tags.includes(state.activeTopic)) return false;
+        if (!normalizedQuery) return true;
+        const zh = localizedBook(book);
+        const alternate = I18N.getBookText(book, state.language === 'zh' ? 'en' : 'zh');
+        return [zh.title, zh.author, zh.description, alternate.title, alternate.author, ...book.tags.map(tagLabel)]
+          .join(' ')
+          .toLocaleLowerCase(state.language === 'en' ? 'en' : 'zh-CN')
+          .includes(normalizedQuery);
+      }).sort((left, right) => {
+        if (state.sort === 'rating') return right.rating - left.rating || left.rank - right.rank;
+        if (state.sort === 'price-asc') return left.amountCent - right.amountCent || left.rank - right.rank;
+        return left.rank - right.rank;
+      });
+      if (els.catalogTitle) els.catalogTitle.textContent = state.activeTopic === 'all' ? s('shelfTitle') : tagLabel(state.activeTopic);
+      if (els.catalogCount) els.catalogCount.textContent = s('resultCount', { count: filtered.length });
+      if (els.topicList) {
+        els.topicList.innerHTML = I18N.topics.map((topic) => `<button type="button" class="prototype-topic-button ${topic.id === state.activeTopic ? 'active' : ''}" data-topic="${topic.id}" aria-pressed="${topic.id === state.activeTopic}"><span class="prototype-topic-icon"><svg viewBox="0 0 24 24" aria-hidden="true">${TOPIC_ICONS[topic.id] || TOPIC_ICONS.all}</svg></span><span class="prototype-topic-copy"><strong>${escapeHtml(topic[state.language])}</strong><span>${escapeHtml(topic[state.language === 'en' ? 'enSubtitle' : 'zhSubtitle'])}</span></span></button>`).join('');
+      }
+      if (els.bookGrid) {
+        els.bookGrid.innerHTML = filtered.map((book) => {
+          const item = localizedBook(book);
+          return `<article class="book-card">
+            <button class="book-cover-button" type="button" data-book-id="${book.id}">${coverMarkup(book, 'catalog-cover')}</button>
+            <div class="book-card-copy"><div class="book-tags compact">${book.tags.slice(0, 2).map((tag) => `<span>${escapeHtml(tagLabel(tag))}</span>`).join('')}</div><button class="book-title-button" type="button" data-book-id="${book.id}"><strong>${escapeHtml(item.title)}</strong></button><span>${escapeHtml(item.authorShort)}</span><div class="book-rating"><span>★★★★★</span><small>${book.rating}</small></div><div class="book-card-footer"><b>${formatPrice(book.amountCent)}</b><button type="button" data-add-book="${book.id}" aria-label="${s('addCart')}: ${escapeHtml(item.title)}">${isInCart(book.id) ? '✓' : '+'}</button></div></div>
+          </article>`;
+        }).join('');
+      }
+      if (els.catalogEmpty) {
+        els.catalogEmpty.hidden = filtered.length > 0;
+        els.catalogEmpty.innerHTML = `<strong>${s('noResults')}</strong><span>${s('noResultsHint')}</span>`;
       }
     }
 
     function renderCart() {
-      const hasItem = state.cartQuantity === 1;
-      const product = selectedProduct();
-      const text = selectedProductText();
-      if (els.cartBadge) {
-        els.cartBadge.hidden = !hasItem;
-        els.cartBadge.textContent = hasItem ? '1' : '0';
-        els.cartBadge.setAttribute('aria-label', t('shopBagCountLabel', { count: hasItem ? 1 : 0 }));
-      }
+      const cartLines = [...state.cart.entries()].filter(([, quantity]) => Number(quantity) > 0);
+      const totalCartCopies = cartLines.reduce((total, [, quantity]) => total + Number(quantity), 0);
+      const hasItem = totalCartCopies > 0;
+      [els.cartBadge, els.mobileCartBadge].forEach((badge) => {
+        if (!badge) return;
+        badge.hidden = !hasItem;
+        badge.textContent = String(totalCartCopies);
+        badge.setAttribute('aria-label', state.language === 'en' ? `${totalCartCopies} books in cart` : `购物车内有 ${totalCartCopies} 本书`);
+      });
       if (els.bagEmpty) els.bagEmpty.hidden = hasItem;
       if (els.bagFilled) els.bagFilled.hidden = !hasItem;
+      if (els.cartHeading) els.cartHeading.innerHTML = `<span class="section-eyebrow">${s('cartEyebrow')}</span><h1>${s('cartTitle')}</h1><p>${s('cartDescription')}</p>`;
+      if (els.cartEmptyTitle) els.cartEmptyTitle.textContent = s('cartEmpty');
+      if (els.cartEmptyHint) els.cartEmptyHint.textContent = s('cartEmptyHint');
       if (hasItem && els.bagItem) {
-        els.bagItem.innerHTML = `
-          <div class="bag-cover">
-            <img src="${text.cover}" alt="${text.coverAlt || text.name}" loading="eager" decoding="async">
-          </div>
-          <div class="bag-copy">
-            <strong>${text.name}</strong>
-            <span>${text.author || ''}</span>
-            <span>${t('shopBagQuantity')} · ${text.note || ''}</span>
-          </div>
-          <div class="bag-item-actions">
-            <span class="bag-item-price">${text.price}</span>
-            <button class="bag-remove" type="button" data-store-action="remove-from-bag">${t('shopBagRemove')}</button>
-          </div>
-        `;
-      } else if (els.bagItem) {
-        els.bagItem.innerHTML = '';
-      }
-      updateSelectedProduct(false);
+        els.bagItem.innerHTML = cartLines.map(([bookId, quantity]) => {
+          const book = I18N.bookById(bookId);
+          const text = localizedBook(book);
+          const selected = state.selectedCart.has(bookId);
+          return `<article class="bag-item cart-page-item${selected ? ' is-selected' : ''}">
+            <input class="cart-checkbox" type="checkbox" data-cart-select="${book.id}" ${selected ? 'checked' : ''} aria-label="${s('selectAll')}: ${escapeHtml(text.title)}">
+            <div class="cart-product">
+              <button type="button" class="cart-cover-button" data-book-id="${book.id}">${coverMarkup(book, 'cart-cover mini-cover')}</button>
+              <span class="cart-page-copy"><button class="cart-title-button" type="button" data-book-id="${book.id}">${escapeHtml(text.title)}</button><span class="cart-book-meta">${escapeHtml(text.authorShort)} · ${s('format')} · ${escapeHtml(text.badge)}</span><span class="cart-stock">${s('inStockShort')}</span></span>
+            </div>
+            <strong class="bag-unit-price cart-unit-price">${formatPrice(book.amountCent)}</strong>
+            <div class="quantity-stepper quantity-control"><button type="button" data-cart-quantity="-1" data-book="${book.id}" aria-label="${s('decrease')}">−</button><strong>${quantity}</strong><button type="button" data-cart-quantity="1" data-book="${book.id}" aria-label="${s('increase')}">＋</button></div>
+            <strong class="bag-line-price cart-page-price">${formatPrice(book.amountCent * quantity)}</strong>
+            <button class="bag-remove cart-remove-button" type="button" data-remove-book="${book.id}">${s('remove')}</button>
+          </article>`;
+        }).join('');
+      } else if (els.bagItem) els.bagItem.innerHTML = '';
+
+      const allSelected = hasItem && cartLines.every(([bookId]) => state.selectedCart.has(bookId));
+      document.querySelectorAll('[data-cart-select-all]').forEach((checkbox) => {
+        checkbox.checked = allSelected;
+        checkbox.indeterminate = state.selectedCart.size > 0 && !allSelected;
+      });
+      if (els.cartToolbar) els.cartToolbar.innerHTML = `<label class="cart-select-control"><input class="cart-checkbox" type="checkbox" data-cart-select-all ${allSelected ? 'checked' : ''}><span>${s('selectAll')}</span></label><button class="cart-toolbar-button" type="button" data-remove-selected ${state.selectedCart.size ? '' : 'disabled'}>${s('removeSelected')}</button><button class="cart-toolbar-button continue-shopping" type="button" data-store-route="home">${s('continueShopping')}</button>`;
+      const snapshot = checkoutSnapshot();
+      if (els.selectedProduct) els.selectedProduct.textContent = s('copies', { count: snapshot.totalCopies });
+      if (els.bagSubtotal) els.bagSubtotal.textContent = formatPrice(snapshot.amountCent);
+      if (els.phoneTotal) els.phoneTotal.textContent = formatPrice(snapshot.amountCent);
+      const labelMap = {
+        summaryTitle: s('summary'), selectedBooksLabel: s('selectedBooks'), subtotalLabel: s('subtotal'), shippingLabel: s('shipping'), shippingValue: s('free'), totalLabel: s('total'), demoActionsTitle: s('demoActions'), demoActionsHint: s('demoHint'), cartProductLabel: s('cartProduct'), cartUnitPriceLabel: s('unitPrice'), cartQuantityHeader: s('quantityHeader'), cartSubtotalHeader: s('itemSubtotal'), cartActionsLabel: s('actions'), cartPromotionTitle: s('promotionTitle'), cartPromotionDescription: s('promotionDescription'), cartSummaryNote: s('summaryNote'),
+      };
+      Object.entries(labelMap).forEach(([id, value]) => { const node = document.getElementById(id); if (node) node.textContent = value; });
+      const services = document.getElementById('summaryServices');
+      if (services) services.innerHTML = `<span><i>✓</i><span>${s('authentic')}</span></span><span><i>✓</i><span>${s('returns')}</span></span><span><i>✓</i><span>${s('fastShipping')}</span></span>`;
+      els.submitBtn.textContent = s('checkout', { count: snapshot.totalCopies });
+      els.trafficBtn.textContent = s('batchOrder');
+      els.submitBtn.disabled = state.busy || snapshot.totalCopies === 0;
+      els.trafficBtn.disabled = state.busy || snapshot.totalCopies === 0;
+      els.sku.value = ORDER_BACKEND_SKU;
+      els.amountCent.value = String(Math.max(1, snapshot.amountCent));
+      applyPreviewObservabilityContext();
     }
 
-    function setCartQuantity(quantity, options = {}) {
-      const previousQuantity = state.cartQuantity;
-      state.cartQuantity = Number(quantity) > 0 ? 1 : 0;
-      renderHomeProduct();
-      renderBookDetail();
-      renderCart();
-      if (previousQuantity !== state.cartQuantity && options.track !== false) {
-        const text = selectedProductText();
-        addRumAction(state.cartQuantity === 1 ? 'business_add_book_to_bag' : 'business_remove_book_from_bag', {
-          product: text.name,
-          sku: selectedProduct().sku,
-          cart_quantity: state.cartQuantity,
+    function setCartQuantity(bookId, quantity, options = {}) {
+      const book = I18N.bookById(bookId);
+      const previousQuantity = Number(state.cart.get(book.id) || 0);
+      const nextQuantity = Math.max(0, Math.min(99, Number(quantity) || 0));
+      if (nextQuantity > 0) {
+        state.cart.set(book.id, nextQuantity);
+        if (options.select !== false) state.selectedCart.add(book.id);
+      } else {
+        state.cart.delete(book.id);
+        state.selectedCart.delete(book.id);
+      }
+      if (previousQuantity !== nextQuantity && options.track !== false) {
+        const text = localizedBook(book);
+        addRumAction(nextQuantity > previousQuantity ? 'business_add_book_to_bag' : 'business_remove_book_from_bag', {
+          product: text.title,
+          book_id: book.id,
+          sku: ORDER_BACKEND_SKU,
+          cart_quantity: nextQuantity,
           trigger: options.trigger || 'store_action',
         });
       }
-      if (options.announce !== false && previousQuantity !== state.cartQuantity) {
-        const text = selectedProductText();
-        if (state.cartQuantity === 1) {
-          setPhoneResult('info', t('shopCartAddedTitle'), t('shopCartAddedDetail', { product: text.name }));
-        } else {
-          setPhoneResult('info', t('shopCartRemovedTitle'), t('shopCartRemovedDetail'));
-        }
+      renderProducts();
+    }
+
+    function addToCart(bookId, quantity = 1, options = {}) {
+      const book = I18N.bookById(bookId);
+      const next = Number(state.cart.get(book.id) || 0) + Math.max(1, Number(quantity) || 1);
+      setCartQuantity(book.id, next, options);
+      if (options.announce !== false) {
+        const text = localizedBook(book);
+        setPhoneResult('info', t('shopCartAddedTitle'), s('added', { title: text.title }));
       }
+      if (options.navigate === true) navigateStorePage('cart', { trigger: options.trigger || 'buy_now' });
     }
 
-    function addToBag(options = {}) {
-      setCartQuantity(1, options);
-      if (options.navigate === true) {
-        navigateStorePage('purchase', { trigger: options.trigger || 'buy_now' });
-      }
+    function removeFromCart(bookId, options = {}) {
+      const book = I18N.bookById(bookId);
+      const text = localizedBook(book);
+      setCartQuantity(book.id, 0, { ...options, trigger: options.trigger || 'cart_remove' });
+      if (options.announce !== false) setPhoneResult('info', t('shopCartRemovedTitle'), s('removed', { title: text.title }));
     }
 
-    function removeFromBag() {
-      setCartQuantity(0, { trigger: 'bag_remove' });
+    function clearSelectedCart() {
+      [...state.selectedCart].forEach((bookId) => state.cart.delete(bookId));
+      state.selectedCart.clear();
+      renderProducts();
     }
 
-    function setLanguage(language) {
+    function setLanguage(language, options = {}) {
       state.language = I18N.setLanguage(language, { updateUrl: true });
       renderProducts();
       renderStorePage({ track: false });
+      if (options.notify !== false) postToParent('shop-language-changed', { language: state.language });
       if (!state.activeClientFault) {
         hidePhoneResult();
       }
@@ -1203,12 +1529,28 @@
       const scenario = state.activeClientFault;
       if (!scenario || !['frontend_click_error', 'frontend_slow_resource', 'frontend_sourcemap_error'].includes(scenario.id)) return false;
       const triggerId = newFaultTriggerId();
-      window.__activeFaultContext = clientFaultContext(scenario);
+      const triggeredAt = Date.now();
+      const rumCorrelation = currentRumCorrelation();
+      window.__activeFaultContext = {
+        ...clientFaultContext(scenario),
+        fault_trigger_id: triggerId,
+        fault_triggered_at: triggeredAt,
+        rum_view_id: rumCorrelation.viewId,
+        rum_session_id: rumCorrelation.sessionId,
+      };
       addRumAction(`fault_${scenario.id}`, {
         trigger_action: actionName,
         ...window.__activeFaultContext,
       });
-      postToParent('frontend-fault-triggered', { action: actionName, scenario, triggerId });
+      postToParent('frontend-fault-triggered', {
+        action: actionName,
+        scenario,
+        triggerId,
+        triggeredAt,
+        applicationId: rumCorrelation.applicationId,
+        viewId: rumCorrelation.viewId,
+        sessionId: rumCorrelation.sessionId,
+      });
       log(t('shopLogFrontendFault', { action: actionName }), {
         status: 'error',
         context: {
@@ -1253,7 +1595,8 @@
     }
 
     async function triggerFrontendSlowResourceFromUserAction(scenario, actionName, triggerId) {
-      window.__activeFaultContext = clientFaultContext(scenario);
+      const faultContext = window.__activeFaultContext || clientFaultContext(scenario);
+      window.__activeFaultContext = faultContext;
       setBusy(true);
       showPurchaseLoading(t('shopStatusSlowLoading'), t('shopStatusSlowLoadingDetail'));
       const startedAt = performance.now();
@@ -1270,6 +1613,8 @@
             faultLayer: scenario.layer,
             faultKind: scenario.kind,
             faultTarget: scenario.target,
+            faultTriggerId: triggerId,
+            faultTriggeredAt: faultContext.fault_triggered_at,
           },
         });
         const elapsedMs = Math.round(performance.now() - startedAt);
@@ -1299,6 +1644,8 @@
             fault_layer: scenario.layer,
             fault_kind: scenario.kind,
             fault_target: scenario.target,
+            fault_trigger_id: triggerId,
+            fault_triggered_at: faultContext.fault_triggered_at,
           },
         });
       } catch (error) {
@@ -1325,6 +1672,8 @@
             fault_layer: scenario.layer,
             fault_kind: scenario.kind,
             fault_target: scenario.target,
+            fault_trigger_id: triggerId,
+            fault_triggered_at: faultContext.fault_triggered_at,
           },
         });
       } finally {
@@ -1338,24 +1687,32 @@
       const manageBusy = options.manageBusy !== false;
       const updateStatus = options.updateStatus !== false;
       const actionName = options.actionName || 'buy_book_button';
+      const cart = checkoutSnapshot();
+      if (cart.totalCopies < 1 || cart.amountCent < 1) {
+        return { ok: false, aborted: true, httpStatus: 0, body: { error: 'empty_cart' }, traceId: '' };
+      }
       if (!options.skipClientFault && triggerClientFaultFromUserAction(actionName)) {
         return { ok: false, aborted: true, httpStatus: 0, body: { error: 'frontend_fault' }, traceId: '' };
       }
 
-      const product = selectedProduct();
-      const text = selectedProductText();
       const { headers, bizRequestId, keyRequest } = buildHeaders();
       const payload = {
-        sku: product.sku,
-        quantity: 1,
-        amountCent: currentAmountCent(),
+        sku: ORDER_BACKEND_SKU,
+        quantity: cart.totalCopies,
+        amountCent: cart.amountCent,
       };
 
       if (manageBusy) setBusy(true);
       if (updateStatus) showPurchaseLoading(t('shopStatusSubmitting'), t('shopStatusSubmittingDetail'));
       addRumAction('business_submit_book_order', {
-        product: text.name,
+        product: cart.productLabel,
         sku: payload.sku,
+        book_ids: cart.bookIds,
+        book_titles: cart.titles,
+        book_quantities: cart.quantities,
+        cart_line_count: cart.lineCount,
+        cart_total_copies: cart.totalCopies,
+        cart_amount_cent: cart.amountCent,
       });
 
       try {
@@ -1367,8 +1724,14 @@
             keyRequest,
             bizChain: 'selfheal_checkout',
             bizRequestId,
-            product: text.name,
+            product: cart.productLabel,
             sku: payload.sku,
+            bookIds: cart.bookIds,
+            bookTitles: cart.titles,
+            bookQuantities: cart.quantities,
+            cartLineCount: cart.lineCount,
+            cartTotalCopies: cart.totalCopies,
+            cartAmountCent: cart.amountCent,
           },
           body: JSON.stringify(payload),
         });
@@ -1393,8 +1756,13 @@
           httpStatus: response.status,
           body,
           bizRequestId,
-          product: text.name,
+          product: cart.productLabel,
           sku: payload.sku,
+          bookIds: cart.bookIds,
+          bookTitles: cart.titles,
+          quantities: cart.quantities,
+          quantity: cart.totalCopies,
+          amountCent: cart.amountCent,
           traceId: traceInfo.traceId || '',
         };
         if (notifyParent) postToParent('order-result', result);
@@ -1406,8 +1774,14 @@
             biz_request_id: body.businessRequestId || bizRequestId,
             order_id: body.orderId,
             http_status: response.status,
-            product: text.name,
+            product: cart.productLabel,
             sku: payload.sku,
+            book_ids: cart.bookIds,
+            book_titles: cart.titles,
+            book_quantities: cart.quantities,
+            cart_line_count: cart.lineCount,
+            cart_total_copies: cart.totalCopies,
+            cart_amount_cent: cart.amountCent,
           },
         });
         return result;
@@ -1422,8 +1796,13 @@
           httpStatus: 0,
           body: { error: error.message },
           bizRequestId,
-          product: text.name,
+          product: cart.productLabel,
           sku: payload.sku,
+          bookIds: cart.bookIds,
+          bookTitles: cart.titles,
+          quantities: cart.quantities,
+          quantity: cart.totalCopies,
+          amountCent: cart.amountCent,
           traceId: traceInfo.traceId || '',
         };
         if (notifyParent) postToParent('order-result', result);
@@ -1434,8 +1813,14 @@
             key_request: keyRequest,
             biz_chain: 'selfheal_checkout',
             biz_request_id: bizRequestId,
-            product: text.name,
+            product: cart.productLabel,
             sku: payload.sku,
+            book_ids: cart.bookIds,
+            book_titles: cart.titles,
+            book_quantities: cart.quantities,
+            cart_line_count: cart.lineCount,
+            cart_total_copies: cart.totalCopies,
+            cart_amount_cent: cart.amountCent,
           },
         });
         return result;
@@ -1446,8 +1831,10 @@
     }
 
     async function runTraffic() {
+      const cart = checkoutSnapshot();
+      if (cart.totalCopies < 1 || cart.amountCent < 1) return;
       if (triggerClientFaultFromUserAction('traffic_buy_book_button')) return;
-      log(t('shopLogTrafficStart'), { context: { operation: 'run_book_purchase_traffic', total: 5 } });
+      log(t('shopLogTrafficStart'), { context: { operation: 'run_book_purchase_traffic', total: 5, book_ids: cart.bookIds, cart_total_copies: cart.totalCopies, cart_amount_cent: cart.amountCent } });
       setBusy(true);
       const results = [];
       try {
@@ -1465,8 +1852,6 @@
         }
         const traceIds = [...new Set(results.map((item) => item.traceId).filter(Boolean))];
         const okCount = results.filter((item) => item.ok).length;
-        const product = selectedProduct();
-        const text = selectedProductText();
         hidePurchaseLoading();
         setPhoneResult(okCount === 5 ? 'success' : 'failed', t('shopStatusBatchSuccess', { count: okCount, total: 5 }), t('shopStatusBatchSuccessDetail', { traceCount: traceIds.length }));
         postToParent('order-result', {
@@ -1480,8 +1865,13 @@
             traceIds,
             orderIds: results.map((item) => item.body?.orderId).filter(Boolean),
           },
-          product: text.name,
-          sku: product.sku,
+          product: cart.productLabel,
+          sku: ORDER_BACKEND_SKU,
+          bookIds: cart.bookIds,
+          bookTitles: cart.titles,
+          quantities: cart.quantities,
+          quantity: cart.totalCopies,
+          amountCent: cart.amountCent,
           traceIds,
         });
         log(t('shopLogTrafficDoneWithTraces', { count: okCount, traceCount: traceIds.length }), {
@@ -1490,6 +1880,11 @@
             total: 5,
             ok_count: okCount,
             trace_count: traceIds.length,
+            book_ids: cart.bookIds,
+            book_titles: cart.titles,
+            book_quantities: cart.quantities,
+            cart_total_copies: cart.totalCopies,
+            cart_amount_cent: cart.amountCent,
           },
         });
       } finally {
@@ -1504,7 +1899,7 @@
       if (data.source !== 'mall-demo-parent') return;
       const payload = data.payload || {};
       if (data.type === 'set-language') {
-        setLanguage(payload.language);
+        setLanguage(payload.language, { notify: false });
       } else if (data.type === 'set-demo-theme') {
         setDemoTheme(payload.theme, { persist: false, notify: false });
       } else if (data.type === 'set-preview-context') {
@@ -1521,7 +1916,9 @@
     window.addEventListener('message', handleParentMessage);
     window.addEventListener('popstate', (event) => {
       const previousPage = state.storePage;
-      const urlPage = new URL(window.location.href).searchParams.get('page');
+      const url = new URL(window.location.href);
+      const urlPage = url.searchParams.get('page');
+      state.currentBookId = I18N.bookById(url.searchParams.get('book') || state.currentBookId).id;
       state.storePage = normalizeStorePage(event.state?.storePage || urlPage);
       state.storeHistoryIndex = Number.isFinite(Number(event.state?.storeIndex)) ? Number(event.state.storeIndex) : 0;
       const trigger = state.pendingHistoryTrigger || 'browser_history';
@@ -1531,18 +1928,89 @@
     els.submitBtn.addEventListener('click', async (event) => {
       if (event.detail > 0) event.currentTarget.blur();
       const result = await submitOrder();
-      if (result?.ok) setCartQuantity(0, { announce: false, track: false });
+      if (result?.ok) clearSelectedCart();
     });
     els.trafficBtn.addEventListener('click', runTraffic);
+    els.storeSearch.addEventListener('input', (event) => {
+      state.query = event.currentTarget.value;
+      state.activeTopic = 'all';
+      renderHomeProduct();
+      if (state.storePage !== 'home') navigateStorePage('home', { trigger: 'search', historyMode: 'push' });
+      addRumAction('business_search_bookstore', { query: state.query, result_count: document.querySelectorAll('.book-grid .book-card').length });
+    });
+    els.clearSearch.addEventListener('click', () => {
+      state.query = '';
+      els.storeSearch.value = '';
+      renderHomeProduct();
+      els.storeSearch.focus();
+    });
+    els.languageToggle.addEventListener('click', () => setLanguage(state.language === 'zh' ? 'en' : 'zh'));
     if (els.storeHome) {
       els.storeHome.addEventListener('click', (event) => {
-        const actionTarget = event.target.closest('[data-store-action]');
-        if (actionTarget) {
+        const topicTarget = event.target.closest('[data-topic]');
+        if (topicTarget) {
           event.preventDefault();
-          const action = actionTarget.dataset.storeAction;
-          if (action === 'add-to-bag') addToBag({ trigger: 'add_to_bag' });
-          else if (action === 'buy-now') addToBag({ navigate: true, trigger: 'buy_now' });
-          else if (action === 'remove-from-bag') removeFromBag();
+          state.activeTopic = topicTarget.dataset.topic;
+          renderHomeProduct();
+          addRumAction('business_filter_bookstore', { topic: state.activeTopic });
+          return;
+        }
+        const addTarget = event.target.closest('[data-add-book]');
+        if (addTarget) {
+          event.preventDefault();
+          const bookId = addTarget.dataset.addBook;
+          if (!isInCart(bookId)) addToCart(bookId, 1, { trigger: 'add_to_cart' });
+          else navigateStorePage('cart', { trigger: 'view_existing_cart_item' });
+          return;
+        }
+        const buyTarget = event.target.closest('[data-buy-book]');
+        if (buyTarget) {
+          event.preventDefault();
+          addToCart(buyTarget.dataset.buyBook, state.detailQuantity, { navigate: true, trigger: 'buy_now' });
+          return;
+        }
+        const removeTarget = event.target.closest('[data-remove-book]');
+        if (removeTarget) {
+          event.preventDefault();
+          removeFromCart(removeTarget.dataset.removeBook);
+          return;
+        }
+        const cartQuantityTarget = event.target.closest('[data-cart-quantity]');
+        if (cartQuantityTarget) {
+          event.preventDefault();
+          const bookId = cartQuantityTarget.dataset.book;
+          setCartQuantity(bookId, Number(state.cart.get(bookId) || 0) + Number(cartQuantityTarget.dataset.cartQuantity), { trigger: 'cart_quantity' });
+          return;
+        }
+        const detailQuantityTarget = event.target.closest('[data-detail-quantity]');
+        if (detailQuantityTarget) {
+          event.preventDefault();
+          state.detailQuantity = Math.max(1, Math.min(99, state.detailQuantity + Number(detailQuantityTarget.dataset.detailQuantity)));
+          renderBookDetail();
+          return;
+        }
+        const detailTabTarget = event.target.closest('[data-detail-tab]');
+        if (detailTabTarget) {
+          event.preventDefault();
+          state.detailTab = detailTabTarget.dataset.detailTab;
+          renderBookDetail();
+          addRumAction('business_view_book_detail_tab', { book_id: state.currentBookId, tab: state.detailTab });
+          return;
+        }
+        const removeSelectedTarget = event.target.closest('[data-remove-selected]');
+        if (removeSelectedTarget) {
+          event.preventDefault();
+          const count = state.selectedCart.size;
+          [...state.selectedCart].forEach((bookId) => state.cart.delete(bookId));
+          state.selectedCart.clear();
+          renderProducts();
+          if (count) setPhoneResult('info', t('shopCartRemovedTitle'), s('removedSelected', { count }));
+          return;
+        }
+        const bookTarget = event.target.closest('[data-book-id]');
+        if (bookTarget) {
+          event.preventDefault();
+          openBookDetail(bookTarget.dataset.bookId, 'book_card');
           return;
         }
         const routeTarget = event.target.closest('[data-store-route]');
@@ -1551,6 +2019,27 @@
         const trigger = routeTarget.dataset.routeTrigger
           || (routeTarget.closest('.store-nav') ? 'top_navigation' : 'page_action');
         navigateStorePage(routeTarget.dataset.storeRoute, { trigger });
+      });
+      els.storeHome.addEventListener('change', (event) => {
+        if (event.target.id === 'sortControl') {
+          state.sort = event.target.value;
+          renderHomeProduct();
+          addRumAction('business_sort_bookstore', { sort: state.sort });
+          return;
+        }
+        const selectTarget = event.target.closest('[data-cart-select]');
+        if (selectTarget) {
+          const bookId = selectTarget.dataset.cartSelect;
+          if (selectTarget.checked) state.selectedCart.add(bookId);
+          else state.selectedCart.delete(bookId);
+          renderCart();
+          return;
+        }
+        if (event.target.matches('[data-cart-select-all]')) {
+          if (event.target.checked) [...state.cart.keys()].forEach((bookId) => state.selectedCart.add(bookId));
+          else state.selectedCart.clear();
+          renderCart();
+        }
       });
       els.storeHome.addEventListener('keydown', (event) => {
         const routeTarget = event.target.closest('[data-store-route][role="link"]');

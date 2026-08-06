@@ -1,0 +1,4327 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f7f6f3" />
+  <title>可观测性书店 · 商城 UI 原型</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --demo-page: #f7f6f3;
+      --demo-surface: #ffffff;
+      --demo-surface-soft: #fbfaf8;
+      --demo-text: #1c1a18;
+      --demo-title: #231c1b;
+      --demo-muted: #706b64;
+      --demo-line: #e6e1da;
+      --demo-accent: #f04b3f;
+      --demo-orange: #ff7a00;
+      --demo-magenta: #d730ff;
+      --demo-accent-soft: #fff1ed;
+      --demo-gradient: linear-gradient(135deg, #ff7a00 0%, #ff3856 56%, #d730ff 100%);
+      --demo-gradient-soft: linear-gradient(135deg, rgba(255, 122, 0, 0.11), rgba(255, 56, 86, 0.09) 56%, rgba(215, 48, 255, 0.08));
+      --demo-success: #149d68;
+      --demo-warning: #f2a321;
+      --demo-danger: #d92d20;
+      --demo-shadow: 0 18px 48px rgba(55, 38, 31, 0.08);
+      --demo-shadow-soft: 0 9px 28px rgba(55, 38, 31, 0.055);
+      --demo-radius-lg: 20px;
+      --demo-radius-md: 14px;
+      --demo-radius-sm: 10px;
+      --demo-content: 1500px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-width: 320px;
+      min-height: 100vh;
+      margin: 0;
+      color: var(--demo-text);
+      background:
+        radial-gradient(circle at 7% -4%, rgba(255, 122, 0, 0.08), transparent 24%),
+        radial-gradient(circle at 94% 2%, rgba(215, 48, 255, 0.06), transparent 20%),
+        var(--demo-page);
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body.is-locked {
+      overflow: hidden;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button,
+    a {
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button {
+      color: inherit;
+      cursor: pointer;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    select:focus-visible,
+    a:focus-visible {
+      outline: 3px solid rgba(240, 75, 63, 0.24);
+      outline-offset: 2px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .icon {
+      width: 20px;
+      height: 20px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(230, 225, 218, 0.94);
+      background: rgba(255, 255, 255, 0.94);
+      box-shadow: 0 4px 18px rgba(55, 38, 31, 0.035);
+      backdrop-filter: blur(18px);
+    }
+
+    .header-inner {
+      width: min(var(--demo-content), calc(100% - 48px));
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: auto minmax(350px, 1fr) minmax(290px, 420px) auto;
+      align-items: center;
+      gap: clamp(18px, 2.2vw, 34px);
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+    }
+
+    .brand-mark {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      display: block;
+    }
+
+    .brand-mark svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 8px 14px rgba(240, 75, 63, 0.2));
+    }
+
+    .brand-copy {
+      display: grid;
+      gap: 2px;
+      white-space: nowrap;
+    }
+
+    .brand-copy strong {
+      color: var(--demo-title);
+      font-size: 18px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-copy span {
+      color: var(--demo-muted);
+      font-size: 10px;
+    }
+
+    .desktop-nav {
+      height: 72px;
+      display: flex;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .nav-button {
+      position: relative;
+      min-width: 58px;
+      border: 0;
+      padding: 0 12px;
+      color: #4b4641;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .nav-button::after {
+      content: "";
+      position: absolute;
+      right: 15px;
+      bottom: 0;
+      left: 15px;
+      height: 3px;
+      border-radius: 3px 3px 0 0;
+      background: var(--demo-gradient);
+      opacity: 0;
+      transform: scaleX(0.5);
+      transition: 160ms ease;
+    }
+
+    .nav-button:hover,
+    .nav-button.is-active {
+      color: var(--demo-accent);
+    }
+
+    .nav-button.is-active::after {
+      opacity: 1;
+      transform: scaleX(1);
+    }
+
+    .search-form {
+      position: relative;
+      min-width: 0;
+    }
+
+    .search-form > .icon {
+      position: absolute;
+      top: 50%;
+      left: 15px;
+      color: #918a84;
+      pointer-events: none;
+      transform: translateY(-50%);
+    }
+
+    .search-input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid #dfd9d2;
+      border-radius: 11px;
+      padding: 0 42px 0 44px;
+      color: var(--demo-text);
+      background: #fcfbfa;
+      transition: 160ms ease;
+    }
+
+    .search-input::placeholder {
+      color: #a29b95;
+    }
+
+    .search-input:hover,
+    .search-input:focus {
+      border-color: #f2afa8;
+      background: #fff;
+      box-shadow: 0 0 0 4px rgba(240, 75, 63, 0.07);
+      outline: 0;
+    }
+
+    .search-clear {
+      position: absolute;
+      top: 50%;
+      right: 9px;
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 0;
+      border-radius: 50%;
+      color: #8b837d;
+      background: transparent;
+      transform: translateY(-50%);
+    }
+
+    .search-clear:hover {
+      color: var(--demo-text);
+      background: #f2efec;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .language-switch {
+      min-width: 42px;
+      min-height: 30px;
+      border: 1px solid var(--demo-line);
+      border-radius: 999px;
+      padding: 4px 9px;
+      color: var(--demo-accent);
+      background: #fff;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .language-switch:hover {
+      border-color: #efb9b3;
+      background: var(--demo-accent-soft);
+    }
+
+    .header-action {
+      position: relative;
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 0;
+      padding: 7px 5px;
+      color: #3c3733;
+      background: transparent;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .header-action:hover {
+      color: var(--demo-accent);
+    }
+
+    .header-action.is-active {
+      border-radius: 10px;
+      color: var(--demo-accent);
+      background: var(--demo-accent-soft);
+    }
+
+    .cart-count {
+      position: absolute;
+      top: 0;
+      left: 17px;
+      min-width: 18px;
+      height: 18px;
+      display: grid;
+      place-items: center;
+      padding: 0 5px;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--demo-gradient);
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .mobile-search {
+      display: none;
+    }
+
+    .app-page {
+      width: min(var(--demo-content), calc(100% - 48px));
+      margin: 22px auto 56px;
+    }
+
+    .home-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+      gap: 18px;
+    }
+
+    .home-main {
+      min-width: 0;
+      display: grid;
+      gap: 16px;
+    }
+
+    .store-hero {
+      position: relative;
+      min-height: 310px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      overflow: hidden;
+      border: 1px solid rgba(240, 75, 63, 0.12);
+      border-radius: var(--demo-radius-lg);
+      background:
+        radial-gradient(circle at 86% 15%, rgba(215, 48, 255, 0.14), transparent 24%),
+        radial-gradient(circle at 58% 100%, rgba(255, 122, 0, 0.13), transparent 28%),
+        linear-gradient(135deg, #fff7ef, #fff3f4 56%, #fcf3ff);
+      box-shadow: var(--demo-shadow-soft);
+      isolation: isolate;
+    }
+
+    .store-hero::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 40px;
+      right: 26%;
+      width: 260px;
+      height: 180px;
+      border-top: 1px solid rgba(240, 75, 63, 0.18);
+      border-right: 1px solid rgba(215, 48, 255, 0.14);
+      border-radius: 50%;
+      transform: rotate(-12deg);
+    }
+
+    .hero-copy {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 42px 28px 48px clamp(34px, 5vw, 70px);
+    }
+
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0 0 10px;
+      color: var(--demo-accent);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+    }
+
+    .hero-kicker::before {
+      content: "";
+      width: 22px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--demo-gradient);
+    }
+
+    .hero-copy h1 {
+      max-width: 670px;
+      margin: 0;
+      color: var(--demo-title);
+      font-size: clamp(34px, 3.3vw, 52px);
+      line-height: 1.08;
+      letter-spacing: -0.04em;
+      text-wrap: balance;
+    }
+
+    .hero-copy p {
+      max-width: 620px;
+      margin: 13px 0 0;
+      color: #665c57;
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px 15px;
+      margin-top: 15px;
+      color: #756b65;
+      font-size: 11px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 21px;
+    }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border-radius: 10px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 800;
+      transition: 150ms ease;
+    }
+
+    .primary-button {
+      border: 1px solid transparent;
+      color: #fff;
+      background: var(--demo-gradient);
+      box-shadow: 0 10px 24px rgba(240, 75, 63, 0.2);
+    }
+
+    .primary-button:hover {
+      filter: saturate(1.08) brightness(0.98);
+      transform: translateY(-1px);
+    }
+
+    .secondary-button {
+      border: 1px solid #f3beb8;
+      color: var(--demo-accent);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .secondary-button:hover {
+      border-color: var(--demo-accent);
+      background: #fff;
+    }
+
+    .hero-visual {
+      position: relative;
+      min-width: 0;
+      display: grid;
+      place-items: center;
+      padding: 25px 30px 20px 6px;
+    }
+
+    .hero-visual::before {
+      content: "";
+      position: absolute;
+      right: 7%;
+      bottom: 17px;
+      left: 6%;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(84, 52, 42, 0.16);
+      filter: blur(18px);
+    }
+
+    .hero-book {
+      position: relative;
+      z-index: 2;
+      width: 172px;
+      overflow: hidden;
+      border: 1px solid rgba(117, 94, 81, 0.16);
+      border-radius: 4px 9px 9px 4px;
+      background: #fff;
+      box-shadow:
+        -8px 0 0 rgba(236, 232, 227, 0.9),
+        0 22px 38px rgba(70, 44, 36, 0.22);
+      transform: rotate(2deg);
+    }
+
+    .hero-book img {
+      width: 100%;
+      display: block;
+    }
+
+    .signal-chip {
+      position: absolute;
+      z-index: 3;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 999px;
+      padding: 8px 11px;
+      color: #4f4540;
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: 0 10px 24px rgba(75, 47, 39, 0.11);
+      font-size: 10px;
+      font-weight: 800;
+      backdrop-filter: blur(10px);
+    }
+
+    .signal-chip i {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--chip-color);
+      box-shadow: 0 0 0 4px color-mix(in srgb, var(--chip-color) 16%, transparent);
+    }
+
+    .signal-chip.metrics {
+      top: 50px;
+      left: 3%;
+      --chip-color: #ff7a00;
+    }
+
+    .signal-chip.traces {
+      top: 46%;
+      right: 2%;
+      --chip-color: #d730ff;
+    }
+
+    .signal-chip.rum {
+      bottom: 43px;
+      left: 2%;
+      --chip-color: #f04b3f;
+    }
+
+    .topic-strip {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .topic-button {
+      min-width: 0;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--demo-line);
+      border-radius: 13px;
+      padding: 11px 12px;
+      color: var(--demo-text);
+      background: var(--demo-surface);
+      box-shadow: 0 5px 18px rgba(55, 38, 31, 0.035);
+      text-align: left;
+      transition: 160ms ease;
+    }
+
+    .topic-button:hover,
+    .topic-button.is-active {
+      border-color: #f1b7b1;
+      color: var(--demo-accent);
+      background: #fffaf9;
+      box-shadow: 0 9px 24px rgba(240, 75, 63, 0.08);
+      transform: translateY(-1px);
+    }
+
+    .topic-icon {
+      width: 38px;
+      height: 38px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--demo-accent);
+      background: var(--demo-accent-soft);
+    }
+
+    .topic-icon .icon {
+      width: 19px;
+      height: 19px;
+    }
+
+    .topic-copy {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .topic-copy strong,
+    .topic-copy span {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .topic-copy strong {
+      font-size: 12px;
+    }
+
+    .topic-copy span {
+      color: var(--demo-muted);
+      font-size: 9px;
+    }
+
+    .shelf {
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-lg);
+      padding: 18px 16px 20px;
+      background: var(--demo-surface);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .section-heading {
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin: 0 2px 12px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    .section-title-mark {
+      width: 10px;
+      height: 24px;
+      border-radius: 999px;
+      background: var(--demo-gradient);
+    }
+
+    .section-title h2 {
+      margin: 0;
+      color: var(--demo-title);
+      font-size: 17px;
+    }
+
+    .result-count {
+      color: var(--demo-muted);
+      font-size: 11px;
+    }
+
+    .sort-control {
+      height: 34px;
+      border: 1px solid var(--demo-line);
+      border-radius: 9px;
+      padding: 0 28px 0 10px;
+      color: #605952;
+      background: #fff;
+      font-size: 11px;
+    }
+
+    .books-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .book-card {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 108px minmax(0, 1fr);
+      gap: 13px;
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-md);
+      padding: 13px;
+      background: #fff;
+      transition: 170ms ease;
+    }
+
+    .book-card:hover {
+      border-color: #f1c3bd;
+      box-shadow: 0 13px 28px rgba(75, 47, 39, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .book-cover-button {
+      min-width: 0;
+      align-self: start;
+      border: 0;
+      border-radius: 7px;
+      padding: 0;
+      background: transparent;
+      perspective: 800px;
+    }
+
+    .book-cover,
+    .css-cover {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 0.72;
+      overflow: hidden;
+      border-radius: 4px 7px 7px 4px;
+      background: #fff;
+      box-shadow:
+        inset 4px 0 0 rgba(0, 0, 0, 0.08),
+        0 8px 17px rgba(51, 35, 29, 0.16);
+      transition: 180ms ease;
+      transform-origin: left center;
+    }
+
+    .book-cover img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .book-cover-button:hover .book-cover,
+    .book-cover-button:hover .css-cover {
+      box-shadow:
+        inset 4px 0 0 rgba(0, 0, 0, 0.08),
+        5px 11px 19px rgba(51, 35, 29, 0.18);
+      transform: rotateY(-4deg) translateY(-1px);
+    }
+
+    .css-cover {
+      color: var(--cover-ink, #fff);
+      background: var(--cover-bg, #352d2a);
+      text-align: left;
+    }
+
+    .css-cover::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: var(--cover-art, linear-gradient(145deg, transparent, rgba(255, 255, 255, 0.16)));
+    }
+
+    .css-cover::after {
+      content: "";
+      position: absolute;
+      right: 10px;
+      bottom: 11px;
+      width: 32px;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--cover-accent, currentColor);
+      box-shadow: 0 -7px 0 color-mix(in srgb, var(--cover-accent, currentColor) 50%, transparent);
+    }
+
+    .cover-label,
+    .cover-title,
+    .cover-author {
+      position: absolute;
+      z-index: 1;
+      right: 10px;
+      left: 13px;
+    }
+
+    .cover-label {
+      top: 12px;
+      color: var(--cover-accent, currentColor);
+      font-size: 6px;
+      font-weight: 900;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .cover-title {
+      top: 29%;
+      font-family: "Songti SC", "STSong", Georgia, serif;
+      font-size: clamp(13px, 1vw, 18px);
+      font-weight: 900;
+      line-height: 1.25;
+      letter-spacing: 0.03em;
+    }
+
+    .cover-author {
+      bottom: 25px;
+      font-size: 6px;
+      font-weight: 700;
+      opacity: 0.76;
+    }
+
+    .book-card-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding-top: 2px;
+    }
+
+    .book-tag {
+      display: inline-flex;
+      margin-bottom: 6px;
+      border-radius: 999px;
+      padding: 3px 7px;
+      color: var(--demo-accent);
+      background: var(--demo-accent-soft);
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .book-title-button {
+      max-width: 100%;
+      border: 0;
+      padding: 0;
+      overflow: hidden;
+      color: #302a27;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 900;
+      line-height: 1.4;
+      text-align: left;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .book-title-button:hover {
+      color: var(--demo-accent);
+    }
+
+    .book-author {
+      max-width: 100%;
+      margin: 4px 0 6px;
+      overflow: hidden;
+      color: #8a837d;
+      font-size: 10px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .book-rating {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--demo-warning);
+      font-size: 9px;
+      white-space: nowrap;
+    }
+
+    .book-rating strong {
+      color: #7e7770;
+      font-size: 9px;
+    }
+
+    .book-price {
+      margin: auto 0 8px;
+      padding-top: 9px;
+      color: var(--demo-danger);
+      font-size: 15px;
+      font-weight: 900;
+    }
+
+    .card-action {
+      width: 100%;
+      min-height: 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      border: 1px solid #f3c0ba;
+      border-radius: 8px;
+      padding: 5px 8px;
+      color: var(--demo-accent);
+      background: #fffaf9;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .card-action:hover {
+      border-color: transparent;
+      color: #fff;
+      background: var(--demo-gradient);
+    }
+
+    .empty-state {
+      min-height: 250px;
+      display: grid;
+      place-items: center;
+      color: var(--demo-muted);
+      text-align: center;
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--demo-title);
+    }
+
+    .home-aside {
+      position: sticky;
+      top: 94px;
+      display: grid;
+      gap: 15px;
+    }
+
+    .side-card {
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-md);
+      padding: 16px;
+      background: var(--demo-surface);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .side-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .side-heading h2 {
+      margin: 0;
+      color: var(--demo-title);
+      font-size: 15px;
+    }
+
+    .side-heading h2 span {
+      margin-left: 4px;
+      color: var(--demo-muted);
+      font-size: 11px;
+      font-weight: 500;
+    }
+
+    .text-button {
+      border: 0;
+      padding: 4px;
+      color: var(--demo-accent);
+      background: transparent;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .text-button:hover {
+      text-decoration: underline;
+    }
+
+    .cart-preview-list {
+      display: grid;
+    }
+
+    .cart-preview-item {
+      display: grid;
+      grid-template-columns: 41px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 9px 0;
+      border-bottom: 1px solid #f0ece8;
+    }
+
+    .mini-cover {
+      position: relative;
+      width: 41px;
+      aspect-ratio: 0.72;
+      overflow: hidden;
+      border-radius: 3px;
+      color: var(--cover-ink, #fff);
+      background: var(--cover-bg, #fff);
+      box-shadow: inset 3px 0 0 rgba(0, 0, 0, 0.08), 0 4px 8px rgba(51, 35, 29, 0.14);
+    }
+
+    .mini-cover img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .mini-cover.css::after {
+      content: attr(data-short);
+      position: absolute;
+      top: 11px;
+      right: 5px;
+      left: 7px;
+      font-family: "Songti SC", "STSong", Georgia, serif;
+      font-size: 7px;
+      font-weight: 900;
+      line-height: 1.15;
+    }
+
+    .cart-preview-copy {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .cart-preview-copy strong {
+      overflow: hidden;
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .cart-preview-copy span {
+      color: var(--demo-danger);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .cart-preview-qty {
+      color: #8b837d;
+      font-size: 9px;
+    }
+
+    .side-empty {
+      padding: 20px 0 22px;
+      color: var(--demo-muted);
+      text-align: center;
+      font-size: 11px;
+    }
+
+    .cart-total {
+      display: flex;
+      align-items: baseline;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 12px 0;
+      font-size: 11px;
+    }
+
+    .cart-total strong {
+      color: var(--demo-danger);
+      font-size: 18px;
+    }
+
+    .checkout-button {
+      width: 100%;
+      min-height: 39px;
+      border: 0;
+      border-radius: 9px;
+      color: #fff;
+      background: var(--demo-gradient);
+      font-weight: 800;
+    }
+
+    .checkout-button:disabled {
+      color: #938c86;
+      background: #ede9e5;
+      cursor: not-allowed;
+    }
+
+    .order-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .order-item {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #f0ece8;
+      border-radius: 9px;
+      padding: 8px;
+    }
+
+    .order-icon {
+      width: 32px;
+      height: 32px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--order-color);
+      background: color-mix(in srgb, var(--order-color) 10%, white);
+    }
+
+    .order-icon .icon {
+      width: 17px;
+      height: 17px;
+    }
+
+    .order-copy {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+
+    .order-copy strong {
+      font-size: 10px;
+    }
+
+    .order-copy span {
+      overflow: hidden;
+      color: #928a84;
+      font-size: 8px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .order-price {
+      color: var(--demo-danger);
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .promise-card {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      border-color: #f7d4cf;
+      background: var(--demo-gradient-soft);
+    }
+
+    .promise-card > .icon {
+      width: 29px;
+      height: 29px;
+      flex: 0 0 auto;
+      color: var(--demo-accent);
+    }
+
+    .promise-card strong {
+      display: block;
+      color: var(--demo-accent);
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .promise-card span {
+      display: block;
+      margin-top: 3px;
+      color: #796f69;
+      font-size: 9px;
+    }
+
+    .standalone-page {
+      display: grid;
+      gap: 16px;
+    }
+
+    .page-intro {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(240, 75, 63, 0.13);
+      border-radius: var(--demo-radius-lg);
+      padding: 34px clamp(26px, 5vw, 64px);
+      background: var(--demo-gradient-soft);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .page-intro::after {
+      content: "";
+      position: absolute;
+      top: -70px;
+      right: 5%;
+      width: 250px;
+      height: 250px;
+      border: 1px solid rgba(215, 48, 255, 0.15);
+      border-radius: 50%;
+    }
+
+    .page-intro span {
+      position: relative;
+      z-index: 1;
+      color: var(--demo-accent);
+      font-size: 10px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .page-intro h1 {
+      position: relative;
+      z-index: 1;
+      margin: 8px 0 7px;
+      color: var(--demo-title);
+      font-size: clamp(27px, 3vw, 40px);
+      letter-spacing: -0.035em;
+    }
+
+    .page-intro p {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0;
+      color: #685f59;
+      font-size: 12px;
+      line-height: 1.75;
+    }
+
+    .page-card {
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-lg);
+      padding: 22px;
+      background: var(--demo-surface);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .path-list {
+      display: grid;
+      gap: 13px;
+    }
+
+    .path-stage {
+      display: grid;
+      grid-template-columns: 90px minmax(0, 0.75fr) minmax(440px, 1.25fr);
+      align-items: center;
+      gap: 22px;
+      border: 1px solid #eee7e2;
+      border-radius: 14px;
+      padding: 18px;
+    }
+
+    .path-stage-mark {
+      width: 70px;
+      height: 70px;
+      display: grid;
+      place-items: center;
+      border-radius: 20px;
+      color: #fff;
+      background: var(--demo-gradient);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .path-stage-copy strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 14px;
+    }
+
+    .path-stage-copy {
+      min-width: 0;
+    }
+
+    .path-stage-copy p {
+      margin: 0;
+      color: var(--demo-muted);
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .path-books {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(190px, 230px));
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .path-book-button {
+      width: 100%;
+      min-width: 0;
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--demo-line);
+      border-radius: 10px;
+      padding: 7px 10px;
+      background: #fff;
+      text-align: left;
+    }
+
+    .path-book-button:hover {
+      border-color: #efb9b3;
+      background: var(--demo-accent-soft);
+    }
+
+    .path-book-button .mini-cover {
+      width: 38px;
+    }
+
+    .path-book-button > span:last-child {
+      min-width: 0;
+      display: block;
+    }
+
+    .path-book-button strong {
+      overflow: hidden;
+      font-size: 9px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .path-book-button > span:last-child > span {
+      display: block;
+      margin-top: 2px;
+      color: var(--demo-muted);
+      font-size: 8px;
+    }
+
+    .cart-page-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      align-items: start;
+      gap: 16px;
+    }
+
+    .cart-commerce-panel {
+      overflow: hidden;
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-lg);
+      background: var(--demo-surface);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .cart-table-head,
+    .cart-page-item {
+      display: grid;
+      grid-template-columns: 24px minmax(260px, 1fr) 78px 106px 86px 52px;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .cart-table-head {
+      min-height: 48px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--demo-line);
+      color: var(--demo-muted);
+      background: #fbfaf8;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .cart-table-head span:nth-last-child(-n + 4) {
+      text-align: center;
+    }
+
+    .cart-select-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--demo-text);
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .cart-checkbox {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      margin: 0;
+      accent-color: var(--demo-accent);
+      cursor: pointer;
+    }
+
+    .cart-page-items {
+      display: grid;
+    }
+
+    .cart-page-item {
+      min-height: 138px;
+      padding: 18px;
+      border-bottom: 1px solid #eee7e2;
+      background: #fff;
+      transition: background 140ms ease;
+    }
+
+    .cart-page-item:last-child {
+      border-bottom: 0;
+    }
+
+    .cart-page-item.is-selected {
+      background: #fffdfc;
+    }
+
+    .cart-product {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: 74px minmax(0, 1fr);
+      align-items: center;
+      gap: 15px;
+    }
+
+    .cart-product .mini-cover {
+      width: 74px;
+    }
+
+    .cart-page-copy {
+      min-width: 0;
+      display: grid;
+      justify-items: start;
+      gap: 6px;
+    }
+
+    .cart-title-button {
+      max-width: max-content;
+      border: 0;
+      padding: 0;
+      color: var(--demo-title);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 900;
+      line-height: 1.45;
+      text-align: left;
+    }
+
+    .cart-title-button:hover {
+      color: var(--demo-accent);
+    }
+
+    .cart-book-meta {
+      color: var(--demo-muted);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .cart-stock {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      color: var(--demo-success);
+      font-size: 8px;
+      font-weight: 800;
+    }
+
+    .cart-stock::before {
+      content: "";
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .cart-unit-price,
+    .cart-page-price {
+      font-size: 11px;
+      font-weight: 800;
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .cart-page-price {
+      color: var(--demo-danger);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .cart-page-item .quantity-control {
+      justify-self: center;
+    }
+
+    .cart-remove-button,
+    .cart-toolbar-button {
+      border: 0;
+      padding: 4px;
+      color: var(--demo-muted);
+      background: transparent;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .cart-remove-button:hover,
+    .cart-toolbar-button:hover {
+      color: var(--demo-accent);
+    }
+
+    .cart-toolbar-button:disabled {
+      color: #b9b2ac;
+      cursor: not-allowed;
+    }
+
+    .cart-list-footer {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 10px 18px;
+      border-top: 1px solid var(--demo-line);
+      background: #fff;
+    }
+
+    .cart-list-footer .continue-shopping {
+      margin-left: auto;
+      color: var(--demo-accent);
+    }
+
+    .cart-summary-card {
+      position: sticky;
+      top: 94px;
+      border: 1px solid #f1d4cf;
+      border-radius: 14px;
+      padding: 20px;
+      background: linear-gradient(145deg, #fff, #fff9f8);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .cart-summary-card h2 {
+      margin: 0 0 17px;
+      font-size: 16px;
+    }
+
+    .cart-promotion {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-bottom: 18px;
+      border: 1px solid #f7d4cf;
+      border-radius: 11px;
+      padding: 11px;
+      color: #6f443e;
+      background: var(--demo-accent-soft);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .cart-promotion strong {
+      display: block;
+      margin-bottom: 2px;
+      color: var(--demo-accent);
+      font-size: 9px;
+    }
+
+    .cart-promotion .icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      color: var(--demo-accent);
+    }
+
+    .summary-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 10px 0;
+      color: var(--demo-muted);
+      font-size: 10px;
+    }
+
+    .summary-total {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 17px 0;
+      padding-top: 15px;
+      border-top: 1px solid var(--demo-line);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .summary-total strong {
+      color: var(--demo-danger);
+      font-size: 22px;
+    }
+
+    .cart-summary-note {
+      margin: -7px 0 14px;
+      color: var(--demo-muted);
+      font-size: 8px;
+      line-height: 1.55;
+    }
+
+    .cart-service-list {
+      display: grid;
+      gap: 7px;
+      margin-top: 15px;
+      padding-top: 14px;
+      border-top: 1px solid var(--demo-line);
+      color: var(--demo-muted);
+      font-size: 8px;
+    }
+
+    .cart-service-list span {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .cart-service-list i {
+      width: 16px;
+      height: 16px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: var(--demo-success);
+      background: rgba(20, 157, 104, 0.09);
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .cart-page-empty {
+      min-height: 330px;
+      display: grid;
+      place-items: center;
+      color: var(--demo-muted);
+      text-align: center;
+    }
+
+    .cart-page-empty strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--demo-title);
+      font-size: 16px;
+    }
+
+    .detail-page {
+      display: grid;
+      gap: 16px;
+    }
+
+    .breadcrumb {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      color: var(--demo-muted);
+      font-size: 11px;
+    }
+
+    .breadcrumb button {
+      border: 0;
+      padding: 2px 0;
+      color: var(--demo-accent);
+      background: transparent;
+      font-weight: 800;
+    }
+
+    .detail-product {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr) 285px;
+      align-items: start;
+      gap: clamp(28px, 4vw, 54px);
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-lg);
+      padding: clamp(28px, 4vw, 50px);
+      background: var(--demo-surface);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .detail-cover-wrap {
+      width: 100%;
+      max-width: 250px;
+      justify-self: center;
+    }
+
+    .detail-cover-wrap .book-cover,
+    .detail-cover-wrap .css-cover {
+      box-shadow:
+        inset 6px 0 0 rgba(0, 0, 0, 0.08),
+        -10px 0 0 #ece7e1,
+        0 22px 38px rgba(51, 35, 29, 0.19);
+    }
+
+    .detail-copy {
+      min-width: 0;
+      padding-top: 4px;
+    }
+
+    .detail-label {
+      display: inline-flex;
+      border-radius: 999px;
+      padding: 5px 9px;
+      color: var(--demo-accent);
+      background: var(--demo-accent-soft);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .detail-copy h1 {
+      margin: 13px 0 5px;
+      color: var(--demo-title);
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.16;
+      letter-spacing: -0.035em;
+    }
+
+    .detail-english-title {
+      margin: 0;
+      color: #8b837d;
+      font-size: 12px;
+    }
+
+    .detail-rating {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 15px 0;
+      color: var(--demo-warning);
+      font-size: 12px;
+    }
+
+    .detail-rating span {
+      color: var(--demo-muted);
+      font-size: 10px;
+    }
+
+    .detail-description {
+      margin: 0;
+      color: #5f5751;
+      font-size: 13px;
+      line-height: 1.82;
+    }
+
+    .detail-author {
+      margin: 14px 0 0;
+      color: var(--demo-text);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .detail-meta {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px 18px;
+      margin-top: 20px;
+      padding-top: 18px;
+      border-top: 1px solid var(--demo-line);
+    }
+
+    .detail-meta-item {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .detail-meta-item span {
+      color: var(--demo-muted);
+      font-size: 9px;
+    }
+
+    .detail-meta-item strong {
+      overflow: hidden;
+      color: #443d38;
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .purchase-panel {
+      border: 1px solid #f1d4cf;
+      border-radius: 14px;
+      padding: 19px;
+      background: linear-gradient(145deg, #fff, #fff9f8);
+    }
+
+    .purchase-format {
+      color: var(--demo-muted);
+      font-size: 10px;
+    }
+
+    .purchase-price {
+      margin: 7px 0 14px;
+      color: var(--demo-danger);
+      font-size: 29px;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .purchase-benefit {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      margin: 8px 0;
+      color: #675e58;
+      font-size: 10px;
+    }
+
+    .purchase-benefit .icon {
+      width: 15px;
+      height: 15px;
+      color: var(--demo-success);
+    }
+
+    .quantity-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 17px 0 12px;
+      padding-top: 14px;
+      border-top: 1px solid var(--demo-line);
+      font-size: 11px;
+    }
+
+    .quantity-control {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quantity-control button {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--demo-line);
+      border-radius: 7px;
+      background: #fff;
+    }
+
+    .quantity-control button:hover {
+      border-color: #efb3ac;
+      color: var(--demo-accent);
+    }
+
+    .quantity-control strong {
+      min-width: 18px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .purchase-actions {
+      display: grid;
+      gap: 9px;
+    }
+
+    .purchase-actions .primary-button,
+    .purchase-actions .secondary-button {
+      width: 100%;
+    }
+
+    .detail-body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 300px;
+      align-items: start;
+      gap: 16px;
+    }
+
+    .detail-content-card {
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-lg);
+      padding: 0 24px 26px;
+      background: var(--demo-surface);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .detail-tabs {
+      display: flex;
+      gap: 22px;
+      overflow-x: auto;
+      border-bottom: 1px solid var(--demo-line);
+      margin-bottom: 24px;
+      scrollbar-width: none;
+    }
+
+    .detail-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-button {
+      position: relative;
+      flex: 0 0 auto;
+      min-height: 54px;
+      border: 0;
+      padding: 0 2px;
+      color: var(--demo-muted);
+      background: transparent;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tab-button::after {
+      content: "";
+      position: absolute;
+      right: 0;
+      bottom: -1px;
+      left: 0;
+      height: 3px;
+      border-radius: 999px;
+      background: var(--demo-gradient);
+      opacity: 0;
+    }
+
+    .tab-button.is-active {
+      color: var(--demo-accent);
+    }
+
+    .tab-button.is-active::after {
+      opacity: 1;
+    }
+
+    .tab-panel h2 {
+      margin: 0 0 9px;
+      color: var(--demo-title);
+      font-size: 19px;
+    }
+
+    .tab-lead {
+      margin: 0;
+      color: #655d57;
+      font-size: 12px;
+      line-height: 1.82;
+    }
+
+    .learn-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    .learn-card {
+      min-height: 115px;
+      border: 1px solid #f0e5e1;
+      border-radius: 12px;
+      padding: 15px;
+      background: linear-gradient(145deg, #fff, #fffbfa);
+    }
+
+    .learn-card span {
+      width: 28px;
+      height: 28px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 11px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--demo-gradient);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .learn-card strong {
+      display: block;
+      margin-bottom: 5px;
+      color: #3f3834;
+      font-size: 11px;
+    }
+
+    .learn-card p {
+      margin: 0;
+      color: var(--demo-muted);
+      font-size: 10px;
+      line-height: 1.6;
+    }
+
+    .chapter-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .chapter-group {
+      display: grid;
+      grid-template-columns: 42px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid #eee8e3;
+      border-radius: 11px;
+      padding: 12px 13px;
+      background: #fff;
+    }
+
+    .chapter-index {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      color: var(--demo-accent);
+      background: var(--demo-accent-soft);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .chapter-copy {
+      min-width: 0;
+      display: grid;
+      gap: 3px;
+    }
+
+    .chapter-copy strong {
+      font-size: 11px;
+    }
+
+    .chapter-copy span {
+      overflow: hidden;
+      color: var(--demo-muted);
+      font-size: 9px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chapter-count {
+      color: #8b837d;
+      font-size: 9px;
+    }
+
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .audience-card {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 11px;
+      border: 1px solid #eee8e3;
+      border-radius: 11px;
+      padding: 14px;
+    }
+
+    .audience-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      color: var(--demo-accent);
+      background: var(--demo-accent-soft);
+      font-size: 15px;
+    }
+
+    .audience-card strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 11px;
+    }
+
+    .audience-card p {
+      margin: 0;
+      color: var(--demo-muted);
+      font-size: 9px;
+      line-height: 1.55;
+    }
+
+    .detail-side {
+      display: grid;
+      gap: 14px;
+    }
+
+    .detail-side-card {
+      border: 1px solid var(--demo-line);
+      border-radius: var(--demo-radius-md);
+      padding: 17px;
+      background: var(--demo-surface);
+      box-shadow: var(--demo-shadow-soft);
+    }
+
+    .detail-side-card h2 {
+      margin: 0 0 12px;
+      font-size: 14px;
+    }
+
+    .reading-path {
+      display: grid;
+      gap: 11px;
+    }
+
+    .reading-step {
+      position: relative;
+      display: grid;
+      grid-template-columns: 27px minmax(0, 1fr);
+      gap: 9px;
+    }
+
+    .reading-step:not(:last-child)::after {
+      content: "";
+      position: absolute;
+      top: 27px;
+      bottom: -11px;
+      left: 13px;
+      width: 1px;
+      background: #efd8d4;
+    }
+
+    .reading-step span {
+      position: relative;
+      z-index: 1;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--demo-gradient);
+      font-size: 9px;
+      font-weight: 900;
+    }
+
+    .reading-step strong {
+      display: block;
+      font-size: 10px;
+    }
+
+    .reading-step p {
+      margin: 3px 0 0;
+      color: var(--demo-muted);
+      font-size: 8px;
+      line-height: 1.5;
+    }
+
+    .related-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .related-item {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      align-items: center;
+      gap: 9px;
+      border: 0;
+      padding: 6px;
+      border-radius: 9px;
+      background: transparent;
+      text-align: left;
+    }
+
+    .related-item:hover {
+      background: var(--demo-accent-soft);
+    }
+
+    .related-item .mini-cover {
+      width: 38px;
+    }
+
+    .related-item strong {
+      display: block;
+      overflow: hidden;
+      font-size: 9px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .related-item span {
+      display: block;
+      margin-top: 3px;
+      color: var(--demo-muted);
+      font-size: 8px;
+    }
+
+    .mobile-nav {
+      display: none;
+    }
+
+    .drawer-backdrop {
+      position: fixed;
+      z-index: 80;
+      inset: 0;
+      border: 0;
+      background: rgba(28, 20, 17, 0.42);
+      opacity: 0;
+      transition: opacity 180ms ease;
+    }
+
+    .drawer-backdrop.is-open {
+      opacity: 1;
+    }
+
+    .cart-drawer {
+      position: fixed;
+      z-index: 90;
+      right: 0;
+      bottom: 0;
+      width: min(430px, 100%);
+      max-height: min(78vh, 760px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      border: 1px solid var(--demo-line);
+      border-radius: 20px 20px 0 0;
+      background: #fff;
+      box-shadow: 0 -26px 60px rgba(34, 22, 18, 0.22);
+      transform: translateY(105%);
+      transition: transform 220ms ease;
+    }
+
+    .cart-drawer.is-open {
+      transform: translateY(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-bottom: 1px solid var(--demo-line);
+      padding: 16px 18px;
+    }
+
+    .drawer-header h2 {
+      margin: 0;
+      font-size: 16px;
+    }
+
+    .icon-button {
+      width: 35px;
+      height: 35px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--demo-line);
+      border-radius: 50%;
+      color: #655d57;
+      background: #fff;
+    }
+
+    .icon-button:hover {
+      border-color: #efb9b3;
+      color: var(--demo-accent);
+      background: var(--demo-accent-soft);
+    }
+
+    .drawer-items {
+      overflow-y: auto;
+      padding: 6px 18px;
+    }
+
+    .drawer-item {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 11px;
+      padding: 13px 0;
+      border-bottom: 1px solid #f0ece8;
+    }
+
+    .drawer-item .mini-cover {
+      width: 52px;
+    }
+
+    .drawer-item-copy {
+      min-width: 0;
+      display: grid;
+      gap: 4px;
+    }
+
+    .drawer-item-copy strong {
+      overflow: hidden;
+      font-size: 11px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .drawer-item-copy span {
+      color: var(--demo-danger);
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .drawer-footer {
+      border-top: 1px solid var(--demo-line);
+      padding: 13px 18px 18px;
+      background: #fff;
+    }
+
+    .drawer-footer .cart-total {
+      justify-content: space-between;
+      padding-top: 0;
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 120;
+      right: 24px;
+      bottom: 28px;
+      max-width: min(360px, calc(100% - 32px));
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      border: 1px solid #f3d2ce;
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: #443b37;
+      background: #fff;
+      box-shadow: 0 17px 40px rgba(52, 32, 25, 0.17);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+      transition: 180ms ease;
+    }
+
+    .toast.is-visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast .icon {
+      flex: 0 0 auto;
+      color: var(--demo-success);
+    }
+
+    @media (max-width: 1280px) {
+      .header-inner {
+        grid-template-columns: auto minmax(290px, 1fr) minmax(250px, 340px) auto;
+        gap: 14px;
+      }
+
+      .brand-copy span {
+        display: none;
+      }
+
+      .books-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .book-card {
+        grid-template-columns: 112px minmax(0, 1fr);
+      }
+
+      .detail-product {
+        grid-template-columns: 220px minmax(0, 1fr) 260px;
+        gap: 28px;
+      }
+    }
+
+    @media (max-width: 1040px) {
+      .header-inner,
+      .app-page {
+        width: min(100% - 30px, var(--demo-content));
+      }
+
+      .desktop-nav {
+        display: none;
+      }
+
+      .header-inner {
+        grid-template-columns: auto minmax(260px, 1fr) auto;
+      }
+
+      .home-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .cart-page-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .cart-summary-card {
+        position: static;
+      }
+
+      .store-hero {
+        grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+      }
+
+      .topic-strip {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .detail-product {
+        grid-template-columns: 210px minmax(0, 1fr);
+      }
+
+      .purchase-panel {
+        grid-column: 1 / -1;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(230px, 0.6fr);
+        gap: 18px;
+      }
+
+      .purchase-actions {
+        align-content: center;
+      }
+
+      .detail-body {
+        grid-template-columns: minmax(0, 1fr) 270px;
+      }
+    }
+
+    @media (max-width: 820px) {
+      .home-layout,
+      .detail-body,
+      .cart-page-layout {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .cart-summary-card {
+        position: static;
+      }
+
+      .path-stage {
+        grid-template-columns: 70px minmax(0, 1fr);
+      }
+
+      .path-books {
+        grid-column: 1 / -1;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        justify-content: stretch;
+      }
+
+      .home-aside,
+      .detail-side {
+        display: none;
+      }
+
+      .store-hero {
+        grid-template-columns: minmax(0, 1.15fr) minmax(250px, 0.85fr);
+      }
+
+      .cart-drawer {
+        right: max(0px, calc((100vw - 540px) / 2));
+        width: min(540px, 100%);
+      }
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding-bottom: 68px;
+      }
+
+      .site-header {
+        position: relative;
+      }
+
+      .header-inner {
+        width: 100%;
+        min-height: 58px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        padding: 8px 13px;
+      }
+
+      .brand-mark {
+        width: 35px;
+        height: 35px;
+      }
+
+      .brand-copy strong {
+        font-size: 15px;
+      }
+
+      .header-inner > .search-form {
+        display: none;
+      }
+
+      .header-action {
+        min-width: 38px;
+        justify-content: center;
+        padding-inline: 5px;
+      }
+
+      .header-action > span:not(.cart-count) {
+        display: none;
+      }
+
+      .language-switch {
+        min-width: 39px;
+        padding-inline: 7px;
+      }
+
+      .account-action {
+        display: none;
+      }
+
+      .mobile-search {
+        display: block;
+        border-top: 1px solid #f0ece8;
+        padding: 8px 13px 10px;
+        background: #fff;
+      }
+
+      .mobile-search .search-input {
+        height: 39px;
+      }
+
+      .app-page {
+        width: 100%;
+        margin: 0 auto 30px;
+      }
+
+      .home-main {
+        gap: 13px;
+      }
+
+      .store-hero {
+        min-height: 325px;
+        grid-template-columns: minmax(0, 1fr);
+        margin: 11px 11px 0;
+        border-radius: 16px;
+      }
+
+      .hero-copy {
+        position: relative;
+        z-index: 4;
+        min-height: 325px;
+        justify-content: flex-start;
+        padding: 27px 28% 33px 22px;
+      }
+
+      .hero-copy h1 {
+        font-size: clamp(27px, 8.8vw, 36px);
+      }
+
+      .hero-copy p {
+        font-size: 12px;
+        line-height: 1.62;
+      }
+
+      .hero-meta {
+        max-width: 250px;
+        gap: 5px 10px;
+        font-size: 9px;
+      }
+
+      .hero-actions {
+        display: grid;
+        gap: 8px;
+      }
+
+      .hero-actions .primary-button,
+      .hero-actions .secondary-button {
+        min-height: 37px;
+        padding: 7px 13px;
+        font-size: 11px;
+      }
+
+      .hero-visual {
+        position: absolute;
+        z-index: 2;
+        right: -20px;
+        bottom: 12px;
+        width: 42%;
+        padding: 0;
+      }
+
+      .hero-book {
+        width: 108px;
+        opacity: 0.96;
+      }
+
+      .signal-chip {
+        display: none;
+      }
+
+      .topic-strip {
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        padding: 0 11px 4px;
+        scrollbar-width: none;
+        scroll-snap-type: x proximity;
+      }
+
+      .topic-strip::-webkit-scrollbar {
+        display: none;
+      }
+
+      .topic-button {
+        min-width: 122px;
+        min-height: 66px;
+        flex: 0 0 auto;
+        padding: 9px 10px;
+        scroll-snap-align: start;
+      }
+
+      .topic-icon {
+        width: 34px;
+        height: 34px;
+      }
+
+      .shelf {
+        border-width: 1px 0 0;
+        border-radius: 0;
+        padding: 15px 10px 23px;
+        box-shadow: none;
+      }
+
+      .section-heading {
+        align-items: flex-start;
+      }
+
+      .section-title {
+        flex-wrap: wrap;
+      }
+
+      .section-title h2 {
+        font-size: 16px;
+      }
+
+      .result-count {
+        flex-basis: 100%;
+        padding-left: 19px;
+      }
+
+      .sort-control {
+        width: 88px;
+      }
+
+      .books-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+      }
+
+      .page-intro {
+        border-width: 1px 0;
+        border-radius: 0;
+        padding: 26px 16px;
+      }
+
+      .page-card {
+        border-width: 1px 0;
+        border-radius: 0;
+        padding: 16px 12px;
+        box-shadow: none;
+      }
+
+      .path-stage {
+        grid-template-columns: 58px minmax(0, 1fr);
+        gap: 12px;
+        padding: 13px;
+      }
+
+      .path-stage-mark {
+        width: 52px;
+        height: 52px;
+        border-radius: 15px;
+      }
+
+      .path-books {
+        grid-column: 1 / -1;
+        grid-template-columns: minmax(0, 1fr);
+        justify-content: stretch;
+      }
+
+      .cart-commerce-panel,
+      .cart-summary-card {
+        border-width: 1px 0;
+        border-radius: 0;
+        box-shadow: none;
+      }
+
+      .cart-table-head {
+        display: none;
+      }
+
+      .cart-page-item {
+        min-height: 0;
+        grid-template-columns: 24px minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 12px 10px;
+        padding: 16px 13px;
+      }
+
+      .cart-page-item > .cart-checkbox {
+        grid-column: 1;
+        grid-row: 1;
+        margin-top: 4px;
+      }
+
+      .cart-product {
+        grid-column: 2 / -1;
+        grid-template-columns: 62px minmax(0, 1fr);
+        align-items: start;
+        gap: 11px;
+      }
+
+      .cart-product .mini-cover {
+        width: 62px;
+      }
+
+      .cart-unit-price {
+        display: none;
+      }
+
+      .cart-page-item .quantity-control {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: start;
+      }
+
+      .cart-page-price {
+        grid-column: 3;
+        grid-row: 2;
+        align-self: center;
+      }
+
+      .cart-remove-button {
+        grid-column: 2;
+        grid-row: 3;
+        justify-self: start;
+        padding-left: 0;
+      }
+
+      .cart-list-footer {
+        flex-wrap: wrap;
+        gap: 10px 14px;
+        padding-inline: 13px;
+      }
+
+      .book-card {
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+        border-radius: 12px;
+        padding: 9px;
+      }
+
+      .book-cover-button {
+        width: 100%;
+      }
+
+      .book-cover,
+      .css-cover {
+        width: min(100%, 158px);
+        margin: 0 auto;
+      }
+
+      .cover-title {
+        font-size: clamp(16px, 5vw, 21px);
+      }
+
+      .book-card-copy {
+        flex: 1;
+        width: 100%;
+      }
+
+      .book-price {
+        margin-top: 7px;
+      }
+
+      .breadcrumb {
+        padding: 13px 14px 0;
+      }
+
+      .detail-page {
+        gap: 13px;
+      }
+
+      .detail-product {
+        grid-template-columns: 118px minmax(0, 1fr);
+        gap: 17px;
+        border-width: 1px 0;
+        border-radius: 0;
+        padding: 24px 16px;
+      }
+
+      .detail-copy {
+        padding-top: 0;
+      }
+
+      .detail-copy h1 {
+        font-size: 24px;
+      }
+
+      .detail-english-title {
+        font-size: 9px;
+      }
+
+      .detail-rating {
+        margin: 10px 0;
+      }
+
+      .detail-description,
+      .detail-author,
+      .detail-meta {
+        grid-column: 1 / -1;
+      }
+
+      .detail-description {
+        font-size: 11px;
+      }
+
+      .detail-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 13px;
+      }
+
+      .purchase-panel {
+        grid-column: 1 / -1;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 8px;
+        padding: 16px;
+      }
+
+      .detail-content-card {
+        border-width: 1px 0;
+        border-radius: 0;
+        padding: 0 15px 23px;
+        box-shadow: none;
+      }
+
+      .detail-tabs {
+        margin-bottom: 19px;
+      }
+
+      .tab-button {
+        min-height: 49px;
+      }
+
+      .learn-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .learn-card {
+        min-height: 0;
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        gap: 10px;
+      }
+
+      .learn-card span {
+        grid-row: 1 / 3;
+        margin: 0;
+      }
+
+      .chapter-group {
+        grid-template-columns: 36px minmax(0, 1fr);
+      }
+
+      .chapter-index {
+        width: 36px;
+        height: 36px;
+      }
+
+      .chapter-count {
+        grid-column: 2;
+      }
+
+      .audience-grid {
+        grid-template-columns: minmax(0, 1fr);
+      }
+
+      .mobile-nav {
+        position: fixed;
+        z-index: 60;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        min-height: 64px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        padding: 5px max(8px, env(safe-area-inset-right)) max(5px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+        border-top: 1px solid var(--demo-line);
+        background: rgba(255, 255, 255, 0.96);
+        box-shadow: 0 -8px 24px rgba(55, 38, 31, 0.07);
+        backdrop-filter: blur(14px);
+      }
+
+      .mobile-nav button {
+        position: relative;
+        display: grid;
+        place-items: center;
+        align-content: center;
+        gap: 3px;
+        border: 0;
+        border-radius: 9px;
+        padding: 4px;
+        color: #827a74;
+        background: transparent;
+        font-size: 9px;
+      }
+
+      .mobile-nav button.is-active,
+      .mobile-nav button:hover {
+        color: var(--demo-accent);
+        background: var(--demo-accent-soft);
+      }
+
+      .mobile-nav .icon {
+        width: 19px;
+        height: 19px;
+      }
+
+      .mobile-nav .cart-count {
+        top: 0;
+        left: calc(50% + 6px);
+      }
+
+      .toast {
+        right: 16px;
+        bottom: 78px;
+      }
+    }
+
+    @media (max-width: 380px) {
+      .brand-copy strong {
+        font-size: 14px;
+      }
+
+      .hero-copy {
+        padding-right: 24%;
+        padding-left: 18px;
+      }
+
+      .hero-copy h1 {
+        font-size: 27px;
+      }
+
+      .detail-product {
+        grid-template-columns: 105px minmax(0, 1fr);
+        gap: 14px;
+        padding-inline: 13px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      html {
+        scroll-behavior: auto;
+      }
+
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="header-inner">
+      <button class="brand" type="button" data-route-home aria-label="返回可观测性书店首页" data-i18n-aria="brandHomeLabel">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" focusable="false">
+            <defs>
+              <linearGradient id="bookMarkGradientWeb" x1="4" y1="36" x2="36" y2="4" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#ff7a00" />
+                <stop offset=".56" stop-color="#ff3856" />
+                <stop offset="1" stop-color="#d730ff" />
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="36" height="36" rx="10" fill="url(#bookMarkGradientWeb)" />
+            <path fill="#fff" d="M8.5 11.5c4.2 0 7.5 1.1 10.5 3.5v13.5c-3-2.3-6.3-3.5-10.5-3.5V11.5Zm23 0c-4.2 0-7.5 1.1-10.5 3.5v13.5c3-2.3 6.3-3.5 10.5-3.5V11.5Z" />
+          </svg>
+        </span>
+        <span class="brand-copy"><strong data-i18n="brandTitle">可观测性书店</strong><span data-i18n="brandSubtitle">技术阅读空间</span></span>
+      </button>
+
+      <nav class="desktop-nav" aria-label="主导航" data-i18n-aria="mainNavLabel">
+        <button class="nav-button is-active" type="button" data-nav="home" data-i18n="navHome">首页</button>
+        <button class="nav-button" type="button" data-nav="path" data-i18n="navPath">阅读路径</button>
+      </nav>
+
+      <form class="search-form" id="desktopSearchForm" role="search">
+        <label class="sr-only" for="desktopSearch" data-i18n="searchLabel">搜索书名、作者或技术主题</label>
+        <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <input class="search-input" id="desktopSearch" type="search" autocomplete="off" placeholder="搜索书名 / 作者 / 技术主题" data-i18n-placeholder="searchPlaceholder" />
+        <button class="search-clear" type="button" data-clear-search aria-label="清空搜索" hidden>×</button>
+      </form>
+
+      <div class="header-actions">
+        <button class="language-switch" id="languageSwitch" type="button" aria-label="Switch language">EN</button>
+        <button class="header-action" type="button" data-nav="cart">
+          <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6.2"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>
+          <span data-i18n="navCart">购物车</span>
+          <strong class="cart-count" data-cart-count>0</strong>
+        </button>
+        <button class="header-action account-action" type="button" data-account>
+          <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"></circle><path d="M4.5 21a7.5 7.5 0 0 1 15 0"></path></svg>
+          <span data-i18n="account">商城账户</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-search">
+      <form class="search-form" id="mobileSearchForm" role="search">
+        <label class="sr-only" for="mobileSearch" data-i18n="searchLabel">搜索书名、作者或技术主题</label>
+        <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-4-4"></path></svg>
+        <input class="search-input" id="mobileSearch" type="search" autocomplete="off" placeholder="搜索书名 / 作者 / 技术主题" data-i18n-placeholder="searchPlaceholder" />
+        <button class="search-clear" type="button" data-clear-search aria-label="清空搜索" hidden>×</button>
+      </form>
+    </div>
+  </header>
+
+  <main class="app-page">
+    <section class="home-page" id="homePage" data-page="home">
+      <div class="home-layout">
+        <div class="home-main">
+          <section class="store-hero" aria-labelledby="homeHeroTitle">
+            <div class="hero-copy">
+              <p class="hero-kicker" id="heroKicker">本周编辑推荐</p>
+              <h1 id="homeHeroTitle">理解系统，始于提出更好的问题</h1>
+              <p id="heroDescription">《可观测性工程》从真实用户体验一路读到后端系统行为，帮助研发、SRE 与平台团队建立调试现代系统的共同语言。</p>
+              <div class="hero-meta" id="heroMeta"></div>
+              <div class="hero-actions">
+                <button class="primary-button" id="heroViewButton" type="button" data-book-id="observability-engineering">查看本书</button>
+                <button class="secondary-button" id="heroAddButton" type="button" data-add-cart="observability-engineering">加入购物车</button>
+              </div>
+            </div>
+            <div class="hero-visual" aria-hidden="true">
+              <span class="signal-chip metrics"><i></i><span data-i18n="metricsSignal">指标与事件</span></span>
+              <span class="signal-chip traces"><i></i><span data-i18n="tracesSignal">分布式追踪</span></span>
+              <span class="signal-chip rum"><i></i><span data-i18n="rumSignal">真实用户体验</span></span>
+              <div class="hero-book"><img id="heroBookImage" src="assets/observability-engineering-zh.png" alt="" /></div>
+            </div>
+          </section>
+
+          <section class="topic-strip" id="topicStrip" aria-label="可观测性主题分类" data-i18n-aria="topicNavLabel">
+            <button class="topic-button is-active" type="button" data-topic="全部" aria-pressed="true">
+              <span class="topic-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"></path></svg></span>
+              <span class="topic-copy"><strong>全部书单</strong><span>精选技术读物</span></span>
+            </button>
+            <button class="topic-button" type="button" data-topic="观测基础" aria-pressed="false">
+              <span class="topic-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
+              <span class="topic-copy"><strong>观测基础</strong><span>指标 · 日志 · 事件</span></span>
+            </button>
+            <button class="topic-button" type="button" data-topic="追踪与调试" aria-pressed="false">
+              <span class="topic-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="5" cy="17" r="2"></circle><circle cx="12" cy="7" r="2"></circle><circle cx="19" cy="15" r="2"></circle><path d="m6.5 15.5 4-6.5M13.8 8.3l3.5 5"></path></svg></span>
+              <span class="topic-copy"><strong>追踪与调试</strong><span>Trace · 高基数</span></span>
+            </button>
+            <button class="topic-button" type="button" data-topic="可靠性" aria-pressed="false">
+              <span class="topic-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.4 8 8 10 4.6-2 8-5 8-10V6l-8-3Z"></path><path d="m8.5 12 2.2 2.2 4.8-5"></path></svg></span>
+              <span class="topic-copy"><strong>SLO 与可靠性</strong><span>SLI · 错误预算</span></span>
+            </button>
+            <button class="topic-button" type="button" data-topic="团队实践" aria-pressed="false">
+              <span class="topic-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M2.5 20a5.5 5.5 0 0 1 11 0M13 19a4.5 4.5 0 0 1 8.5 0"></path></svg></span>
+              <span class="topic-copy"><strong>团队实践</strong><span>SRE · 协作文化</span></span>
+            </button>
+            <button class="topic-button" type="button" data-topic="系统设计" aria-pressed="false">
+              <span class="topic-icon"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1"></rect><rect x="14" y="4" width="6" height="6" rx="1"></rect><rect x="9" y="15" width="6" height="6" rx="1"></rect><path d="M7 10v2h10v-2M12 12v3"></path></svg></span>
+              <span class="topic-copy"><strong>系统设计</strong><span>分布式 · 云原生</span></span>
+            </button>
+          </section>
+
+          <section class="shelf" id="bookShelf" aria-labelledby="shelfTitle">
+            <div class="section-heading">
+              <div class="section-title">
+                <span class="section-title-mark" aria-hidden="true"></span>
+                <h2 id="shelfTitle">可观测性主题书单</h2>
+                <span class="result-count" id="resultCount"></span>
+              </div>
+              <label>
+                <span class="sr-only" data-i18n="sortLabel">排序方式</span>
+                <select class="sort-control" id="sortControl">
+                  <option value="recommended">编辑推荐</option>
+                  <option value="rating">评分最高</option>
+                  <option value="price-asc">价格从低到高</option>
+                </select>
+              </label>
+            </div>
+            <div class="books-grid" id="booksGrid"></div>
+            <div class="empty-state" id="emptyState" hidden>
+              <div><strong>没有找到匹配的书籍</strong><span>试试其他书名、作者或技术主题</span></div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+    </section>
+
+    <section class="standalone-page" id="pathPage" data-page="path" hidden>
+      <header class="page-intro">
+        <span id="pathEyebrow"></span>
+        <h1 id="pathTitle"></h1>
+        <p id="pathDescription"></p>
+      </header>
+      <div class="page-card path-list" id="pathList"></div>
+    </section>
+
+    <section class="standalone-page" id="cartPage" data-page="cart" hidden>
+      <header class="page-intro">
+        <span id="cartEyebrow"></span>
+        <h1 id="cartPageTitle"></h1>
+        <p id="cartDescription"></p>
+      </header>
+      <div class="cart-page-layout">
+        <section class="cart-commerce-panel" aria-labelledby="cartPageTitle">
+          <div class="cart-table-head" id="cartTableHead">
+            <input class="cart-checkbox" type="checkbox" data-cart-select-all aria-label="全选商品" />
+            <span id="cartProductLabel"></span>
+            <span id="cartUnitPriceLabel"></span>
+            <span id="cartQuantityHeader"></span>
+            <span id="cartSubtotalHeader"></span>
+            <span id="cartActionsLabel"></span>
+          </div>
+          <div class="cart-page-items" id="cartPageItems"></div>
+          <div class="cart-page-empty" id="cartPageEmpty" hidden></div>
+          <div class="cart-list-footer" id="cartListFooter">
+            <label class="cart-select-control"><input class="cart-checkbox" type="checkbox" data-cart-select-all /><span id="cartSelectAllLabel"></span></label>
+            <button class="cart-toolbar-button" type="button" data-cart-remove-selected id="cartRemoveSelectedButton"></button>
+            <button class="cart-toolbar-button continue-shopping" type="button" data-route-home id="continueShoppingButton"></button>
+          </div>
+        </section>
+        <aside class="cart-summary-card" aria-labelledby="cartSummaryTitle">
+          <div class="cart-promotion">
+            <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h16v13H4z"></path><path d="M8 7a4 4 0 0 1 8 0M8 12h8"></path></svg>
+            <span><strong id="cartPromotionTitle"></strong><span id="cartPromotionDescription"></span></span>
+          </div>
+          <h2 id="cartSummaryTitle"></h2>
+          <div class="summary-line"><span id="cartQuantityLabel"></span><strong id="cartSummaryCount"></strong></div>
+          <div class="summary-line"><span id="cartSubtotalLabel"></span><strong id="cartSubtotal"></strong></div>
+          <div class="summary-line"><span id="cartShippingLabel"></span><strong id="cartShipping"></strong></div>
+          <div class="summary-total"><span id="cartTotalLabel"></span><strong id="cartSummaryTotal"></strong></div>
+          <p class="cart-summary-note" id="cartSummaryNote"></p>
+          <button class="checkout-button" id="cartCheckoutButton" type="button" data-checkout></button>
+          <div class="cart-service-list">
+            <span><i>✓</i><span id="cartServiceOne"></span></span>
+            <span><i>✓</i><span id="cartServiceTwo"></span></span>
+            <span><i>✓</i><span id="cartServiceThree"></span></span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="detail-page" id="detailPage" data-page="book" hidden aria-labelledby="detailTitle">
+      <nav class="breadcrumb" aria-label="面包屑导航" data-i18n-aria="breadcrumbLabel">
+        <button type="button" data-route-home data-i18n="breadcrumbHome">商城首页</button>
+        <span>›</span>
+        <span data-i18n="breadcrumbDetail">图书详情</span>
+        <span>›</span>
+        <strong id="breadcrumbTitle"></strong>
+      </nav>
+
+      <section class="detail-product">
+        <div class="detail-cover-wrap" id="detailCover"></div>
+        <div class="detail-copy">
+          <span class="detail-label" id="detailTag"></span>
+          <h1 id="detailTitle"></h1>
+          <p class="detail-english-title" id="detailEnglishTitle"></p>
+          <div class="detail-rating"><span id="detailStars">★★★★★</span><strong id="detailRating"></strong><span data-i18n="editorPick">编辑推荐</span></div>
+          <p class="detail-description" id="detailDescription"></p>
+          <p class="detail-author" id="detailAuthor"></p>
+          <div class="detail-meta" id="detailMeta"></div>
+        </div>
+        <aside class="purchase-panel" aria-label="购买信息" data-i18n-aria="purchasePanelLabel">
+          <div>
+            <span class="purchase-format" data-i18n="purchaseFormat">纸质书 · 商城商品</span>
+            <div class="purchase-price" id="detailPrice"></div>
+            <div class="purchase-benefit"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m4 8 8-5 8 5-8 5-8-5Z"></path><path d="m4 8 8 5 8-5v9l-8 5-8-5V8Z"></path></svg><span data-i18n="inStock">现货，下单后 24 小时内发出</span></div>
+            <div class="purchase-benefit"><svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 4 6v6c0 5 3.4 8 8 10 4.6-2 8-5 8-10V6l-8-3Z"></path><path d="m8.5 12 2.2 2.2 4.8-5"></path></svg><span data-i18n="authenticity">正版保障，支持 7 天退换</span></div>
+            <div class="quantity-row">
+              <span data-i18n="purchaseQuantity">购买数量</span>
+              <span class="quantity-control">
+                <button type="button" id="detailMinus" aria-label="减少数量" data-i18n-aria="decreaseQuantity">−</button>
+                <strong id="detailQuantity">1</strong>
+                <button type="button" id="detailPlus" aria-label="增加数量" data-i18n-aria="increaseQuantity">+</button>
+              </span>
+            </div>
+          </div>
+          <div class="purchase-actions">
+            <button class="primary-button" id="detailAddButton" type="button" data-i18n="addToCart">加入购物车</button>
+            <button class="secondary-button" id="detailBuyButton" type="button" data-i18n="buyNow">立即购买</button>
+          </div>
+        </aside>
+      </section>
+
+      <div class="detail-body">
+        <section class="detail-content-card">
+          <div class="detail-tabs" role="tablist" aria-label="图书详细资料" data-i18n-aria="detailTabsLabel">
+            <button class="tab-button is-active" type="button" role="tab" data-detail-tab="overview" data-i18n="tabOverview" aria-selected="true">内容简介</button>
+            <button class="tab-button" type="button" role="tab" data-detail-tab="chapters" data-i18n="tabChapters" aria-selected="false">目录概览</button>
+            <button class="tab-button" type="button" role="tab" data-detail-tab="audience" data-i18n="tabAudience" aria-selected="false">适读人群</button>
+          </div>
+          <div class="tab-panel" id="detailTabPanel"></div>
+        </section>
+
+        <aside class="detail-side">
+          <section class="detail-side-card">
+            <h2 data-i18n="suggestedPath">建议阅读路径</h2>
+            <div class="reading-path" id="detailReadingPath"></div>
+          </section>
+          <section class="detail-side-card">
+            <h2 data-i18n="relatedBooks">同主题推荐</h2>
+            <div class="related-list" id="relatedList"></div>
+          </section>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <nav class="mobile-nav" aria-label="移动端导航" data-i18n-aria="mobileNavLabel">
+    <button class="is-active" type="button" data-mobile-nav="home">
+      <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v9H3v-9Z"></path><path d="M9 20v-6h6v6"></path></svg>
+      <span data-i18n="navHome">首页</span>
+    </button>
+    <button type="button" data-mobile-nav="path">
+      <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Z"></path><path d="M8 17h11M9 8h6M9 12h7"></path></svg>
+      <span data-i18n="navPath">阅读路径</span>
+    </button>
+    <button type="button" data-mobile-nav="cart">
+      <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6.2"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>
+      <span data-i18n="navCart">购物车</span>
+      <strong class="cart-count" data-cart-count>0</strong>
+    </button>
+  </nav>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+    <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 3 3 5-6"></path></svg>
+    <span id="toastMessage"></span>
+  </div>
+
+  <script>
+    const books = Object.freeze([
+      {
+        id: 'observability-engineering',
+        title: '可观测性工程',
+        englishTitle: 'Observability Engineering',
+        shortTitle: '可观测性工程',
+        author: 'Charity Majors、Liz Fong-Jones、George Miranda',
+        authorShort: 'Charity Majors 等',
+        topic: '观测基础',
+        tags: ['观测基础', '追踪与调试', '可靠性', '团队实践'],
+        price: 99,
+        rating: 4.9,
+        rank: 1,
+        badge: '综合实践',
+        image: 'assets/observability-engineering-zh.png',
+        imageEn: 'assets/observability-engineering-en.png',
+        description: '一本面向现代复杂系统的实践指南，系统解释可观测性为何不同于传统监控，以及团队如何借助结构化事件、分布式追踪、OpenTelemetry、SLO 和组织协作，更快地理解与调试未知问题。',
+        published: '2022 年 5 月',
+        pages: '318 页',
+        level: '中高级',
+        isbn: '9781492076438',
+        publisher: "O'Reilly Media",
+        learn: [
+          ['建立正确概念', '理解可观测性、监控与调试方式之间的边界和联系。'],
+          ['组织遥测数据', '用结构化事件、Trace 与 OpenTelemetry 构建可分析的数据。'],
+          ['推动团队实践', '把 SLO、可观测性驱动开发和组织文化融入交付流程。']
+        ],
+        parts: [
+          ['I', '走向可观测性', '定义、调试差异、规模化经验、与 DevOps/SRE 的关系', '第 1—4 章'],
+          ['II', '可观测性基础', '结构化事件、分布式追踪、OpenTelemetry、事件分析', '第 5—9 章'],
+          ['III', '面向团队的实践', '团队落地、可观测性驱动开发、SLO 与告警', '第 10—14 章'],
+          ['IV', '规模化可观测性', '构建或购买、数据存储、采样与遥测管道', '第 15—18 章'],
+          ['V', '传播可观测性文化', '商业价值、利益相关者、成熟度模型与未来', '第 19—22 章']
+        ],
+        audience: [
+          ['研发工程师', '需要在微服务和分布式系统中定位未知问题的开发者。'],
+          ['SRE / 运维工程师', '希望减少告警疲劳、建立 SLO 并改进故障响应的团队。'],
+          ['平台工程团队', '负责统一遥测、工具链和内部开发者体验的平台建设者。'],
+          ['技术管理者', '需要评估可观测性投入、团队协作和组织成熟度的负责人。']
+        ]
+      },
+      {
+        id: 'distributed-observability',
+        title: '分布式系统可观测性',
+        englishTitle: 'Distributed Systems Observability',
+        shortTitle: '分布式系统\n可观测性',
+        author: 'Cindy Sridharan',
+        authorShort: 'Cindy Sridharan',
+        topic: '追踪与调试',
+        tags: ['观测基础', '追踪与调试', '系统设计'],
+        price: 49,
+        rating: 4.7,
+        rank: 2,
+        badge: '观测入门',
+        cover: ['#30283d', '#fff8f0', '#ff7a00', 'radial-gradient(circle at 72% 72%, rgba(215,48,255,.48) 0 15%, transparent 16%), linear-gradient(145deg, transparent 42%, rgba(255,255,255,.16) 43% 45%, transparent 46%)'],
+        description: '聚焦分布式系统中的监控难题与取舍，讨论日志、指标和追踪各自的优势与局限，并给出逐步演进观测体系的清晰蓝图。',
+        published: '2018 年 7 月',
+        pages: '34 页',
+        level: '中高级',
+        isbn: '9781492033431',
+        publisher: "O'Reilly Media",
+        learn: [
+          ['理解三类信号', '比较日志、指标与追踪在调试复杂系统时的不同作用。'],
+          ['识别软失败', '理解分布式架构中局部、隐式和难以监控的失败模式。'],
+          ['演进观测体系', '根据系统复杂度和团队需求选择合适的工具与策略。']
+        ],
+        parts: [
+          ['01', '为什么需要可观测性', '从分布式系统复杂度与运营挑战开始', '第 1 章'],
+          ['02', '监控与可观测性', '告警、信号选择与不可监控故障', '第 2 章'],
+          ['03', '为可观测性编码', '面向失败的代码与测试方法', '第 3 章'],
+          ['04', '日志、指标与追踪', '三类遥测信号的优势、限制与组合', '第 4 章']
+        ],
+        audience: [
+          ['后端工程师', '正在构建或维护分布式服务的开发者。'],
+          ['SRE', '需要重新评估监控体系和告警策略的工程师。'],
+          ['架构师', '需要理解观测工具取舍与系统可调试性的技术负责人。'],
+          ['技术新手', '想用较短篇幅建立可观测性整体认知的读者。']
+        ]
+      },
+      {
+        id: 'implementing-slo',
+        title: '实施服务级别目标',
+        englishTitle: 'Implementing Service Level Objectives',
+        shortTitle: '实施 SLO',
+        author: 'Alex Hidalgo',
+        authorShort: 'Alex Hidalgo',
+        topic: '可靠性',
+        tags: ['可靠性', '团队实践'],
+        price: 89,
+        rating: 4.8,
+        rank: 3,
+        badge: 'SLO 实践',
+        cover: ['#183d47', '#f6fbf7', '#ff8a55', 'linear-gradient(160deg, transparent 0 55%, rgba(255,138,85,.55) 56% 58%, transparent 59%), radial-gradient(circle at 72% 72%, rgba(75,195,174,.55) 0 16%, transparent 17%)'],
+        description: '从用户视角定义有意义的 SLI 和 SLO，使用错误预算推动数据驱动决策，并从零开始建立支持 SLO 的工具、流程与组织文化。',
+        published: '2020 年 8 月',
+        pages: '402 页',
+        level: '中高级',
+        isbn: '9781492076803',
+        publisher: "O'Reilly Media",
+        learn: [
+          ['定义用户可靠性', '选择真正反映用户体验的 SLI 和目标。'],
+          ['使用错误预算', '让稳定性、发布速度和风险讨论建立在共同数据上。'],
+          ['建立 SLO 文化', '从试点、培训到跨团队推广形成可持续流程。']
+        ],
+        parts: [
+          ['I', 'SLO 开发', '可靠性堆栈、SLI、目标与错误预算', '第 1—5 章'],
+          ['II', 'SLO 实施', '组织共识、测量、工具与案例', '第 6—12 章'],
+          ['III', 'SLO 文化', '推广、报告与持续改进', '第 13—17 章']
+        ],
+        audience: [
+          ['SRE 团队', '准备建立或改进 SLO 体系的可靠性工程师。'],
+          ['产品与研发', '需要围绕用户体验讨论可靠性目标的跨职能团队。'],
+          ['平台团队', '负责 SLI 数据、SLO 工具和报告平台的工程师。'],
+          ['工程管理者', '希望用错误预算协调稳定性与交付速度的负责人。']
+        ]
+      },
+      {
+        id: 'site-reliability-engineering',
+        title: '网站可靠性工程',
+        englishTitle: 'Site Reliability Engineering',
+        shortTitle: 'SRE',
+        author: 'Betsy Beyer、Chris Jones、Jennifer Petoff、Niall Richard Murphy',
+        authorShort: 'Google SRE 团队',
+        topic: '团队实践',
+        tags: ['可靠性', '团队实践', '系统设计'],
+        price: 79,
+        rating: 4.9,
+        rank: 4,
+        badge: 'SRE 经典',
+        cover: ['#f3ede1', '#372e28', '#f04b3f', 'repeating-linear-gradient(155deg, transparent 0 17px, rgba(240,75,63,.14) 18px 20px), radial-gradient(circle at 73% 72%, rgba(255,122,0,.25) 0 16%, transparent 17%)'],
+        description: 'Google SRE 团队总结如何以软件工程方法运行大型生产系统，覆盖风险、SLO、自动化、告警、故障响应、容量与组织协作。',
+        published: '2016 年',
+        pages: '经典合集',
+        level: '中高级',
+        isbn: 'SRE Book',
+        publisher: "O'Reilly / Google",
+        learn: [
+          ['以工程方法做运维', '把重复的运营工作转化为可扩展的软件系统。'],
+          ['平衡风险与可靠性', '使用 SLO、错误预算和容量规划保护用户体验。'],
+          ['建立故障文化', '通过值班、应急响应和复盘让系统与团队共同改进。']
+        ],
+        parts: [
+          ['I', '概念与背景', 'Google 生产环境与 SRE 的基本定义', '导论'],
+          ['II', '核心原则', '风险、SLO、消除琐务、监控与自动化', '原则篇'],
+          ['III', '工程实践', '告警、值班、故障响应、容量与系统设计', '实践篇'],
+          ['IV', '组织与管理', '团队成长、协作和参与模式', '管理篇']
+        ],
+        audience: [
+          ['SRE / 运维', '希望系统学习可靠性工程原则和实践的工程师。'],
+          ['研发工程师', '需要理解生产系统运行约束与故障模式的开发者。'],
+          ['技术负责人', '负责可靠性目标、容量与组织协作的管理者。'],
+          ['平台工程师', '建设自动化、监控和内部平台的团队成员。']
+        ]
+      },
+      {
+        id: 'sre-workbook',
+        title: 'SRE 实战手册',
+        englishTitle: 'The Site Reliability Workbook',
+        shortTitle: 'SRE\n实战手册',
+        author: 'Betsy Beyer 等',
+        authorShort: 'Betsy Beyer 等',
+        topic: '团队实践',
+        tags: ['可靠性', '团队实践'],
+        price: 85,
+        rating: 4.8,
+        rank: 5,
+        badge: '案例进阶',
+        cover: ['#28292c', '#fff7ec', '#d730ff', 'linear-gradient(120deg, transparent 0 48%, rgba(215,48,255,.42) 49% 52%, transparent 53%), radial-gradient(circle at 73% 72%, rgba(255,122,0,.65) 0 9%, transparent 10%)'],
+        description: '《网站可靠性工程》的实践伙伴，以 Google 与多家团队的真实案例说明如何落地 SLO、告警、值班、故障响应、消除琐务和组织变革。',
+        published: '实践合集',
+        pages: '案例驱动',
+        level: '中高级',
+        isbn: 'SRE Workbook',
+        publisher: "O'Reilly / Google",
+        learn: [
+          ['把原则变成操作', '通过案例与模板将 SRE 原则转化为团队流程。'],
+          ['改进值班与告警', '围绕用户影响设计更可行动的响应机制。'],
+          ['推动组织改变', '从单个团队试点逐步扩展可靠性实践。']
+        ],
+        parts: [
+          ['I', '基础', 'SRE 与 DevOps、SLO 和错误预算', '基础篇'],
+          ['II', '实践', '值班、事故响应、复盘与容量', '实践篇'],
+          ['III', '流程', '发布、配置、管道与恢复', '流程篇'],
+          ['IV', '组织', 'SRE 参与模式与变革管理', '组织篇']
+        ],
+        audience: [
+          ['SRE 团队', '已经理解概念、希望获取落地案例的团队。'],
+          ['工程经理', '负责流程、值班和组织改进的管理者。'],
+          ['平台工程师', '建设可靠性工具与标准化流程的工程师。'],
+          ['技术教练', '需要培训材料、模板和案例的实践推动者。']
+        ]
+      },
+      {
+        id: 'secure-reliable-systems',
+        title: '构建安全可靠的系统',
+        englishTitle: 'Building Secure & Reliable Systems',
+        shortTitle: '安全与\n可靠系统',
+        author: 'Heather Adkins、Betsy Beyer 等',
+        authorShort: 'Google 团队',
+        topic: '系统设计',
+        tags: ['可靠性', '系统设计', '团队实践'],
+        price: 88,
+        rating: 4.7,
+        rank: 6,
+        badge: '系统设计',
+        cover: ['#752f3f', '#fff7ec', '#ffb05b', 'radial-gradient(circle at 72% 70%, rgba(255,176,91,.35) 0 20%, transparent 21%), repeating-linear-gradient(35deg, transparent 0 12px, rgba(255,255,255,.08) 13px 14px)'],
+        description: '将安全与可靠性作为同一套系统质量来设计，讨论从架构、变更、恢复到组织协作的工程实践，帮助团队构建可扩展的生产系统。',
+        published: 'Google 实践',
+        pages: '系统设计',
+        level: '中高级',
+        isbn: 'Secure & Reliable',
+        publisher: "O'Reilly / Google",
+        learn: [
+          ['统一安全与可靠性', '从共同风险、设计原则和运营目标理解两类工程。'],
+          ['设计可恢复系统', '在架构和流程中预先考虑故障、攻击与恢复。'],
+          ['建立协作机制', '让安全、SRE 与研发团队共享上下文和责任。']
+        ],
+        parts: [
+          ['I', '设计原则', '安全与可靠性的共同基础', '原则篇'],
+          ['II', '系统设计', '架构、隔离、最小权限与弹性', '设计篇'],
+          ['III', '运营实践', '变更、检测、响应和恢复', '运营篇'],
+          ['IV', '组织协作', '跨团队文化、流程和治理', '组织篇']
+        ],
+        audience: [
+          ['系统架构师', '需要兼顾安全、可靠性与扩展性的设计者。'],
+          ['SRE 团队', '负责生产系统韧性、响应和恢复的工程师。'],
+          ['安全工程师', '希望与可靠性和研发流程更紧密协作的团队。'],
+          ['技术负责人', '制定系统质量目标与跨团队机制的管理者。']
+        ]
+      }
+    ]);
+
+    const bookEnglish = Object.freeze({
+      'observability-engineering': {
+        title: 'Observability Engineering',
+        englishTitle: 'Achieving Production Excellence',
+        shortTitle: 'Observability\nEngineering',
+        author: 'Charity Majors, Liz Fong-Jones, and George Miranda',
+        authorShort: 'Charity Majors et al.',
+        badge: 'End-to-End Practice',
+        description: 'A practical guide to understanding modern, complex systems. It explains how observability differs from traditional monitoring and how teams use structured events, distributed tracing, OpenTelemetry, SLOs, and collaborative practices to debug previously unknown problems.',
+        published: 'May 2022',
+        pages: '318 pages',
+        level: 'Intermediate–advanced',
+        learn: [
+          ['Build the right mental model', 'Understand the boundaries and connections among observability, monitoring, and modern debugging.'],
+          ['Shape useful telemetry', 'Use structured events, traces, and OpenTelemetry to create explorable production data.'],
+          ['Make it a team practice', 'Bring SLOs, observability-driven development, and collaborative habits into delivery.']
+        ],
+        parts: [
+          ['I', 'The path to observability', 'Definitions, debugging differences, scaling lessons, and the relationship with DevOps and SRE', 'Ch. 1–4'],
+          ['II', 'Observability fundamentals', 'Structured events, distributed tracing, OpenTelemetry, and event analysis', 'Ch. 5–9'],
+          ['III', 'Practices for teams', 'Team adoption, observability-driven development, SLOs, and alerting', 'Ch. 10–14'],
+          ['IV', 'Observability at scale', 'Build versus buy, data stores, sampling, and telemetry pipelines', 'Ch. 15–18'],
+          ['V', 'Spreading the culture', 'Business value, stakeholders, maturity models, and what comes next', 'Ch. 19–22']
+        ],
+        audience: [
+          ['Software engineers', 'Developers debugging unknown behavior in microservices and distributed systems.'],
+          ['SRE and operations', 'Teams reducing alert fatigue, introducing SLOs, and improving incident response.'],
+          ['Platform engineers', 'Builders of shared telemetry, tooling, and internal developer platforms.'],
+          ['Engineering leaders', 'Leaders evaluating investment, collaboration, and organizational maturity.']
+        ]
+      },
+      'distributed-observability': {
+        title: 'Distributed Systems Observability',
+        englishTitle: 'A practical introduction to production signals',
+        shortTitle: 'Distributed Systems\nObservability',
+        author: 'Cindy Sridharan',
+        authorShort: 'Cindy Sridharan',
+        badge: 'Observability Primer',
+        description: 'A concise guide to monitoring tradeoffs in distributed systems. It compares logs, metrics, and traces, explains partial and soft failures, and offers a clear path for evolving an observability practice.',
+        published: 'July 2018',
+        pages: '34 pages',
+        level: 'Intermediate–advanced',
+        learn: [
+          ['Compare the three signals', 'Understand the distinct roles of logs, metrics, and traces when debugging complex systems.'],
+          ['Recognize soft failures', 'Identify partial, implicit, and difficult-to-monitor failure modes in distributed architectures.'],
+          ['Evolve your approach', 'Choose tooling and practices that match system complexity and team needs.']
+        ],
+        parts: [
+          ['01', 'Why observability', 'Distributed-system complexity and operational challenges', 'Chapter 1'],
+          ['02', 'Monitoring and observability', 'Alerts, signal selection, and failures that evade monitoring', 'Chapter 2'],
+          ['03', 'Coding for observability', 'Failure-aware code and testing methods', 'Chapter 3'],
+          ['04', 'Logs, metrics, and traces', 'Strengths, limitations, and combinations of the three signals', 'Chapter 4']
+        ],
+        audience: [
+          ['Backend engineers', 'Developers building or maintaining distributed services.'],
+          ['SREs', 'Engineers reassessing monitoring systems and alert strategies.'],
+          ['Architects', 'Technical leaders evaluating observability tradeoffs and system debuggability.'],
+          ['New practitioners', 'Readers seeking a concise overview of the field.']
+        ]
+      },
+      'implementing-slo': {
+        title: 'Implementing Service Level Objectives',
+        englishTitle: 'A Practical Guide to SLIs, SLOs, and Error Budgets',
+        shortTitle: 'Implementing\nSLOs',
+        author: 'Alex Hidalgo',
+        authorShort: 'Alex Hidalgo',
+        badge: 'SLO Practice',
+        description: 'Define meaningful SLIs and SLOs from the user perspective, apply error budgets to data-driven decisions, and build the tooling, process, and culture needed to operate an SLO program.',
+        published: 'August 2020',
+        pages: '402 pages',
+        level: 'Intermediate–advanced',
+        learn: [
+          ['Define user reliability', 'Choose SLIs and objectives that genuinely reflect the customer experience.'],
+          ['Use error budgets', 'Ground reliability, release velocity, and risk discussions in shared data.'],
+          ['Build an SLO culture', 'Move from pilots and education to sustainable cross-team adoption.']
+        ],
+        parts: [
+          ['I', 'Developing SLOs', 'The reliability stack, SLIs, objectives, and error budgets', 'Ch. 1–5'],
+          ['II', 'Implementing SLOs', 'Alignment, measurement, tooling, and case studies', 'Ch. 6–12'],
+          ['III', 'SLO culture', 'Adoption, reporting, and continuous improvement', 'Ch. 13–17']
+        ],
+        audience: [
+          ['SRE teams', 'Reliability engineers preparing to build or improve an SLO program.'],
+          ['Product and engineering', 'Cross-functional teams aligning reliability with user experience.'],
+          ['Platform teams', 'Engineers responsible for SLI data, SLO tooling, and reporting.'],
+          ['Engineering managers', 'Leaders balancing reliability and delivery speed with error budgets.']
+        ]
+      },
+      'site-reliability-engineering': {
+        title: 'Site Reliability Engineering',
+        englishTitle: 'How Google Runs Production Systems',
+        shortTitle: 'Site Reliability\nEngineering',
+        author: 'Betsy Beyer, Chris Jones, Jennifer Petoff, and Niall Richard Murphy',
+        authorShort: 'Google SRE team',
+        badge: 'SRE Classic',
+        description: 'Google SRE practitioners explain how software engineering can operate large production systems, covering risk, SLOs, automation, monitoring, incident response, capacity, and organizational collaboration.',
+        published: '2016',
+        pages: 'Classic collection',
+        level: 'Intermediate–advanced',
+        learn: [
+          ['Engineer operations', 'Turn repetitive operational work into scalable software and systems.'],
+          ['Balance risk and reliability', 'Protect user experience with SLOs, error budgets, and capacity planning.'],
+          ['Build a learning culture', 'Improve systems and teams through on-call, incident response, and postmortems.']
+        ],
+        parts: [
+          ['I', 'Introduction', 'Google production environments and the definition of SRE', 'Introduction'],
+          ['II', 'Principles', 'Risk, SLOs, toil reduction, monitoring, and automation', 'Principles'],
+          ['III', 'Practices', 'Alerting, on-call, incident response, capacity, and design', 'Practices'],
+          ['IV', 'Management', 'Team growth, collaboration, and engagement models', 'Management']
+        ],
+        audience: [
+          ['SRE and operations', 'Engineers seeking a systematic foundation in reliability engineering.'],
+          ['Software engineers', 'Developers learning the constraints and failure modes of production systems.'],
+          ['Technical leaders', 'Leaders responsible for reliability goals, capacity, and collaboration.'],
+          ['Platform engineers', 'Teams building automation, monitoring, and internal platforms.']
+        ]
+      },
+      'sre-workbook': {
+        title: 'The Site Reliability Workbook',
+        englishTitle: 'Practical Ways to Implement SRE',
+        shortTitle: 'The SRE\nWorkbook',
+        author: 'Betsy Beyer, Niall Richard Murphy, David K. Rensin, Kent Kawahara, and Stephen Thorne',
+        authorShort: 'Betsy Beyer et al.',
+        badge: 'Case-Study Playbook',
+        description: 'The hands-on companion to the SRE book, using cases from Google and other organizations to implement SLOs, alerting, on-call, incident response, toil reduction, and organizational change.',
+        published: '2018',
+        pages: 'Case-study collection',
+        level: 'Intermediate–advanced',
+        learn: [
+          ['Turn principles into actions', 'Use cases and templates to translate SRE ideas into team workflows.'],
+          ['Improve on-call and alerts', 'Design actionable response mechanisms around user impact.'],
+          ['Lead organizational change', 'Grow reliability practices from one team to a wider organization.']
+        ],
+        parts: [
+          ['I', 'Foundations', 'SRE and DevOps, SLOs, and error budgets', 'Foundations'],
+          ['II', 'Practices', 'On-call, incidents, postmortems, and capacity', 'Practices'],
+          ['III', 'Processes', 'Releases, configuration, pipelines, and recovery', 'Processes'],
+          ['IV', 'Organizations', 'SRE engagement models and change management', 'Organizations']
+        ],
+        audience: [
+          ['SRE teams', 'Teams that know the concepts and want concrete implementation cases.'],
+          ['Engineering managers', 'Leaders improving process, on-call, and organizational health.'],
+          ['Platform engineers', 'Builders of reliability tooling and standardized workflows.'],
+          ['Technical coaches', 'Practitioners seeking training material, templates, and examples.']
+        ]
+      },
+      'secure-reliable-systems': {
+        title: 'Building Secure & Reliable Systems',
+        englishTitle: 'Best Practices for Designing, Implementing, and Maintaining Systems',
+        shortTitle: 'Secure & Reliable\nSystems',
+        author: 'Heather Adkins, Betsy Beyer, Paul Blankinship, Piotr Lewandowski, Ana Oprea, and Adam Stubblefield',
+        authorShort: 'Google engineering team',
+        badge: 'Resilient Design',
+        description: 'Treat security and reliability as one system quality. The book connects architecture, change, recovery, and organizational collaboration to help teams build scalable and resilient production systems.',
+        published: '2020',
+        pages: 'Engineering reference',
+        level: 'Intermediate–advanced',
+        learn: [
+          ['Unify security and reliability', 'Understand shared risks, principles, and operational objectives.'],
+          ['Design for recovery', 'Anticipate failure, attack, and recovery in architecture and process.'],
+          ['Create shared ownership', 'Give security, SRE, and development teams common context and responsibility.']
+        ],
+        parts: [
+          ['I', 'Design principles', 'The shared foundations of security and reliability', 'Principles'],
+          ['II', 'System design', 'Architecture, isolation, least privilege, and resilience', 'Design'],
+          ['III', 'Operations', 'Change, detection, response, and recovery', 'Operations'],
+          ['IV', 'Collaboration', 'Cross-team culture, process, and governance', 'Organization']
+        ],
+        audience: [
+          ['System architects', 'Designers balancing security, reliability, and scale.'],
+          ['SRE teams', 'Engineers responsible for resilience, response, and recovery.'],
+          ['Security engineers', 'Teams integrating more closely with reliability and delivery.'],
+          ['Technical leaders', 'Leaders defining system-quality goals and cross-team mechanisms.']
+        ]
+      }
+    });
+
+    const messages = Object.freeze({
+      zh: {
+        documentTitle: '可观测性书店 · UI 原型', brandTitle: '可观测性书店', brandSubtitle: '技术阅读空间',
+        navHome: '首页', navPath: '阅读路径', navCart: '购物车', account: '商城账户',
+        searchPlaceholder: '搜索书名 / 作者 / 技术主题', searchLabel: '搜索书名、作者或技术主题', clearSearch: '清空搜索', languageLabel: 'Switch to English', brandHomeLabel: '返回可观测性书店首页', mainNavLabel: '主导航', topicNavLabel: '可观测性主题分类', breadcrumbLabel: '面包屑导航', purchasePanelLabel: '购买信息', detailTabsLabel: '图书详细资料', mobileNavLabel: '移动端导航', decreaseQuantity: '减少数量', increaseQuantity: '增加数量',
+        heroKicker: '本周编辑推荐', heroTitle: '理解系统，始于提出更好的问题', heroDescription: '《可观测性工程》从真实用户体验一路读到后端系统行为，帮助研发、SRE 与平台团队建立调试现代系统的共同语言。', metricsSignal: '指标与事件', tracesSignal: '分布式追踪', rumSignal: '真实用户体验',
+        edition: '中文版', format: '纸质书', viewBook: '查看本书', addToCart: '加入购物车', viewDetails: '查看详情',
+        allShelf: '可观测性主题书单', topicShelf: '{topic}书单', searchResults: '“{query}”的搜索结果', resultCount: '共 {count} 本',
+        sortLabel: '排序方式', sortRecommended: '编辑推荐', sortRating: '评分最高', sortPrice: '价格从低到高', ratingLabel: '评分 {rating} 分',
+        emptyTitle: '没有找到匹配的书籍', emptyDescription: '试试其他书名、作者或技术主题',
+        pathEyebrow: 'GUIDED READING', pathTitle: '三阶段可观测性阅读路径', pathDescription: '先建立共同语言，再掌握 SLO 与生产实践，最后走向安全、可靠且可扩展的系统设计。', stage: '阶段 {index}',
+        cartEyebrow: 'SHOPPING CART', cartTitle: '我的购物车', cartDescription: '核对书目、版本与数量，选择本次需要购买的图书后统一结算。', cartSummary: '结算明细', quantity: '已选商品', subtotal: '商品金额', shipping: '配送费', free: '免费', total: '应付合计', checkout: '去结算（{count}）',
+        cartEmptyTitle: '购物车还是空的', cartEmptyDescription: '从首页或详情页加入一本想读的书吧。', removeOne: '减少一本', addOne: '增加一本', itemQuantity: '{title} 数量', selectItem: '选择《{title}》', cartProduct: '商品信息', unitPrice: '单价', quantityHeader: '数量', itemSubtotal: '小计', actions: '操作', selectAll: '全选', selectAllAria: '全选购物车商品', removeSelected: '删除选中商品', continueShopping: '继续选书', removeItem: '删除', inStockShort: '现货', selectedBooks: '{count} 件', promotionTitle: '购书优惠', promotionDescription: '满 99 元免配送费，专业技术书籍享正版保障。', summaryNote: '最终价格与配送方式将在提交订单前再次确认。', serviceOne: '正版图书保障', serviceTwo: '7 天无理由退换', serviceThree: '24 小时内安排发货', removedSelected: '已删除 {count} 件选中商品',
+        breadcrumbHome: '商城首页', breadcrumbDetail: '图书详情', editorPick: '编辑推荐', purchaseFormat: '纸质书 · 商城商品', inStock: '现货，下单后 24 小时内发出', authenticity: '正版保障，支持 7 天退换', purchaseQuantity: '购买数量', buyNow: '立即购买',
+        tabOverview: '内容简介', tabChapters: '目录概览', tabAudience: '适读人群', suggestedPath: '建议阅读路径', relatedBooks: '同主题推荐', learnHeading: '这本书将帮助你完成什么',
+        authorLabel: '作者 / 编者：{author}', score: '{rating} 分', published: '出版时间', pages: '篇幅', level: '阅读难度', publisher: '出版信息', isbn: 'ISBN / 标识', sku: '商品 SKU',
+        pathOneTitle: '先建立定义', pathOneDesc: '理解可观测性与传统监控的差异。', pathTwoTitle: '再掌握数据', pathTwoDesc: '从结构化事件、Trace 到 OpenTelemetry。', pathThreeTitle: '最后落地团队', pathThreeDesc: '把 SLO、调试与文化变成日常实践。',
+        added: '《{title}》已加入购物车', removed: '已从购物车移除《{title}》', checkoutToast: '结算预览：共 {count} 本，合计 {total}', accountToast: '账户入口已保留，迁移时可接入现有登录状态。'
+      },
+      en: {
+        documentTitle: 'Observability Bookstore · UI Prototype', brandTitle: 'Observability Books', brandSubtitle: 'Engineering Reading Room',
+        navHome: 'Home', navPath: 'Reading Path', navCart: 'Cart', account: 'Account',
+        searchPlaceholder: 'Search by title, author, or topic', searchLabel: 'Search by title, author, or engineering topic', clearSearch: 'Clear search', languageLabel: '切换到中文', brandHomeLabel: 'Return to the bookstore home', mainNavLabel: 'Primary navigation', topicNavLabel: 'Observability topic filters', breadcrumbLabel: 'Breadcrumb navigation', purchasePanelLabel: 'Purchase information', detailTabsLabel: 'Book information', mobileNavLabel: 'Mobile navigation', decreaseQuantity: 'Decrease quantity', increaseQuantity: 'Increase quantity',
+        heroKicker: "EDITOR'S PICK", heroTitle: 'Better questions reveal better systems', heroDescription: 'Observability Engineering connects real user experience to backend behavior, giving developers, SREs, and platform teams a shared language for debugging modern systems.', metricsSignal: 'Metrics & events', tracesSignal: 'Distributed tracing', rumSignal: 'Real user experience',
+        edition: 'English edition', format: 'Print book', viewBook: 'View book', addToCart: 'Add to cart', viewDetails: 'View details',
+        allShelf: 'Observability collection', topicShelf: '{topic} books', searchResults: 'Results for “{query}”', resultCount: '{count} books',
+        sortLabel: 'Sort books', sortRecommended: "Editor's picks", sortRating: 'Highest rated', sortPrice: 'Price: low to high', ratingLabel: 'Rated {rating} out of 5',
+        emptyTitle: 'No matching books', emptyDescription: 'Try another title, author, or engineering topic.',
+        pathEyebrow: 'GUIDED READING', pathTitle: 'A three-stage observability reading path', pathDescription: 'Build a shared vocabulary, learn SLO and production practices, then design systems that are secure, reliable, and scalable.', stage: 'Stage {index}',
+        cartEyebrow: 'SHOPPING CART', cartTitle: 'Your shopping cart', cartDescription: 'Review editions and quantities, then select the books you want to purchase in this order.', cartSummary: 'Checkout summary', quantity: 'Selected items', subtotal: 'Merchandise', shipping: 'Shipping', free: 'Free', total: 'Order total', checkout: 'Checkout ({count})',
+        cartEmptyTitle: 'Your cart is empty', cartEmptyDescription: 'Add a book from the home or detail page to begin.', removeOne: 'Remove one', addOne: 'Add one', itemQuantity: 'Quantity for {title}', selectItem: 'Select {title}', cartProduct: 'Book details', unitPrice: 'Unit price', quantityHeader: 'Quantity', itemSubtotal: 'Subtotal', actions: 'Actions', selectAll: 'Select all', selectAllAria: 'Select all cart items', removeSelected: 'Remove selected', continueShopping: 'Continue shopping', removeItem: 'Remove', inStockShort: 'In stock', selectedBooks: '{count} items', promotionTitle: 'Bookstore offer', promotionDescription: 'Free shipping over ¥99 with authentic-edition protection.', summaryNote: 'Final pricing and delivery options are confirmed before the order is submitted.', serviceOne: 'Authentic editions', serviceTwo: '7-day returns', serviceThree: 'Ships within 24 hours', removedSelected: 'Removed {count} selected items',
+        breadcrumbHome: 'Bookstore home', breadcrumbDetail: 'Book details', editorPick: "Editor's pick", purchaseFormat: 'Print book · Store item', inStock: 'In stock · ships within 24 hours', authenticity: 'Authentic edition · 7-day returns', purchaseQuantity: 'Quantity', buyNow: 'Buy now',
+        tabOverview: 'Overview', tabChapters: 'Contents', tabAudience: 'Who it is for', suggestedPath: 'Suggested reading path', relatedBooks: 'Related books', learnHeading: 'What you will learn',
+        authorLabel: 'Author / editor: {author}', score: '{rating} / 5', published: 'Published', pages: 'Length', level: 'Reading level', publisher: 'Publisher', isbn: 'ISBN / ID', sku: 'Store SKU',
+        pathOneTitle: 'Start with the definition', pathOneDesc: 'Separate observability from traditional monitoring.', pathTwoTitle: 'Learn the data model', pathTwoDesc: 'Move from structured events and traces to OpenTelemetry.', pathThreeTitle: 'Apply it across the team', pathThreeDesc: 'Make SLOs, debugging, and learning part of daily work.',
+        added: '“{title}” was added to your cart', removed: '“{title}” was removed from your cart', checkoutToast: 'Checkout preview: {count} books · {total}', accountToast: 'The account entry point is ready for the existing sign-in state during migration.'
+      }
+    });
+
+    const topics = Object.freeze([
+      {key: '全部', zh: ['全部书单', '精选技术读物', '从完整书架开始，自由组合可观测性、SRE 与系统设计主题。'], en: ['All books', 'Curated engineering reads', 'Start with the full shelf and combine observability, SRE, and system-design topics.']},
+      {key: '观测基础', zh: ['观测基础', '指标 · 日志 · 事件', '建立遥测信号、结构化事件与生产调试的共同语言。'], en: ['Foundations', 'Metrics · logs · events', 'Build a shared language for telemetry signals, structured events, and production debugging.']},
+      {key: '追踪与调试', zh: ['追踪与调试', 'Trace · 高基数', '沿请求路径理解分布式系统，并探索此前未知的故障模式。'], en: ['Tracing & debugging', 'Traces · high cardinality', 'Follow request paths through distributed systems and investigate previously unknown failures.']},
+      {key: '可靠性', zh: ['SLO 与可靠性', 'SLI · 错误预算', '从用户体验定义目标，用错误预算平衡稳定性与交付速度。'], en: ['SLOs & reliability', 'SLIs · error budgets', 'Define objectives from user experience and balance reliability with delivery speed.']},
+      {key: '团队实践', zh: ['团队实践', 'SRE · 协作文化', '把值班、复盘、SLO 与可观测性驱动开发沉淀为团队习惯。'], en: ['Team practices', 'SRE · learning culture', 'Turn on-call, postmortems, SLOs, and observability-driven development into team habits.']},
+      {key: '系统设计', zh: ['系统设计', '分布式 · 云原生', '在架构阶段同时考虑可调试性、安全性、可靠性与恢复能力。'], en: ['System design', 'Distributed · cloud native', 'Design for debuggability, security, reliability, and recovery from the start.']}
+    ]);
+
+    const readingStages = Object.freeze([
+      {books: ['distributed-observability', 'observability-engineering'], zh: ['共同语言', '理解观测、监控与调试之间的差异，建立对三类遥测信号和未知问题的整体认知。'], en: ['Shared vocabulary', 'Understand observability, monitoring, telemetry signals, and the challenge of previously unknown problems.']},
+      {books: ['implementing-slo', 'site-reliability-engineering'], zh: ['可靠性实践', '围绕用户体验定义 SLO，用工程化方式改善告警、值班、容量与故障响应。'], en: ['Reliability practice', 'Define SLOs around user experience and improve alerting, on-call, capacity, and incident response.']},
+      {books: ['sre-workbook', 'secure-reliable-systems'], zh: ['规模化落地', '借助案例、流程和系统设计，把安全与可靠性扩展到跨团队协作和组织机制。'], en: ['Scale the practice', 'Use cases, processes, and system design to scale security and reliability across teams.']}
+    ]);
+
+    const state = {
+      topic: '全部',
+      query: '',
+      sort: 'recommended',
+      cart: new Map([['observability-engineering', 1]]),
+      selectedCart: new Set(['observability-engineering']),
+      currentBookId: 'observability-engineering',
+      detailTab: 'overview',
+      detailQuantity: 1,
+      language: new URLSearchParams(window.location.search).get('lang') === 'en' ? 'en' : 'zh',
+      toastTimer: null
+    };
+
+    const elements = {
+      homePage: document.getElementById('homePage'),
+      pathPage: document.getElementById('pathPage'),
+      cartPage: document.getElementById('cartPage'),
+      detailPage: document.getElementById('detailPage'),
+      booksGrid: document.getElementById('booksGrid'),
+      emptyState: document.getElementById('emptyState'),
+      resultCount: document.getElementById('resultCount'),
+      shelfTitle: document.getElementById('shelfTitle'),
+      sortControl: document.getElementById('sortControl'),
+      topicStrip: document.getElementById('topicStrip'),
+      bookShelf: document.getElementById('bookShelf'),
+      pathList: document.getElementById('pathList'),
+      cartPageItems: document.getElementById('cartPageItems'),
+      cartPageEmpty: document.getElementById('cartPageEmpty'),
+      cartTableHead: document.getElementById('cartTableHead'),
+      cartListFooter: document.getElementById('cartListFooter'),
+      cartRemoveSelectedButton: document.getElementById('cartRemoveSelectedButton'),
+      cartSummaryCount: document.getElementById('cartSummaryCount'),
+      cartSubtotal: document.getElementById('cartSubtotal'),
+      cartShipping: document.getElementById('cartShipping'),
+      cartSummaryTotal: document.getElementById('cartSummaryTotal'),
+      cartCheckoutButton: document.getElementById('cartCheckoutButton'),
+      desktopSearch: document.getElementById('desktopSearch'),
+      mobileSearch: document.getElementById('mobileSearch'),
+      languageSwitch: document.getElementById('languageSwitch'),
+      heroKicker: document.getElementById('heroKicker'),
+      heroTitle: document.getElementById('homeHeroTitle'),
+      heroDescription: document.getElementById('heroDescription'),
+      heroMeta: document.getElementById('heroMeta'),
+      heroBookImage: document.getElementById('heroBookImage'),
+      heroViewButton: document.getElementById('heroViewButton'),
+      heroAddButton: document.getElementById('heroAddButton'),
+      detailCover: document.getElementById('detailCover'),
+      detailTag: document.getElementById('detailTag'),
+      detailTitle: document.getElementById('detailTitle'),
+      detailEnglishTitle: document.getElementById('detailEnglishTitle'),
+      detailRating: document.getElementById('detailRating'),
+      detailDescription: document.getElementById('detailDescription'),
+      detailAuthor: document.getElementById('detailAuthor'),
+      detailMeta: document.getElementById('detailMeta'),
+      detailPrice: document.getElementById('detailPrice'),
+      detailQuantity: document.getElementById('detailQuantity'),
+      detailMinus: document.getElementById('detailMinus'),
+      detailPlus: document.getElementById('detailPlus'),
+      detailAddButton: document.getElementById('detailAddButton'),
+      detailBuyButton: document.getElementById('detailBuyButton'),
+      detailTabPanel: document.getElementById('detailTabPanel'),
+      detailReadingPath: document.getElementById('detailReadingPath'),
+      relatedList: document.getElementById('relatedList'),
+      breadcrumbTitle: document.getElementById('breadcrumbTitle'),
+      toast: document.getElementById('toast'),
+      toastMessage: document.getElementById('toastMessage')
+    };
+
+    function bookById(id) {
+      return books.find((book) => book.id === id);
+    }
+
+    function t(key, values = {}) {
+      const template = messages[state.language][key] || messages.zh[key] || key;
+      return Object.entries(values).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, value), template);
+    }
+
+    function localizedBook(book) {
+      if (!book || state.language === 'zh') return book;
+      return {...book, ...bookEnglish[book.id]};
+    }
+
+    function topicCopy(key) {
+      const topic = topics.find((item) => item.key === key) || topics[0];
+      return topic[state.language];
+    }
+
+    function bookImage(book) {
+      return state.language === 'en' && book.imageEn ? book.imageEn : book.image;
+    }
+
+    function money(value) {
+      return `${state.language === 'zh' ? '￥' : '¥'}${Number(value).toFixed(2)}`;
+    }
+
+    function coverStyle(book) {
+      if (!book.cover) return '';
+      return [
+        `--cover-bg:${book.cover[0]}`,
+        `--cover-ink:${book.cover[1]}`,
+        `--cover-accent:${book.cover[2]}`,
+        `--cover-art:${book.cover[3]}`
+      ].join(';');
+    }
+
+    function coverMarkup(book, className = '') {
+      const content = localizedBook(book);
+      const image = bookImage(content);
+      if (image) {
+        return `<div class="book-cover ${className}"><img src="${image}" alt="${content.title}" /></div>`;
+      }
+      return `
+        <div class="css-cover ${className}" style="${coverStyle(content)}" role="img" aria-label="${content.title}">
+          <span class="cover-label">${state.language === 'zh' ? '可观测性 · 工程实践' : 'OBSERVABILITY · ENGINEERING'}</span>
+          <strong class="cover-title">${content.shortTitle.replaceAll('\n', '<br>')}</strong>
+          <span class="cover-author">${content.authorShort}</span>
+        </div>
+      `;
+    }
+
+    function miniCoverMarkup(book) {
+      const content = localizedBook(book);
+      const image = bookImage(content);
+      if (image) {
+        return `<span class="mini-cover"><img src="${image}" alt="" /></span>`;
+      }
+      return `<span class="mini-cover css" style="${coverStyle(content)}" data-short="${content.shortTitle.replaceAll('\n', ' ')}" aria-hidden="true"></span>`;
+    }
+
+    function bookCardMarkup(book) {
+      const content = localizedBook(book);
+      return `
+        <article class="book-card">
+          <button class="book-cover-button" type="button" data-book-id="${book.id}" aria-label="${t('viewDetails')}: ${content.title}">
+            ${coverMarkup(book)}
+          </button>
+          <div class="book-card-copy">
+            <span class="book-tag">${content.badge}</span>
+            <button class="book-title-button" type="button" data-book-id="${book.id}">${content.title}</button>
+            <span class="book-author">${content.authorShort}</span>
+            <span class="book-rating" aria-label="${t('ratingLabel', {rating: book.rating.toFixed(1)})}">★★★★★ <strong>${book.rating.toFixed(1)}</strong></span>
+            <strong class="book-price">${money(book.price)}</strong>
+            <button class="card-action" type="button" data-book-id="${book.id}">${t('viewDetails')}</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function filteredBooks() {
+      const query = state.query.trim().toLocaleLowerCase(state.language === 'zh' ? 'zh-CN' : 'en-US');
+      return books
+        .filter((book) => {
+          const topicMatches = state.topic === '全部' || book.tags.includes(state.topic);
+          const content = localizedBook(book);
+          const translatedTopics = book.tags.map((key) => topicCopy(key)[0]).join(' ');
+          const haystack = `${book.title} ${book.englishTitle} ${book.author} ${book.description} ${content.title} ${content.englishTitle} ${content.author} ${content.description} ${book.tags.join(' ')} ${translatedTopics}`.toLocaleLowerCase(state.language === 'zh' ? 'zh-CN' : 'en-US');
+          return topicMatches && (!query || haystack.includes(query));
+        })
+        .sort((left, right) => {
+          if (state.sort === 'rating') return right.rating - left.rating || left.rank - right.rank;
+          if (state.sort === 'price-asc') return left.price - right.price;
+          return left.rank - right.rank;
+        });
+    }
+
+    function renderBooks() {
+      const visibleBooks = filteredBooks();
+      elements.booksGrid.innerHTML = visibleBooks.map(bookCardMarkup).join('');
+      elements.booksGrid.hidden = visibleBooks.length === 0;
+      elements.emptyState.hidden = visibleBooks.length > 0;
+      elements.resultCount.textContent = t('resultCount', {count: visibleBooks.length});
+    }
+
+    function cartEntries() {
+      return Array.from(state.cart.entries())
+        .map(([id, quantity]) => ({book: bookById(id), quantity}))
+        .filter((entry) => entry.book && entry.quantity > 0);
+    }
+
+    function selectedCartEntries() {
+      return cartEntries().filter(({book}) => state.selectedCart.has(book.id));
+    }
+
+    function cartTotals(entries) {
+      const summary = entries.reduce((result, entry) => {
+        result.count += entry.quantity;
+        result.subtotal += entry.book.price * entry.quantity;
+        return result;
+      }, {count: 0, subtotal: 0});
+      summary.shipping = summary.count === 0 || summary.subtotal >= 99 ? 0 : 12;
+      summary.total = summary.subtotal + summary.shipping;
+      return summary;
+    }
+
+    function renderCart() {
+      const entries = cartEntries();
+      const selectedEntries = selectedCartEntries();
+      const allSummary = cartTotals(entries);
+      const summary = cartTotals(selectedEntries);
+      const allSelected = entries.length > 0 && selectedEntries.length === entries.length;
+      elements.cartPageItems.innerHTML = entries.length
+        ? entries.map(({book, quantity}) => `
+            <article class="cart-page-item${state.selectedCart.has(book.id) ? ' is-selected' : ''}">
+              <input class="cart-checkbox" type="checkbox" data-cart-select="${book.id}" ${state.selectedCart.has(book.id) ? 'checked' : ''} aria-label="${t('selectItem', {title: localizedBook(book).title})}" />
+              <div class="cart-product">
+                ${miniCoverMarkup(book)}
+                <span class="cart-page-copy">
+                  <button class="cart-title-button" type="button" data-book-id="${book.id}">${localizedBook(book).title}</button>
+                  <span class="cart-book-meta">${localizedBook(book).authorShort} · ${t('format')} · ${localizedBook(book).badge}</span>
+                  <span class="cart-stock">${t('inStockShort')}</span>
+                </span>
+              </div>
+              <strong class="cart-unit-price">${money(book.price)}</strong>
+              <span class="quantity-control" aria-label="${t('itemQuantity', {title: localizedBook(book).title})}">
+                <button type="button" data-cart-qty="${book.id}" data-delta="-1" aria-label="${t('removeOne')}">−</button>
+                <strong>${quantity}</strong>
+                <button type="button" data-cart-qty="${book.id}" data-delta="1" aria-label="${t('addOne')}">+</button>
+              </span>
+              <strong class="cart-page-price">${money(book.price * quantity)}</strong>
+              <button class="cart-remove-button" type="button" data-cart-remove="${book.id}">${t('removeItem')}</button>
+            </article>
+          `).join('')
+        : '';
+
+      elements.cartPageItems.hidden = entries.length === 0;
+      elements.cartPageEmpty.hidden = entries.length > 0;
+      elements.cartPageEmpty.innerHTML = `<div><strong>${t('cartEmptyTitle')}</strong><span>${t('cartEmptyDescription')}</span></div>`;
+      elements.cartTableHead.hidden = entries.length === 0;
+      elements.cartListFooter.hidden = entries.length === 0;
+      elements.cartSummaryCount.textContent = t('selectedBooks', {count: summary.count});
+      elements.cartSubtotal.textContent = money(summary.subtotal);
+      elements.cartShipping.textContent = summary.count === 0 ? '—' : (summary.shipping === 0 ? t('free') : money(summary.shipping));
+      elements.cartSummaryTotal.textContent = money(summary.total);
+      elements.cartCheckoutButton.disabled = summary.count === 0;
+      elements.cartCheckoutButton.textContent = t('checkout', {count: summary.count});
+      elements.cartRemoveSelectedButton.disabled = selectedEntries.length === 0;
+
+      document.querySelectorAll('[data-cart-select-all]').forEach((checkbox) => {
+        checkbox.checked = allSelected;
+        checkbox.indeterminate = selectedEntries.length > 0 && !allSelected;
+        checkbox.setAttribute('aria-label', t('selectAllAria'));
+      });
+
+      document.querySelectorAll('[data-cart-count]').forEach((node) => {
+        node.textContent = String(allSummary.count);
+        node.hidden = allSummary.count === 0;
+      });
+    }
+
+    function addToCart(id, quantity = 1) {
+      const book = bookById(id);
+      if (!book) return;
+      state.cart.set(id, (state.cart.get(id) || 0) + quantity);
+      state.selectedCart.add(id);
+      renderCart();
+      showToast(t('added', {title: localizedBook(book).title}));
+    }
+
+    function updateCartQuantity(id, delta) {
+      const book = bookById(id);
+      if (!book) return;
+      const next = (state.cart.get(id) || 0) + delta;
+      if (next <= 0) {
+        state.cart.delete(id);
+        state.selectedCart.delete(id);
+        showToast(t('removed', {title: localizedBook(book).title}));
+      } else {
+        state.cart.set(id, next);
+      }
+      renderCart();
+    }
+
+    function removeCartItem(id) {
+      const book = bookById(id);
+      if (!book || !state.cart.has(id)) return;
+      state.cart.delete(id);
+      state.selectedCart.delete(id);
+      renderCart();
+      showToast(t('removed', {title: localizedBook(book).title}));
+    }
+
+    function toggleCartItem(id, selected) {
+      if (!state.cart.has(id)) return;
+      if (selected) state.selectedCart.add(id);
+      else state.selectedCart.delete(id);
+      renderCart();
+    }
+
+    function toggleAllCartItems(selected) {
+      state.selectedCart.clear();
+      if (selected) cartEntries().forEach(({book}) => state.selectedCart.add(book.id));
+      renderCart();
+    }
+
+    function removeSelectedCartItems() {
+      const selectedIds = selectedCartEntries().map(({book}) => book.id);
+      if (!selectedIds.length) return;
+      selectedIds.forEach((id) => {
+        state.cart.delete(id);
+        state.selectedCart.delete(id);
+      });
+      renderCart();
+      showToast(t('removedSelected', {count: selectedIds.length}));
+    }
+
+    function setTopic(topic) {
+      state.topic = topic;
+      elements.topicStrip.querySelectorAll('[data-topic]').forEach((button) => {
+        const active = button.dataset.topic === topic;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      elements.shelfTitle.textContent = topic === '全部' ? t('allShelf') : t('topicShelf', {topic: topicCopy(topic)[0]});
+      renderBooks();
+    }
+
+    function setSearch(query) {
+      state.query = query;
+      elements.desktopSearch.value = query;
+      elements.mobileSearch.value = query;
+      document.querySelectorAll('[data-clear-search]').forEach((button) => {
+        button.hidden = !query;
+      });
+      elements.shelfTitle.textContent = query ? t('searchResults', {query}) : (state.topic === '全部' ? t('allShelf') : t('topicShelf', {topic: topicCopy(state.topic)[0]}));
+      renderBooks();
+    }
+
+    function renderHero() {
+      const book = localizedBook(bookById('observability-engineering'));
+      elements.heroKicker.textContent = t('heroKicker');
+      elements.heroTitle.textContent = t('heroTitle');
+      elements.heroDescription.textContent = t('heroDescription');
+      elements.heroMeta.innerHTML = [book.authorShort, t('edition'), t('format'), money(book.price)].map((item) => `<span>${item}</span>`).join('');
+      elements.heroBookImage.src = bookImage(book);
+      elements.heroBookImage.alt = book.title;
+      elements.heroViewButton.textContent = t('viewBook');
+      elements.heroAddButton.textContent = t('addToCart');
+    }
+
+    function renderTopicStrip() {
+      elements.topicStrip.querySelectorAll('[data-topic]').forEach((button) => {
+        const [title, subtitle] = topicCopy(button.dataset.topic);
+        button.querySelector('.topic-copy strong').textContent = title;
+        button.querySelector('.topic-copy span').textContent = subtitle;
+      });
+    }
+
+    function renderPathPage() {
+      document.getElementById('pathEyebrow').textContent = t('pathEyebrow');
+      document.getElementById('pathTitle').textContent = t('pathTitle');
+      document.getElementById('pathDescription').textContent = t('pathDescription');
+      elements.pathList.innerHTML = readingStages.map((stage, index) => {
+        const [title, description] = stage[state.language];
+        return `
+          <article class="path-stage">
+            <span class="path-stage-mark">${String(index + 1).padStart(2, '0')}</span>
+            <span class="path-stage-copy"><strong>${t('stage', {index: index + 1})} · ${title}</strong><p>${description}</p></span>
+            <span class="path-books">
+              ${stage.books.map((id) => {
+                const book = bookById(id);
+                const content = localizedBook(book);
+                return `<button class="path-book-button" type="button" data-book-id="${id}">${miniCoverMarkup(book)}<span><strong>${content.title}</strong><span>${content.badge}</span></span></button>`;
+              }).join('')}
+            </span>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function renderCartLabels() {
+      document.getElementById('cartEyebrow').textContent = t('cartEyebrow');
+      document.getElementById('cartPageTitle').textContent = t('cartTitle');
+      document.getElementById('cartDescription').textContent = t('cartDescription');
+      document.getElementById('cartProductLabel').textContent = t('cartProduct');
+      document.getElementById('cartUnitPriceLabel').textContent = t('unitPrice');
+      document.getElementById('cartQuantityHeader').textContent = t('quantityHeader');
+      document.getElementById('cartSubtotalHeader').textContent = t('itemSubtotal');
+      document.getElementById('cartActionsLabel').textContent = t('actions');
+      document.getElementById('cartSelectAllLabel').textContent = t('selectAll');
+      document.getElementById('cartRemoveSelectedButton').textContent = t('removeSelected');
+      document.getElementById('continueShoppingButton').textContent = t('continueShopping');
+      document.getElementById('cartPromotionTitle').textContent = t('promotionTitle');
+      document.getElementById('cartPromotionDescription').textContent = t('promotionDescription');
+      document.getElementById('cartSummaryTitle').textContent = t('cartSummary');
+      document.getElementById('cartQuantityLabel').textContent = t('quantity');
+      document.getElementById('cartSubtotalLabel').textContent = t('subtotal');
+      document.getElementById('cartShippingLabel').textContent = t('shipping');
+      document.getElementById('cartTotalLabel').textContent = t('total');
+      document.getElementById('cartSummaryNote').textContent = t('summaryNote');
+      document.getElementById('cartServiceOne').textContent = t('serviceOne');
+      document.getElementById('cartServiceTwo').textContent = t('serviceTwo');
+      document.getElementById('cartServiceThree').textContent = t('serviceThree');
+    }
+
+    function applyLanguage(language, persist = false) {
+      state.language = language;
+      document.documentElement.lang = language === 'zh' ? 'zh-CN' : 'en';
+      document.title = t('documentTitle');
+      document.querySelectorAll('[data-i18n]').forEach((node) => {
+        node.textContent = t(node.dataset.i18n);
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+        node.placeholder = t(node.dataset.i18nPlaceholder);
+      });
+      document.querySelectorAll('[data-i18n-aria]').forEach((node) => {
+        node.setAttribute('aria-label', t(node.dataset.i18nAria));
+      });
+      document.querySelectorAll('[data-clear-search]').forEach((button) => button.setAttribute('aria-label', t('clearSearch')));
+      elements.languageSwitch.textContent = language === 'zh' ? 'EN' : '中文';
+      elements.languageSwitch.setAttribute('aria-label', t('languageLabel'));
+      elements.sortControl.innerHTML = `
+        <option value="recommended">${t('sortRecommended')}</option>
+        <option value="rating">${t('sortRating')}</option>
+        <option value="price-asc">${t('sortPrice')}</option>
+      `;
+      elements.sortControl.value = state.sort;
+      elements.emptyState.innerHTML = `<div><strong>${t('emptyTitle')}</strong><span>${t('emptyDescription')}</span></div>`;
+      renderHero();
+      renderTopicStrip();
+      setTopic(state.topic);
+      renderPathPage();
+      renderCartLabels();
+      renderCart();
+      renderRoute();
+      if (persist) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('lang', language);
+        window.history.replaceState(null, '', url);
+      }
+    }
+
+    function navigateHome() {
+      navigatePage('home');
+    }
+
+    function navigatePage(page) {
+      if (window.location.hash !== `#${page}`) window.location.hash = page;
+      else renderRoute();
+    }
+
+    function navigateBook(id) {
+      if (!bookById(id)) return;
+      window.location.hash = `book/${id}`;
+    }
+
+    function currentHashRoute() {
+      const hash = window.location.hash.replace(/^#/, '');
+      if (hash.startsWith('book/')) {
+        const id = hash.slice(5);
+        return bookById(id) ? {page: 'book', id} : {page: 'home'};
+      }
+      return {page: ['home', 'path', 'cart'].includes(hash) ? hash : 'home'};
+    }
+
+    function renderRoute() {
+      const route = currentHashRoute();
+      document.querySelectorAll('[data-page]').forEach((page) => { page.hidden = true; });
+      if (route.page === 'book' && bookById(route.id)) {
+        if (state.currentBookId !== route.id) {
+          state.detailTab = 'overview';
+          state.detailQuantity = 1;
+        }
+        state.currentBookId = route.id;
+        elements.detailPage.hidden = false;
+        renderBookDetail();
+      } else {
+        const page = document.querySelector(`[data-page="${route.page}"]`) || elements.homePage;
+        page.hidden = false;
+        if (route.page === 'home') renderBooks();
+        if (route.page === 'path') renderPathPage();
+        if (route.page === 'cart') renderCart();
+      }
+      updateNavigation(route.page);
+      window.scrollTo({top: 0, behavior: 'auto'});
+    }
+
+    function renderBookDetail() {
+      const source = bookById(state.currentBookId);
+      if (!source) return;
+      const book = localizedBook(source);
+      elements.detailCover.innerHTML = coverMarkup(source);
+      elements.detailTag.textContent = book.badge;
+      elements.detailTitle.textContent = book.title;
+      elements.detailEnglishTitle.textContent = book.englishTitle;
+      elements.detailRating.textContent = t('score', {rating: book.rating.toFixed(1)});
+      elements.detailDescription.textContent = book.description;
+      elements.detailAuthor.textContent = t('authorLabel', {author: book.author});
+      elements.detailPrice.textContent = money(book.price);
+      elements.detailQuantity.textContent = String(state.detailQuantity);
+      elements.breadcrumbTitle.textContent = book.title;
+      elements.detailMeta.innerHTML = [
+        [t('published'), book.published],
+        [t('pages'), book.pages],
+        [t('level'), book.level],
+        [t('publisher'), book.publisher],
+        [t('isbn'), book.isbn],
+        [t('sku'), `obs-${book.id}`]
+      ].map(([label, value]) => `
+        <span class="detail-meta-item"><span>${label}</span><strong>${value}</strong></span>
+      `).join('');
+      elements.detailReadingPath.innerHTML = [1, 2, 3].map((index) => `
+        <div class="reading-step"><span>${index}</span><div><strong>${t(`path${['One', 'Two', 'Three'][index - 1]}Title`)}</strong><p>${t(`path${['One', 'Two', 'Three'][index - 1]}Desc`)}</p></div></div>
+      `).join('');
+      renderDetailTab();
+      renderRelatedBooks();
+    }
+
+    function renderDetailTab() {
+      const source = bookById(state.currentBookId);
+      if (!source) return;
+      const book = localizedBook(source);
+      document.querySelectorAll('[data-detail-tab]').forEach((button) => {
+        const active = button.dataset.detailTab === state.detailTab;
+        button.classList.toggle('is-active', active);
+        button.setAttribute('aria-selected', String(active));
+      });
+
+      if (state.detailTab === 'chapters') {
+        elements.detailTabPanel.innerHTML = `
+          <div class="chapter-list">
+            ${book.parts.map(([index, title, description, count]) => `
+              <article class="chapter-group">
+                <span class="chapter-index">${index}</span>
+                <span class="chapter-copy"><strong>${title}</strong><span>${description}</span></span>
+                <span class="chapter-count">${count}</span>
+              </article>
+            `).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      if (state.detailTab === 'audience') {
+        elements.detailTabPanel.innerHTML = `
+          <div class="audience-grid">
+            ${book.audience.map(([title, description], index) => `
+              <article class="audience-card">
+                <span class="audience-icon" aria-hidden="true">${['⌘', '◎', '◇', '↗'][index]}</span>
+                <div><strong>${title}</strong><p>${description}</p></div>
+              </article>
+            `).join('')}
+          </div>
+        `;
+        return;
+      }
+
+      elements.detailTabPanel.innerHTML = `
+        <h2>${t('learnHeading')}</h2>
+        <p class="tab-lead">${book.description}</p>
+        <div class="learn-grid">
+          ${book.learn.map(([title, description], index) => `
+            <article class="learn-card">
+              <span>0${index + 1}</span>
+              <strong>${title}</strong>
+              <p>${description}</p>
+            </article>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderRelatedBooks() {
+      const related = books.filter((book) => book.id !== state.currentBookId).slice(0, 3);
+      elements.relatedList.innerHTML = related.map((book) => `
+        <button class="related-item" type="button" data-book-id="${book.id}">
+          ${miniCoverMarkup(book)}
+          <span><strong>${localizedBook(book).title}</strong><span>${localizedBook(book).authorShort}</span></span>
+        </button>
+      `).join('');
+    }
+
+    function updateNavigation(active) {
+      document.querySelectorAll('[data-nav]').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.nav === active);
+      });
+      document.querySelectorAll('[data-mobile-nav]').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.mobileNav === active);
+      });
+    }
+
+    function handleNavigation(action) {
+      navigatePage(action);
+    }
+
+    function checkout() {
+      const summary = cartTotals(selectedCartEntries());
+      if (!summary.count) return;
+      showToast(t('checkoutToast', {count: summary.count, total: money(summary.total)}));
+    }
+
+    function showToast(message) {
+      window.clearTimeout(state.toastTimer);
+      elements.toastMessage.textContent = message;
+      elements.toast.classList.add('is-visible');
+      state.toastTimer = window.setTimeout(() => {
+        elements.toast.classList.remove('is-visible');
+      }, 2400);
+    }
+
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.dataset.bookId) navigateBook(button.dataset.bookId);
+      if (button.dataset.addCart) addToCart(button.dataset.addCart);
+      if (button.dataset.topic) setTopic(button.dataset.topic);
+      if (button.dataset.routeHome !== undefined) navigateHome();
+      if (button.dataset.nav) handleNavigation(button.dataset.nav);
+      if (button.dataset.mobileNav) handleNavigation(button.dataset.mobileNav);
+      if (button.dataset.checkout !== undefined) checkout();
+      if (button.dataset.cartQty) updateCartQuantity(button.dataset.cartQty, Number(button.dataset.delta));
+      if (button.dataset.cartRemove) removeCartItem(button.dataset.cartRemove);
+      if (button.dataset.cartRemoveSelected !== undefined) removeSelectedCartItems();
+      if (button.dataset.detailTab) {
+        state.detailTab = button.dataset.detailTab;
+        renderDetailTab();
+      }
+      if (button.dataset.clearSearch !== undefined) {
+        setSearch('');
+        elements.desktopSearch.focus();
+      }
+      if (button.dataset.account !== undefined) showToast(t('accountToast'));
+    });
+
+    document.addEventListener('change', (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) return;
+      if (target.dataset.cartSelect) toggleCartItem(target.dataset.cartSelect, target.checked);
+      if (target.dataset.cartSelectAll !== undefined) toggleAllCartItems(target.checked);
+    });
+
+    document.querySelectorAll('.search-form').forEach((form) => {
+      form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        navigateHome();
+      });
+    });
+
+    [elements.desktopSearch, elements.mobileSearch].forEach((input) => {
+      input.addEventListener('input', () => {
+        setSearch(input.value);
+        if (elements.homePage.hidden) navigateHome();
+      });
+    });
+
+    elements.sortControl.addEventListener('change', () => {
+      state.sort = elements.sortControl.value;
+      renderBooks();
+    });
+
+    elements.detailMinus.addEventListener('click', () => {
+      state.detailQuantity = Math.max(1, state.detailQuantity - 1);
+      elements.detailQuantity.textContent = String(state.detailQuantity);
+    });
+
+    elements.detailPlus.addEventListener('click', () => {
+      state.detailQuantity = Math.min(9, state.detailQuantity + 1);
+      elements.detailQuantity.textContent = String(state.detailQuantity);
+    });
+
+    elements.detailAddButton.addEventListener('click', () => {
+      addToCart(state.currentBookId, state.detailQuantity);
+    });
+
+    elements.detailBuyButton.addEventListener('click', () => {
+      addToCart(state.currentBookId, state.detailQuantity);
+      navigatePage('cart');
+    });
+
+    elements.languageSwitch.addEventListener('click', () => {
+      applyLanguage(state.language === 'zh' ? 'en' : 'zh', true);
+    });
+
+    window.addEventListener('hashchange', renderRoute);
+
+    applyLanguage(state.language);
+  </script>
+</body>
+</html>

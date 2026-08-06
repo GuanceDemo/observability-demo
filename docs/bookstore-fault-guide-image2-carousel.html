@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>故障演练操作指引 · Image 2</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
+        background: #061b49;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        min-height: 100%;
+        margin: 0;
+      }
+
+      body {
+        display: grid;
+        min-height: 100vh;
+        place-items: center;
+        padding: clamp(12px, 2vw, 28px);
+        background:
+          radial-gradient(circle at 50% 0%, rgba(44, 126, 255, 0.35), transparent 42%),
+          #061b49;
+      }
+
+      .carousel {
+        position: relative;
+        width: min(100%, 1672px);
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: clamp(12px, 1.4vw, 24px);
+        background: #08245d;
+        box-shadow: 0 32px 80px rgba(0, 10, 42, 0.52);
+      }
+
+      .viewport {
+        overflow: hidden;
+      }
+
+      .track {
+        display: flex;
+        transition: transform 420ms cubic-bezier(0.22, 0.75, 0.25, 1);
+      }
+
+      .slide {
+        min-width: 100%;
+        margin: 0;
+      }
+
+      .slide img {
+        display: block;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 1672 / 941;
+      }
+
+      .nav {
+        position: absolute;
+        top: 50%;
+        display: grid;
+        width: clamp(38px, 4vw, 64px);
+        aspect-ratio: 1;
+        place-items: center;
+        border: 1px solid rgba(255, 255, 255, 0.6);
+        border-radius: 50%;
+        color: #fff;
+        background: rgba(4, 32, 93, 0.72);
+        box-shadow: 0 8px 28px rgba(0, 20, 73, 0.38);
+        cursor: pointer;
+        transform: translateY(-50%);
+        backdrop-filter: blur(12px);
+      }
+
+      .nav:hover,
+      .nav:focus-visible {
+        background: rgba(21, 93, 228, 0.92);
+        outline: 2px solid rgba(255, 255, 255, 0.86);
+        outline-offset: 2px;
+      }
+
+      .nav span {
+        width: 26%;
+        aspect-ratio: 1;
+        border-top: 3px solid currentColor;
+        border-right: 3px solid currentColor;
+      }
+
+      .previous {
+        left: clamp(10px, 1.6vw, 28px);
+      }
+
+      .previous span {
+        transform: rotate(-135deg) translate(-6%, 6%);
+      }
+
+      .next {
+        right: clamp(10px, 1.6vw, 28px);
+      }
+
+      .next span {
+        transform: rotate(45deg) translate(-6%, 6%);
+      }
+
+      .dots {
+        position: absolute;
+        right: 0;
+        bottom: clamp(10px, 1.6vw, 26px);
+        left: 0;
+        display: flex;
+        justify-content: center;
+        gap: 9px;
+        pointer-events: none;
+      }
+
+      .dot {
+        width: clamp(7px, 0.7vw, 11px);
+        aspect-ratio: 1;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.75);
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.45);
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
+      .dot[aria-current="true"] {
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.68);
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: 0;
+        }
+
+        .carousel {
+          border: 0;
+          border-radius: 0;
+        }
+
+        .nav {
+          width: 38px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="carousel" aria-label="故障演练操作指引轮播">
+      <div class="viewport">
+        <div class="track">
+          <figure class="slide"><img src="guide-carousel/image2-slide-01.png" alt="步骤一：进入演示工作台" /></figure>
+          <figure class="slide"><img src="guide-carousel/image2-slide-02.png" alt="步骤二：选择并注入故障" /></figure>
+          <figure class="slide"><img src="guide-carousel/image2-slide-03.png" alt="步骤三：在真实书城中触发故障" /></figure>
+          <figure class="slide"><img src="guide-carousel/image2-slide-04.png" alt="步骤四：打开对应观测详情" /></figure>
+          <figure class="slide"><img src="guide-carousel/image2-slide-05.png" alt="步骤五：恢复并重复演练" /></figure>
+        </div>
+      </div>
+
+      <button class="nav previous" type="button" aria-label="上一张"><span aria-hidden="true"></span></button>
+      <button class="nav next" type="button" aria-label="下一张"><span aria-hidden="true"></span></button>
+      <div class="dots" aria-label="选择指引页面"></div>
+    </main>
+
+    <script>
+      const track = document.querySelector('.track');
+      const slides = [...document.querySelectorAll('.slide')];
+      const dots = document.querySelector('.dots');
+      let current = 0;
+
+      slides.forEach((_, index) => {
+        const dot = document.createElement('button');
+        dot.className = 'dot';
+        dot.type = 'button';
+        dot.setAttribute('aria-label', `显示第 ${index + 1} 张`);
+        dot.addEventListener('click', () => show(index));
+        dots.append(dot);
+      });
+
+      function show(index) {
+        current = (index + slides.length) % slides.length;
+        track.style.transform = `translateX(-${current * 100}%)`;
+        [...dots.children].forEach((dot, dotIndex) => {
+          dot.setAttribute('aria-current', String(dotIndex === current));
+        });
+      }
+
+      document.querySelector('.previous').addEventListener('click', () => show(current - 1));
+      document.querySelector('.next').addEventListener('click', () => show(current + 1));
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') show(current - 1);
+        if (event.key === 'ArrowRight') show(current + 1);
+      });
+
+      show(0);
+    </script>
+  </body>
+</html>

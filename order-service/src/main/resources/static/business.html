@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>商城 Demo 与故障注入 Demo</title>
   <link rel="icon" href="data:," />
-  <script src="assets/selfheal-i18n.js?v=20260722-storefront-v29"></script>
+  <script src="assets/selfheal-i18n.js?v=20260805-bookstore-v41"></script>
   <script>
     (() => {
       const supportedThemes = new Set(['colorful', 'white']);
@@ -650,6 +650,22 @@
       box-shadow: 0 10px 22px rgba(23, 112, 230, .18);
     }
 
+    .observability-link-actions {
+      display: flex;
+      align-items: stretch;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .observability-link-actions > [hidden] {
+      display: none !important;
+    }
+
+    .trace-link.rum-view-link {
+      background: #6554c0;
+      box-shadow: 0 10px 22px rgba(101, 84, 192, .18);
+    }
+
     .trace-link.disabled {
       pointer-events: none;
       color: var(--gc-muted);
@@ -703,6 +719,7 @@
       .panel-note { text-align: left; }
       .trace-link-card { grid-template-columns: 1fr; }
       .trace-link { width: 100%; }
+      .observability-link-actions { flex-direction: column; }
     }
   </style>
   <style id="workbench-v2">
@@ -808,36 +825,45 @@
 
     .workbench-actions { gap: 8px; }
 
+    .usage-guide-button {
+      display: inline-flex;
+      min-height: 34px;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-color: #d9e4f2;
+      color: #31557f;
+      background: #fff;
+      box-shadow: none;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .usage-guide-button:hover,
+    .usage-guide-button:focus-visible {
+      color: var(--gc-primary);
+      border-color: #bdd4f6;
+      background: #f3f7ff;
+      outline: 0;
+    }
+
+    .usage-guide-button svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     .simulator-actions {
       min-width: 0;
       display: flex;
       align-items: center;
       justify-content: flex-end;
       gap: 7px;
-    }
-
-    .datakit-provider-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      min-height: 30px;
-      padding: 5px 9px;
-      border: 1px solid #dce8ff;
-      border-radius: 999px;
-      color: #2357a6;
-      background: #f3f7ff;
-      font-size: 11px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .datakit-provider-badge::before {
-      content: "";
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--gc-success);
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, .12);
     }
 
     .mobile-drawer-button {
@@ -1227,9 +1253,41 @@
     }
 
     .preview-browser-address span {
+      min-width: 0;
+      flex: 1;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+    }
+
+    .preview-browser-open {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      margin-right: -6px;
+      border-radius: 5px;
+      color: #65758b;
+      text-decoration: none;
+    }
+
+    .preview-browser-open:hover,
+    .preview-browser-open:focus-visible {
+      color: var(--gc-primary);
+      background: #eef4ff;
+      outline: 0;
+    }
+
+    .preview-browser-tool svg,
+    .preview-browser-open svg {
+      width: 14px;
+      height: 14px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     .preview-stage[data-view="web"] .preview-shell.phone-shell::after {
@@ -1266,6 +1324,12 @@
     .preview-stage[data-view="mobile"] .phone-screen,
     .preview-stage[data-view="mobile"] .phone-statusbar {
       background: #ffffff;
+    }
+
+    .preview-stage[data-view="mobile"] .phone-frame-wrap,
+    .preview-stage[data-view="mobile"] .shop-frame {
+      overflow: hidden;
+      border-radius: 0 0 24px 24px;
     }
 
     .fault-history {
@@ -1464,6 +1528,7 @@
     }
     .control-sidebar .trace-link-card h2 { font-size: 13px; }
     .control-sidebar .trace-link-card p { font-size: 10px; }
+    .control-sidebar .observability-link-actions { display: grid; grid-template-columns: 1fr; }
     .control-sidebar .trace-link { width: 100%; min-height: 36px; padding: 8px; font-size: 11px; }
 
     .drawer-backdrop {
@@ -1481,6 +1546,185 @@
     }
 
     .drawer-backdrop:hover { filter: none; transform: none; box-shadow: none; }
+
+    .usage-guide-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: grid;
+      place-items: center;
+      padding: clamp(12px, 2.5vw, 36px);
+      background: rgba(6, 18, 48, .78);
+      backdrop-filter: blur(10px);
+    }
+
+    .usage-guide-modal[hidden] { display: none; }
+
+    .usage-guide-dialog {
+      width: min(1560px, 96vw);
+      max-height: calc(100vh - 32px);
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, .24);
+      border-radius: 18px;
+      background: #071f55;
+      box-shadow: 0 30px 90px rgba(0, 9, 35, .52);
+    }
+
+    .usage-guide-head {
+      display: flex;
+      min-height: 52px;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 8px 10px 8px 18px;
+      color: #fff;
+      background: linear-gradient(135deg, #0b2f74, #0a2157);
+    }
+
+    .usage-guide-heading {
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+    }
+
+    .usage-guide-heading h2 {
+      overflow: hidden;
+      margin: 0;
+      font-size: 16px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .usage-guide-progress {
+      flex: 0 0 auto;
+      color: rgba(255, 255, 255, .72);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .usage-guide-close {
+      display: grid;
+      width: 36px;
+      min-height: 36px;
+      padding: 0;
+      place-items: center;
+      border-color: rgba(255, 255, 255, .18);
+      border-radius: 50%;
+      color: #fff;
+      background: rgba(255, 255, 255, .08);
+      box-shadow: none;
+    }
+
+    .usage-guide-close:hover,
+    .usage-guide-close:focus-visible {
+      background: rgba(255, 255, 255, .2);
+      outline: 2px solid rgba(255, 255, 255, .82);
+      outline-offset: 2px;
+    }
+
+    .usage-guide-close svg {
+      width: 17px;
+      height: 17px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .usage-guide-stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: #061b49;
+    }
+
+    .usage-guide-image {
+      display: block;
+      width: 100%;
+      max-height: calc(100vh - 116px);
+      object-fit: contain;
+      aspect-ratio: 1672 / 941;
+      background: #061b49;
+    }
+
+    .usage-guide-nav {
+      position: absolute;
+      top: 50%;
+      display: grid;
+      width: clamp(40px, 3.5vw, 54px);
+      min-height: 0;
+      aspect-ratio: 1;
+      place-items: center;
+      padding: 0;
+      border: 1px solid rgba(255, 255, 255, .6);
+      border-radius: 50%;
+      color: #fff;
+      background: rgba(4, 32, 93, .72);
+      box-shadow: 0 8px 28px rgba(0, 20, 73, .38);
+      transform: translateY(-50%);
+      backdrop-filter: blur(12px);
+    }
+
+    .usage-guide-nav:hover,
+    .usage-guide-nav:focus-visible {
+      background: rgba(23, 112, 230, .94);
+      box-shadow: 0 8px 28px rgba(0, 20, 73, .44);
+      transform: translateY(-50%);
+      outline: 2px solid rgba(255, 255, 255, .86);
+      outline-offset: 2px;
+    }
+
+    .usage-guide-nav svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .usage-guide-previous { left: clamp(10px, 1.6vw, 24px); }
+    .usage-guide-next { right: clamp(10px, 1.6vw, 24px); }
+
+    .usage-guide-dots {
+      display: flex;
+      flex: 0 0 auto;
+      gap: 7px;
+      margin-left: auto;
+      padding: 6px 8px;
+      border: 1px solid rgba(255, 255, 255, .18);
+      border-radius: 999px;
+      background: rgba(4, 32, 93, .62);
+      backdrop-filter: blur(10px);
+    }
+
+    .usage-guide-dot {
+      width: 8px;
+      min-height: 8px;
+      aspect-ratio: 1;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .45);
+      box-shadow: none;
+    }
+
+    .usage-guide-dot:hover,
+    .usage-guide-dot:focus-visible {
+      background: rgba(255, 255, 255, .76);
+      box-shadow: none;
+      transform: none;
+      outline: 1px solid #fff;
+      outline-offset: 2px;
+    }
+
+    .usage-guide-dot.active {
+      background: #fff;
+      box-shadow: 0 0 0 3px rgba(23, 112, 230, .72);
+    }
 
     @media (max-width: 1199px) {
       .workbench-grid { --left-column: 48px; --right-column: 48px; }
@@ -1569,9 +1813,16 @@
 
     @media (max-width: 520px) {
       .workbench-brand-copy strong { max-width: 34vw; }
+      .usage-guide-button { width: 34px; min-height: 34px; padding: 0; }
+      .usage-guide-button span { display: none; }
       .preview-toggle button { min-height: 30px; padding: 5px 6px; font-size: 10px; }
       .simulator-actions { gap: 4px; }
       .preview-stage[data-view="mobile"] .preview-shell.phone-shell { max-height: 100%; max-width: min(100%, 390px); }
+      .usage-guide-modal { padding: 8px; }
+      .usage-guide-dialog { width: 100%; border-radius: 12px; }
+      .usage-guide-head { min-height: 46px; padding-left: 12px; }
+      .usage-guide-heading h2 { font-size: 14px; }
+      .usage-guide-progress { font-size: 11px; }
     }
   </style>
 </head>
@@ -1587,7 +1838,10 @@
       <div class="workbench-actions">
         <button class="mobile-drawer-button" id="mobileScenesBtn" type="button" aria-label="展开业务场景" data-i18n-aria-label="expandScenes" title="业务场景">S</button>
         <button class="mobile-drawer-button" id="mobileFaultsBtn" type="button" aria-label="展开故障控制台" data-i18n-aria-label="expandFaults" title="故障控制台">F</button>
-        <span class="datakit-provider-badge" id="datakitProviderBadge" title="DataKit 上报平台">DataKit → Guance</span>
+        <button class="usage-guide-button" id="usageGuideBtn" type="button" title="使用说明" aria-label="使用说明" data-i18n-title="usageGuideOpen" data-i18n-aria-label="usageGuideOpen">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"></path></svg>
+          <span data-i18n="usageGuideOpen">使用说明</span>
+        </button>
         <div class="language-toggle" aria-label="语言" data-i18n-aria-label="commonLanguage">
           <button type="button" data-lang="zh">中文</button>
           <button type="button" data-lang="en">English</button>
@@ -1640,14 +1894,21 @@
 
           <div class="preview-stage" id="previewStage" data-view="web">
             <div class="preview-shell phone-shell" id="previewShell">
-              <div class="preview-browser-chrome" aria-label="demo.local/bookstore" data-i18n-aria-label="browserAddress">
+              <div class="preview-browser-chrome" aria-label="https://demo.dataflux.cn" data-i18n-aria-label="browserAddress">
                 <span class="preview-browser-lights" aria-hidden="true"><i></i><i></i><i></i></span>
                 <span class="preview-browser-tools" aria-hidden="true">
                   <span class="preview-browser-tool muted">‹</span>
                   <span class="preview-browser-tool muted">›</span>
-                  <span class="preview-browser-tool">↻</span>
+                  <span class="preview-browser-tool">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  </span>
                 </span>
-                <span class="preview-browser-address"><span data-i18n="browserAddress">demo.local/bookstore</span></span>
+                <span class="preview-browser-address">
+                  <span data-i18n="browserAddress">https://demo.dataflux.cn</span>
+                  <a class="preview-browser-open" id="openShopLink" href="shop.html" target="_blank" rel="noopener noreferrer" title="打开独立商城" aria-label="打开独立商城" data-i18n-title="parentOpenShop" data-i18n-aria-label="parentOpenShop">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5"></path><path d="m19 5-8 8"></path><path d="M17 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"></path></svg>
+                  </a>
+                </span>
               </div>
               <div class="phone-screen">
                 <div class="phone-camera" aria-hidden="true"></div>
@@ -1731,12 +1992,16 @@
             </div>
             </section>
 
-            <section class="trace-link-card" aria-label="链路详情" data-i18n-aria-label="parentTraceLinkPanel">
+            <section class="trace-link-card" aria-label="观测详情" data-i18n-aria-label="parentTraceLinkPanel">
               <div>
-                <h2 data-i18n="parentTraceLinkPanel">链路详情</h2>
+                <h2 data-i18n="parentTraceLinkPanel">观测详情</h2>
+                <p id="rumViewLinkHint" data-i18n="parentRumViewLinkPending" hidden>前端异常触发后，可打开对应的 RUM View。</p>
                 <p id="traceLinkHint" data-i18n="parentTraceLinkPending">购买成功并匹配到 trace_id 后，可查看对应链路详情。</p>
               </div>
-              <a id="observabilityTraceLink" class="trace-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="parentTraceLinkOpen">打开链路详情</a>
+              <div class="observability-link-actions">
+                <a id="observabilityRumViewLink" class="trace-link rum-view-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="parentRumViewLinkOpen" hidden>打开 RUM View</a>
+                <a id="observabilityTraceLink" class="trace-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="parentTraceLinkOpen" hidden>打开链路详情</a>
+              </div>
             </section>
           </div>
         </aside>
@@ -1745,11 +2010,42 @@
     <button class="drawer-backdrop" id="drawerBackdrop" type="button" aria-label="关闭侧栏"></button>
   </div>
 
+  <div class="usage-guide-modal" id="usageGuideModal" hidden>
+    <section class="usage-guide-dialog" role="dialog" aria-modal="true" aria-labelledby="usageGuideTitle" tabindex="-1">
+      <header class="usage-guide-head">
+        <div class="usage-guide-heading">
+          <h2 id="usageGuideTitle" data-i18n="usageGuideTitle">故障演练使用说明</h2>
+          <span class="usage-guide-progress" id="usageGuideProgress">第 1 / 5 页</span>
+        </div>
+        <div class="usage-guide-dots" id="usageGuideDots" aria-label="轮播图页面"></div>
+        <button class="usage-guide-close" id="usageGuideCloseBtn" type="button" aria-label="关闭使用说明" data-i18n-aria-label="usageGuideClose">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"></path></svg>
+        </button>
+      </header>
+      <div class="usage-guide-stage">
+        <img class="usage-guide-image" id="usageGuideImage" alt="故障演练操作指引第 1 页" decoding="async" />
+        <button class="usage-guide-nav usage-guide-previous" id="usageGuidePreviousBtn" type="button" aria-label="上一张" data-i18n-aria-label="usageGuidePrevious">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>
+        </button>
+        <button class="usage-guide-nav usage-guide-next" id="usageGuideNextBtn" type="button" aria-label="下一张" data-i18n-aria-label="usageGuideNext">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg>
+        </button>
+      </div>
+    </section>
+  </div>
+
   <script>
     const I18N = window.SelfhealI18n;
     const apiPrefix = window.location.pathname.startsWith('/selfheal') ? '/selfheal' : '';
     const STATUS_REFRESH_INTERVAL_MS = 60000;
-    const SHOP_BUILD_ID = '20260724-rum-session-v31';
+    const SHOP_BUILD_ID = '20260805-bookstore-v41';
+    const USAGE_GUIDE_SLIDES = Object.freeze([
+      'assets/guide-carousel/image2-slide-01.png',
+      'assets/guide-carousel/image2-slide-02.png?v=20260806-pagination-v2',
+      'assets/guide-carousel/image2-slide-03.png',
+      'assets/guide-carousel/image2-slide-04.png',
+      'assets/guide-carousel/image2-slide-05.png',
+    ]);
     const DEMO_THEME_STORAGE_KEY = 'mall-demo-theme';
     const DEMO_THEMES = new Set(['colorful', 'white']);
     const LAYOUT_STORAGE_KEYS = {
@@ -1802,6 +2098,7 @@
       demoTheme: normalizeDemoTheme(document.documentElement.dataset.demoTheme),
       shopReady: false,
       lastTraceIds: [],
+      lastRumViewContext: null,
       traceLookupSeq: 0,
       faultRecords: [],
       activeFaultRecordId: '',
@@ -1828,7 +2125,15 @@
       rightCollapseBtn: document.getElementById('rightCollapseBtn'),
       mobileScenesBtn: document.getElementById('mobileScenesBtn'),
       mobileFaultsBtn: document.getElementById('mobileFaultsBtn'),
-      datakitProviderBadge: document.getElementById('datakitProviderBadge'),
+      usageGuideBtn: document.getElementById('usageGuideBtn'),
+      usageGuideModal: document.getElementById('usageGuideModal'),
+      usageGuideDialog: document.querySelector('.usage-guide-dialog'),
+      usageGuideCloseBtn: document.getElementById('usageGuideCloseBtn'),
+      usageGuidePreviousBtn: document.getElementById('usageGuidePreviousBtn'),
+      usageGuideNextBtn: document.getElementById('usageGuideNextBtn'),
+      usageGuideImage: document.getElementById('usageGuideImage'),
+      usageGuideProgress: document.getElementById('usageGuideProgress'),
+      usageGuideDots: document.getElementById('usageGuideDots'),
       drawerBackdrop: document.getElementById('drawerBackdrop'),
       openShopLink: document.getElementById('openShopLink'),
       logs: document.getElementById('logs'),
@@ -1838,7 +2143,9 @@
       orderHealth: document.getElementById('orderHealth'),
       inventoryHealth: document.getElementById('inventoryHealth'),
       paymentHealth: document.getElementById('paymentHealth'),
+      rumViewLinkHint: document.getElementById('rumViewLinkHint'),
       traceLinkHint: document.getElementById('traceLinkHint'),
+      observabilityRumViewLink: document.getElementById('observabilityRumViewLink'),
       observabilityTraceLink: document.getElementById('observabilityTraceLink'),
       faultLayerTabs: document.getElementById('faultLayerTabs'),
       faultScenarioTabs: document.getElementById('faultScenarioTabs'),
@@ -1861,6 +2168,75 @@
 
     function t(key, params) {
       return I18N.t(key, params, state.language);
+    }
+
+    let usageGuideSlideIndex = 0;
+    let usageGuideReturnFocus = null;
+
+    function renderUsageGuide() {
+      if (!els.usageGuideModal || !els.usageGuideImage) return;
+      const total = USAGE_GUIDE_SLIDES.length;
+      const current = usageGuideSlideIndex + 1;
+      if (els.usageGuideProgress) {
+        els.usageGuideProgress.textContent = t('usageGuideProgress', { current, total });
+      }
+      els.usageGuideImage.alt = t('usageGuideSlideAlt', { index: current });
+      if (!els.usageGuideModal.hidden && els.usageGuideImage.dataset.slideIndex !== String(usageGuideSlideIndex)) {
+        els.usageGuideImage.src = USAGE_GUIDE_SLIDES[usageGuideSlideIndex];
+        els.usageGuideImage.dataset.slideIndex = String(usageGuideSlideIndex);
+      }
+      if (els.usageGuideDots && els.usageGuideDots.children.length !== total) {
+        els.usageGuideDots.replaceChildren(...USAGE_GUIDE_SLIDES.map((_, index) => {
+          const dot = document.createElement('button');
+          dot.className = 'usage-guide-dot';
+          dot.type = 'button';
+          dot.dataset.guideSlide = String(index);
+          return dot;
+        }));
+      }
+      if (els.usageGuideDots) {
+        [...els.usageGuideDots.children].forEach((dot, index) => {
+          const active = index === usageGuideSlideIndex;
+          dot.classList.toggle('active', active);
+          dot.setAttribute('aria-current', active ? 'true' : 'false');
+          dot.setAttribute('aria-label', t('usageGuideDotLabel', { index: index + 1 }));
+        });
+      }
+    }
+
+    function showUsageGuideSlide(index) {
+      usageGuideSlideIndex = (index + USAGE_GUIDE_SLIDES.length) % USAGE_GUIDE_SLIDES.length;
+      renderUsageGuide();
+    }
+
+    function openUsageGuide() {
+      if (!els.usageGuideModal) return;
+      usageGuideReturnFocus = document.activeElement;
+      els.usageGuideModal.hidden = false;
+      renderUsageGuide();
+      window.requestAnimationFrame(() => els.usageGuideCloseBtn?.focus());
+    }
+
+    function closeUsageGuide() {
+      if (!els.usageGuideModal || els.usageGuideModal.hidden) return;
+      els.usageGuideModal.hidden = true;
+      if (usageGuideReturnFocus && typeof usageGuideReturnFocus.focus === 'function') {
+        usageGuideReturnFocus.focus();
+      }
+    }
+
+    function handleUsageGuideKeydown(event) {
+      if (!els.usageGuideModal || els.usageGuideModal.hidden) return;
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeUsageGuide();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        showUsageGuideSlide(usageGuideSlideIndex - 1);
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        showUsageGuideSlide(usageGuideSlideIndex + 1);
+      }
     }
 
     function selectedBusinessScene() {
@@ -1991,6 +2367,7 @@
       state.previewMode = mode;
       renderPreviewMode();
       updateWorkbenchUrl();
+      updateFrameUrls();
       syncPreviewContext();
     }
 
@@ -2248,8 +2625,65 @@
         .join(' OR ');
     }
 
-    function encodeObservabilityTraceQuery(query) {
+    function encodeObservabilityQuery(query) {
       return `b64-${btoa(query).replace(/=+$/, '')}`;
+    }
+
+    function normalizeRumViewContext(context) {
+      if (!context || typeof context !== 'object') return null;
+      const triggeredAt = Number(context.triggeredAt);
+      const applicationId = String(context.applicationId || '').trim();
+      if (!applicationId || !Number.isFinite(triggeredAt) || triggeredAt <= 0) return null;
+      return {
+        applicationId,
+        viewId: String(context.viewId || '').trim(),
+        sessionId: String(context.sessionId || '').trim(),
+        triggerId: String(context.triggerId || '').trim(),
+        triggeredAt,
+      };
+    }
+
+    function buildObservabilityRumViewUrl(context) {
+      const correlation = normalizeRumViewContext(context);
+      if (!correlation || !state.demoConfig.observabilityConsoleUrl || !state.demoConfig.workspaceId) return '';
+      const url = new URL('/rum/viewer', state.demoConfig.observabilityConsoleUrl);
+      Object.entries({
+        lak: 'Rum', activeName: 'RumViewer', w: state.demoConfig.workspaceId,
+        time: '1h',
+        cols: 'time,view_name,view_loading_type,loading_time,time_spent,browser',
+        viewType: 'view', viewer_source: 'view', alias: 'view', app_id: correlation.applicationId,
+      }).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+      const query = correlation.viewId
+        ? `view_id:${correlation.viewId}`
+        : correlation.sessionId
+          ? `session_id:${correlation.sessionId}`
+          : '';
+      if (correlation.viewId) url.searchParams.set('view_id', correlation.viewId);
+      if (query) url.searchParams.set('query', encodeObservabilityQuery(query));
+      return url.toString();
+    }
+
+    function updateObservabilityRumViewLink(context) {
+      if (arguments.length > 0) state.lastRumViewContext = normalizeRumViewContext(context);
+      const correlation = state.lastRumViewContext;
+      const rumUrl = buildObservabilityRumViewUrl(correlation);
+      const hasRumView = Boolean(rumUrl);
+      if (els.observabilityRumViewLink) {
+        els.observabilityRumViewLink.hidden = !hasRumView;
+        els.observabilityRumViewLink.href = rumUrl || '#';
+        els.observabilityRumViewLink.classList.toggle('disabled', !hasRumView);
+        els.observabilityRumViewLink.setAttribute('aria-disabled', hasRumView ? 'false' : 'true');
+      }
+      if (els.rumViewLinkHint) {
+        els.rumViewLinkHint.hidden = !hasRumView;
+        if (hasRumView) {
+          els.rumViewLinkHint.textContent = correlation.viewId
+            ? t('parentRumViewLinkReady', { viewId: shortId(correlation.viewId) })
+            : t('parentRumViewLinkFallback');
+        }
+      }
     }
 
     function buildObservabilityTraceUrl(traceIds) {
@@ -2268,7 +2702,7 @@
       }
       const query = buildObservabilityTraceQuery(ids);
       if (query) {
-        url.searchParams.set('query', encodeObservabilityTraceQuery(query));
+        url.searchParams.set('query', encodeObservabilityQuery(query));
       }
       return url.toString();
     }
@@ -2281,6 +2715,7 @@
       const hasTrace = ids.length > 0;
       const traceUrl = hasTrace ? buildObservabilityTraceUrl(ids) : '';
       if (els.observabilityTraceLink) {
+        els.observabilityTraceLink.hidden = !hasTrace;
         els.observabilityTraceLink.href = traceUrl || '#';
         els.observabilityTraceLink.dataset.copyTrace = traceUrl ? 'false' : 'true';
         els.observabilityTraceLink.classList.toggle('disabled', !hasTrace);
@@ -2295,6 +2730,11 @@
           els.traceLinkHint.textContent = t('parentTraceLinkReadyBatch', { count: ids.length });
         }
       }
+    }
+
+    function resetObservabilityLinks() {
+      updateObservabilityRumViewLink(null);
+      updateObservabilityTraceLink([]);
     }
 
     function extractTraceIdFromText(text) {
@@ -2377,25 +2817,15 @@
       return { response, body };
     }
 
-    function updateDatakitProviderBadge() {
-      if (!els.datakitProviderBadge) return;
-      const provider = state.demoConfig.datakitProvider === 'truewatch' ? 'TrueWatch' : 'Guance';
-      els.datakitProviderBadge.textContent = `DataKit → ${provider}`;
-      els.datakitProviderBadge.title = state.language === 'en'
-        ? `DataKit target platform: ${provider}`
-        : `DataKit 上报平台：${provider}`;
-    }
-
     async function loadDemoConfig() {
       try {
         const { response, body } = await requestJson('/api/demo/config');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.demoConfig = body && typeof body === 'object' ? body : {};
-        updateDatakitProviderBadge();
+        updateObservabilityRumViewLink();
         updateObservabilityTraceLink();
       } catch (error) {
         state.demoConfig = {};
-        updateDatakitProviderBadge();
         log(`Demo config: ${error.message}`, { status: 'warn' });
       }
     }
@@ -2442,6 +2872,7 @@
       document.querySelectorAll('[data-lang]').forEach((button) => {
         button.classList.toggle('active', button.dataset.lang === state.language);
       });
+      renderUsageGuide();
       renderBusinessScenes();
       renderPreviewMode();
       renderLayoutState();
@@ -2449,8 +2880,8 @@
       renderFaultCatalog();
       renderActiveFault(state.faultMode);
       renderFaultHistory();
-      updateDatakitProviderBadge();
       updateObservabilityTraceLink();
+      updateObservabilityRumViewLink();
       renderDemoTheme();
       syncLanguageToShop();
       syncDemoThemeToShop();
@@ -2686,6 +3117,7 @@
       setBusy(true);
       try {
         state.activeClientFault = null;
+        resetObservabilityLinks();
         sendShopMessage('clear-client-fault');
         setFaultStatus('none');
 
@@ -2727,6 +3159,7 @@
         const { response, body } = await requestJson('/api/demo/faults/off', { method: 'POST' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.activeClientFault = null;
+        resetObservabilityLinks();
         sendShopMessage('clear-client-fault');
         setFaultStatus('none');
         finishActiveFaultRecord('closed');
@@ -2775,7 +3208,12 @@
       }
 
       if (data.type === 'demo-theme-changed') {
-        setDemoTheme(payload.theme, { updateFrame: false, sync: false });
+        setDemoTheme(payload.theme, { updateFrame: true, sync: false });
+        return;
+      }
+
+      if (data.type === 'shop-language-changed') {
+        setLanguage(payload.language);
         return;
       }
 
@@ -2813,6 +3251,7 @@
 
       if (data.type === 'frontend-fault-triggered') {
         incrementActiveFaultRecordTrigger(payload.triggerId || '');
+        updateObservabilityRumViewLink(payload);
         updateObservabilityTraceLink([]);
         if (els.traceLinkHint) {
           els.traceLinkHint.textContent = payload.scenario?.id === 'frontend_slow_resource'
@@ -2843,6 +3282,22 @@
     if (els.rightCollapseBtn) els.rightCollapseBtn.addEventListener('click', () => toggleSidebar('right'));
     if (els.mobileScenesBtn) els.mobileScenesBtn.addEventListener('click', () => toggleSidebar('left'));
     if (els.mobileFaultsBtn) els.mobileFaultsBtn.addEventListener('click', () => toggleSidebar('right'));
+    if (els.usageGuideBtn) els.usageGuideBtn.addEventListener('click', openUsageGuide);
+    if (els.usageGuideCloseBtn) els.usageGuideCloseBtn.addEventListener('click', closeUsageGuide);
+    if (els.usageGuidePreviousBtn) els.usageGuidePreviousBtn.addEventListener('click', () => showUsageGuideSlide(usageGuideSlideIndex - 1));
+    if (els.usageGuideNextBtn) els.usageGuideNextBtn.addEventListener('click', () => showUsageGuideSlide(usageGuideSlideIndex + 1));
+    if (els.usageGuideDots) {
+      els.usageGuideDots.addEventListener('click', (event) => {
+        const dot = event.target.closest('[data-guide-slide]');
+        if (dot) showUsageGuideSlide(Number(dot.dataset.guideSlide));
+      });
+    }
+    if (els.usageGuideModal) {
+      els.usageGuideModal.addEventListener('click', (event) => {
+        if (event.target === els.usageGuideModal) closeUsageGuide();
+      });
+    }
+    document.addEventListener('keydown', handleUsageGuideKeydown);
     if (els.bookstoreRailBtn) els.bookstoreRailBtn.addEventListener('click', () => selectBusinessScene('bookstore'));
     if (els.drawerBackdrop) els.drawerBackdrop.addEventListener('click', closeDrawers);
     compactViewport.addEventListener('change', closeDrawers);

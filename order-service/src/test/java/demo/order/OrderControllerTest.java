@@ -121,12 +121,14 @@ class OrderControllerTest {
     String orderId = "ord-1001-abcdef";
     Files.writeString(
         tempDir.resolve("gateway-service.log"),
-        "2026-06-20 03:13:19.150 INFO [main] demo.gateway.GatewayProxyFilter - 网关接入：方法=GET 路径=/api/orders/demo 下游=http://order-service:8080/api/orders/demo 关键请求=checkout_submit_order 业务请求ID=%s | service=gateway-service env=test version=1.0.0 project=mall-demo trace_id=1057687758430268391 span_id=2206721340737204861 process_id=1 host=demo-node pod_name=gateway-service-abc pod_namespace=demo container_name=gateway-service%n"
-            .formatted(businessRequestId));
+        ("2026-06-20 03:13:19.150 INFO [main] demo.gateway.GatewayProxyFilter - 网关接入：方法=GET 路径=/api/orders/demo 下游=http://order-service:8080/api/orders/demo 关键请求=checkout_submit_order 业务请求ID=%s | service=gateway-service env=test version=1.0.0 project=mall-demo trace_id=1057687758430268391 span_id=2206721340737204861 process_id=1 host=demo-node pod_name=gateway-service-abc pod_namespace=demo container_name=gateway-service%n"
+                + "2026-06-20 03:13:19.355 INFO [main] demo.gateway.GatewayProxyFilter - Gateway request: method=GET path=/api/demo/logs downstream=http://order-service:8080/api/demo/logs?biz_request_id=%s | service=gateway-service env=test version=1.0.0 project=mall-demo trace_id=887766554433221100 span_id=2206721340737204999%n")
+            .formatted(businessRequestId, businessRequestId));
     Files.writeString(
         tempDir.resolve("order-service.log"),
-        "2026-06-20 03:13:19.165 INFO [main] demo.order.OrderController - 创建订单：订单ID=%s 商品=sku-1001 数量=1 金额=1999分 关键请求=checkout_submit_order 业务请求ID=%s | service=order-service env=test version=1.0.0 project=mall-demo trace_id=1057687758430268391 span_id=4456721340737204861 process_id=1 host_process_id=101 container_process_id=1 host=demo-node host_name=order-service-abc pod_name=order-service-abc pod_namespace=demo container_name=order-service container_id=container-order-abc%n"
-            .formatted(orderId, businessRequestId));
+        ("2026-06-20 03:13:19.165 INFO [main] demo.order.OrderController - 创建订单：订单ID=%s 商品=sku-1001 数量=1 金额=1999分 关键请求=checkout_submit_order 业务请求ID=%s | service=order-service env=test version=1.0.0 project=mall-demo trace_id=1057687758430268391 span_id=4456721340737204861 process_id=1 host_process_id=101 container_process_id=1 host=demo-node host_name=order-service-abc pod_name=order-service-abc pod_namespace=demo container_name=order-service container_id=container-order-abc%n"
+                + "2026-06-20 03:13:19.360 INFO [main] demo.order.KeyRequestSpanTagInterceptor - 接口入口：方法=GET 路径=/api/demo/logs 参数=biz_request_id=%s&order_id=%s 关键请求=- 业务请求ID=- | service=order-service env=test version=1.0.0 project=mall-demo trace_id=998877665544332211 span_id=4456721340737204999%n")
+            .formatted(orderId, businessRequestId, businessRequestId, orderId));
     Files.writeString(
         tempDir.resolve("inventory-service.log"),
         "2026-06-20 03:13:19.172 INFO [main] demo.inventory.InventoryController - 预留库存：订单ID=%s 商品=sku-1001 数量=1 库存模式=none 关键请求=checkout_submit_order 业务请求ID=%s | service=inventory-service env=test version=1.0.0 project=mall-demo trace_id=1057687758430268391 span_id=9906721340737204861 process_id=1 host_process_id=102 container_process_id=1 host=demo-node host_name=inventory-service-abc pod_name=inventory-service-abc pod_namespace=demo container_name=inventory-service container_id=container-inventory-abc%n"
@@ -151,7 +153,10 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.items[2].service").value("inventory-service"))
         .andExpect(jsonPath("$.items[3].service").value("payment-service"))
         .andExpect(jsonPath("$.traceId").value("1057687758430268391"))
+        .andExpect(jsonPath("$.traceIds.length()").value(1))
         .andExpect(jsonPath("$.items[0].traceId").value("1057687758430268391"))
+        .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("998877665544332211"))))
+        .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("887766554433221100"))))
         .andExpect(
             jsonPath("$.items[3].message").value(org.hamcrest.Matchers.containsString("支付成功")));
   }
@@ -254,7 +259,7 @@ class OrderControllerTest {
   }
 
   @Test
-  void storefrontEmbedsBookCoversForSessionReplay() throws Exception {
+  void storefrontUsesLocalizedSameOriginBookCoversForRumAndReplay() throws Exception {
     byte[] sourceBytes;
     try (var source = getClass().getResourceAsStream("/static/assets/selfheal-i18n.js")) {
       assertThat(source).isNotNull();
@@ -263,18 +268,25 @@ class OrderControllerTest {
 
     String source = new String(sourceBytes, StandardCharsets.UTF_8);
     assertThat(source)
-        .contains("data:image/svg+xml")
-        .contains("colorful: createThemeBookCovers(BOOK_COVER_PALETTES.colorful)")
-        .contains("white: createThemeBookCovers(BOOK_COVER_PALETTES.white)")
-        .contains("cover: bookCovers.colorful.zh")
-        .contains("cover: bookCovers.colorful.en")
-        .contains("bookCovers[normalizedTheme]?.[lang]")
+        .contains("id: 'observability-engineering'")
+        .contains("id: 'distributed-observability'")
+        .contains("id: 'implementing-slo'")
+        .contains("id: 'site-reliability-engineering'")
+        .contains("id: 'sre-workbook'")
+        .contains("id: 'secure-reliable-systems'")
+        .contains("image: 'assets/observability-engineering-zh.png'")
+        .contains("imageEn: 'assets/observability-engineering-en.png'")
+        .contains("lang === 'en' && product.imageEn ? product.imageEn : product.image")
+        .contains("const storeMessages = Object.freeze")
+        .contains("shelfTitle: '可观测性书单'")
+        .contains("const readingStages = Object.freeze")
         .contains("window.history.replaceState(window.history.state || {}, '', url)")
-        .doesNotContain("cover: 'assets/observability-engineering-");
+        .contains("function bookById(id)")
+        .contains("function storeT(key, params, language)");
   }
 
   @Test
-  void storefrontUsesSingleProductRoutesAndBagContract() throws Exception {
+  void storefrontUsesCatalogCartAndObservabilityCompatibilityContract() throws Exception {
     String shopSource;
     try (var source = getClass().getResourceAsStream("/static/shop.html")) {
       assertThat(source).isNotNull();
@@ -292,28 +304,81 @@ class OrderControllerTest {
       assertThat(source).isNotNull();
       businessSource = new String(source.readAllBytes(), StandardCharsets.UTF_8);
     }
+    for (int slide = 1; slide <= 5; slide++) {
+      String slidePath = String.format("/static/assets/guide-carousel/image2-slide-%02d.png", slide);
+      try (var source = getClass().getResourceAsStream(slidePath)) {
+        assertThat(source).as("usage guide slide %s", slidePath).isNotNull();
+      }
+    }
 
     assertThat(shopSource)
-        .contains("const STORE_PAGES = new Set(['home', 'detail', 'purchase'])")
-        .contains("const LEGACY_STORE_PAGE_ALIASES = Object.freeze({ categories: 'home', technology: 'detail' })")
+        .contains("const STORE_PAGES = new Set(['home', 'path', 'detail', 'cart'])")
+        .contains("const LEGACY_STORE_PAGE_ALIASES = Object.freeze({ categories: 'home', technology: 'detail', purchase: 'cart' })")
+        .contains("const ORDER_BACKEND_SKU = 'sku-1001'")
         .contains("data-store-panel=\"home\"")
+        .contains("data-store-panel=\"path\"")
         .contains("data-store-panel=\"detail\"")
-        .contains("data-store-panel=\"purchase\"")
+        .contains("data-store-panel=\"cart\"")
         .contains("id=\"bagEmpty\"")
         .contains("id=\"bagFilled\"")
         .contains("id=\"cartBadge\"")
-        .contains("data-store-action=\"add-to-bag\"")
-        .contains("data-store-action=\"remove-from-bag\"")
+        .contains("id=\"mobileCartBadge\"")
+        .contains("id=\"storeSearch\"")
+        .contains("class=\"header-cart-button\"")
+        .contains("class=\"signal-chip metrics\"")
+        .contains("class=\"prototype-topic-strip\"")
+        .contains("id=\"sortControl\"")
+        .contains("class=\"detail-product\"")
+        .contains("class=\"bag-filled cart-page-layout\"")
+        .contains("class=\"cart-table-head\"")
+        .contains("data-add-book")
+        .contains("data-remove-book")
+        .contains("data-cart-quantity")
+        .contains("data-cart-select")
         .contains("id=\"submitBtn\"")
         .contains("id=\"trafficBtn\"")
+        .contains("连续下单 5 次")
         .contains("id=\"phoneToast\"")
+        .contains("assets/selfheal-i18n.js?v=20260805-bookstore-v41")
+        .contains("assets/storefront.css?v=20260805-bookstore-v41")
+        .contains("assets/checkout-sourcemap-fault.min.js?v=20260805-bookstore-v41")
+        .contains("const PREVIEW_DISPLAY_URL = 'https://demo.dataflux.cn'")
+        .contains("data-i18n-aria-label=\"shopAppLabel\"")
+        .contains("data-i18n-aria-label=\"shopHomePageLabel\"")
+        .contains("data-i18n-aria-label=\"shopCartPageLabel\"")
+        .contains("data-i18n-aria-label=\"shopMobileNavLabel\"")
+        .contains("class=\"hero-title-lines\"")
+        .contains("s('heroTitleLines').split('|').filter(Boolean)")
+        .contains("class=\"stage-book-copy\"")
+        .doesNotContain("<small>${escapeHtml(text.badge)}</small>")
+        .contains("sku: ORDER_BACKEND_SKU")
+        .contains("quantity: cart.totalCopies")
+        .contains("amountCent: cart.amountCent")
+        .contains("book_ids: cart.bookIds")
+        .contains("cart_total_copies: cart.totalCopies")
+        .contains("for (let index = 0; index < 5; index += 1)")
         .contains("const BROWSER_SESSION_PERSISTENCE = 'local-storage'")
         .contains("guance: 'https://static.guance.com'")
         .contains("truewatch: 'https://static.truewatch.com'")
         .contains("await ensureBrowserSdks(body.datakitProvider)")
         .contains("window.DATAFLUX_RUM?.getInternalContext?.()?.session?.id")
+        .contains("window.DATAFLUX_RUM?.getInternalContext?.()?.view?.id")
+        .contains("if (event?.view?.id) state.rumViewId = event.view.id")
+        .contains("fault_trigger_id: triggerId")
+        .contains("applicationId: rumCorrelation.applicationId")
+        .contains("viewId: rumCorrelation.viewId")
+        .contains("sessionId: rumCorrelation.sessionId")
         .contains("window.DATAFLUX_RUM.startSessionReplayRecording();")
         .contains("console.info('[RUM] initialized'")
+        .contains("trackInteractions: true")
+        .contains("trackResources: true")
+        .contains("trackLongTasks: true")
+        .contains("frontend_click_error")
+        .contains("frontend_slow_resource")
+        .contains("frontend_sourcemap_error")
+        .contains("postToParent('order-result'")
+        .contains("postToParent('frontend-fault-triggered'")
+        .contains("source: 'mall-shop-demo'")
         .contains("data-demo-theme=\"colorful\"")
         .contains("data-demo-theme=\"white\"")
         .contains("window.history.back()")
@@ -324,8 +389,7 @@ class OrderControllerTest {
         .doesNotContain("class=\"page-back\"")
         .doesNotContain("data-store-route=\"categories\"")
         .doesNotContain("data-store-route=\"technology\"")
-        .doesNotContain("class=\"search\"")
-        .doesNotContain("category-card")
+        .doesNotContain("phone-statusbar")
         .doesNotContain("waitForRumSession")
         .doesNotContain("RUM session was not created")
         .doesNotContain("<script src=\"https://static.truewatch.com/browser-sdk/v3/dataflux-rum.js");
@@ -342,17 +406,72 @@ class OrderControllerTest {
         .contains("grid-template-rows: auto minmax(0, 1fr);")
         .contains("overflow-y: auto;")
         .contains("overscroll-behavior-y: contain;")
+        .contains(".storefront[data-store-page=\"path\"] > [data-store-panel=\"path\"]")
+        .contains(".storefront[data-store-page=\"cart\"] > [data-store-panel=\"cart\"]")
+        .contains("grid-template-columns: repeat(3, minmax(0, 1fr));")
+        .contains(".mobile-nav-icon")
+        .contains("Observability bookstore v33: approved prototype parity")
+        .contains("grid-template-rows: 64px minmax(0, 1fr);")
+        .contains("grid-template-columns: repeat(2, minmax(0, 1fr));")
+        .contains("flex: 0 0 116px;")
+        .contains("scroll-snap-type: x proximity;")
+        .contains("flex: 0 0 112px;")
+        .contains(".storefront-hero .hero-title-lines > span { display: block; white-space: nowrap; }")
+        .contains(":root[data-preview-mode=\"web\"] .storefront.shop-app { grid-template-rows: 88px minmax(0, 1fr); }")
+        .contains("height: 52px;")
+        .contains("border-radius: 0 0 23px 23px;")
+        .contains(":root[data-preview-mode=\"web\"] .storefront .mobile-bottom-nav")
         .contains("z-index: 30;")
-        .contains("min-height: 58px;")
-        .contains("\"brand theme\"")
-        .contains("\"nav nav\"")
-        .doesNotContain("position: sticky;")
         .doesNotContain(".storefront .page-back");
 
     assertThat(businessSource)
-        .contains("const SHOP_BUILD_ID = '20260724-rum-session-v31'")
+        .contains("const SHOP_BUILD_ID = '20260805-bookstore-v41'")
+        .contains("assets/selfheal-i18n.js?v=20260805-bookstore-v41")
+        .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
+        .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
+        .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")
+        .doesNotContain("demo.local/bookstore")
+        .doesNotContain(">↻</span>")
+        .doesNotContain("id=\"datakitProviderBadge\"")
+        .doesNotContain("function updateDatakitProviderBadge()")
+        .doesNotContain("DataKit → Guance")
+        .contains("id=\"usageGuideBtn\"")
+        .contains("id=\"usageGuideModal\" hidden")
+        .contains("const USAGE_GUIDE_SLIDES = Object.freeze([")
+        .contains("assets/guide-carousel/image2-slide-01.png")
+        .contains("assets/guide-carousel/image2-slide-05.png")
+        .contains("function openUsageGuide()")
+        .contains("function closeUsageGuide()")
+        .contains("event.key === 'ArrowLeft'")
+        .contains("event.key === 'ArrowRight'")
+        .contains("event.key === 'Escape'")
+        .contains("id=\"openShopLink\"")
+        .contains("id=\"observabilityRumViewLink\"")
+        .contains("data-i18n=\"parentRumViewLinkOpen\" hidden")
+        .contains("id=\"observabilityTraceLink\"")
+        .contains("data-i18n=\"parentTraceLinkOpen\" hidden")
+        .contains("new URL('/rum/viewer', state.demoConfig.observabilityConsoleUrl)")
+        .contains("time: '1h'")
+        .contains("viewType: 'view'")
+        .contains("app_id: correlation.applicationId")
+        .contains("`view_id:${correlation.viewId}`")
+        .contains("updateObservabilityRumViewLink(payload)")
+        .contains("els.observabilityRumViewLink.hidden = !hasRumView")
+        .contains("els.observabilityTraceLink.hidden = !hasTrace")
+        .contains(".observability-link-actions > [hidden]")
+        .contains("function resetObservabilityLinks()")
+        .contains("updateObservabilityTraceLink([])")
+        .doesNotContain("RUM_VIEW_TIME_PADDING_MS")
+        .contains("target=\"_blank\"")
+        .contains("rel=\"noopener noreferrer\"")
+        .contains("if (els.openShopLink) els.openShopLink.href = nextUrl")
+        .contains("state.previewMode = mode;")
+        .contains("updateFrameUrls();")
+        .contains("data.type === 'shop-language-changed'")
         .contains("scenario.platforms.includes('web')")
         .contains(".preview-stage[data-view=\"mobile\"] .phone-statusbar")
+        .contains(".preview-stage[data-view=\"mobile\"] .phone-frame-wrap")
+        .contains("border-radius: 0 0 24px 24px;")
         .contains("background: #ffffff;");
   }
 

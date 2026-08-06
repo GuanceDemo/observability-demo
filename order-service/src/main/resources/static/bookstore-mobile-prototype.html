@@ -1,0 +1,1101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#f7f6f3" />
+  <title>可观测性书店 · 移动端原型</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --page: #f7f6f3;
+      --surface: #ffffff;
+      --surface-soft: #fbfaf8;
+      --text: #221d1b;
+      --muted: #746d68;
+      --line: #e9e3dc;
+      --accent: #f04b3f;
+      --orange: #ff7a00;
+      --magenta: #d730ff;
+      --accent-soft: #fff1ed;
+      --gradient: linear-gradient(135deg, #ff7a00 0%, #ff3856 56%, #d730ff 100%);
+      --gradient-soft: linear-gradient(135deg, rgba(255, 122, 0, .12), rgba(255, 56, 86, .09) 54%, rgba(215, 48, 255, .08));
+      --success: #13875d;
+      --danger: #d92d20;
+      --warning: #f0a51d;
+      --phone-width: 393px;
+      --phone-height: 852px;
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body { min-width: 320px; min-height: 100%; margin: 0; }
+
+    body {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 18% 5%, rgba(255, 122, 0, .10), transparent 28%),
+        radial-gradient(circle at 85% 92%, rgba(215, 48, 255, .08), transparent 27%),
+        #eeeae6;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", system-ui, -apple-system, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button,
+    input { font: inherit; }
+
+    button,
+    a { -webkit-tap-highlight-color: transparent; }
+
+    button { color: inherit; cursor: pointer; }
+
+    button:focus-visible,
+    input:focus-visible,
+    a:focus-visible {
+      outline: 2px solid rgba(240, 75, 63, .34);
+      outline-offset: 2px;
+    }
+
+    [hidden] { display: none !important; }
+
+    .phone {
+      position: relative;
+      width: var(--phone-width);
+      height: var(--phone-height);
+      overflow: hidden;
+      border: 1px solid rgba(28, 24, 22, .18);
+      border-radius: 32px;
+      color: var(--text);
+      background: var(--page);
+      box-shadow: 0 30px 80px rgba(59, 42, 34, .18), 0 0 0 7px rgba(255, 255, 255, .5);
+      isolation: isolate;
+    }
+
+    .statusbar {
+      position: absolute;
+      z-index: 50;
+      inset: 0 0 auto;
+      height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 3px 20px 0;
+      color: #151312;
+      background: rgba(255, 255, 255, .94);
+      font-size: 11px;
+      font-weight: 800;
+      backdrop-filter: blur(16px);
+    }
+
+    .status-icons { display: flex; align-items: center; gap: 6px; }
+
+    .signal-bars { height: 11px; display: flex; align-items: flex-end; gap: 1.5px; }
+    .signal-bars i { width: 2px; border-radius: 1px; background: currentColor; }
+    .signal-bars i:nth-child(1) { height: 4px; }
+    .signal-bars i:nth-child(2) { height: 6px; }
+    .signal-bars i:nth-child(3) { height: 8px; }
+    .signal-bars i:nth-child(4) { height: 10px; }
+
+    .wifi {
+      width: 17px;
+      height: 17px;
+      display: grid;
+      place-items: center;
+      line-height: 0;
+    }
+
+    .wifi svg {
+      width: 17px;
+      height: 17px;
+      display: block;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.15;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .battery {
+      position: relative;
+      width: 17px;
+      height: 8px;
+      border: 1.3px solid currentColor;
+      border-radius: 2px;
+    }
+
+    .battery::before { content: ""; position: absolute; inset: 1px; border-radius: 1px; background: currentColor; }
+    .battery::after { content: ""; position: absolute; top: 2px; right: -3px; width: 2px; height: 4px; border-radius: 0 1px 1px 0; background: currentColor; }
+
+    .app-viewport {
+      position: absolute;
+      inset: 30px 0 0;
+      overflow: hidden;
+      background: var(--page);
+    }
+
+    .screen-scroller {
+      position: absolute;
+      inset: 0 0 64px;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      scrollbar-width: none;
+      background: var(--page);
+    }
+
+    .screen-scroller::-webkit-scrollbar { display: none; }
+    .phone.is-detail .screen-scroller { bottom: 68px; }
+    .phone.is-cart .screen-scroller { bottom: 126px; }
+
+    .app-header {
+      position: sticky;
+      z-index: 30;
+      top: 0;
+      min-height: 54px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 13px;
+      border-bottom: 1px solid rgba(233, 227, 220, .88);
+      background: rgba(255, 255, 255, .94);
+      backdrop-filter: blur(18px);
+    }
+
+    .app-header.centered { grid-template-columns: 38px minmax(0, 1fr) auto; }
+    .app-header.centered h1 { margin: 0; overflow: hidden; font-size: 15px; text-align: center; text-overflow: ellipsis; white-space: nowrap; }
+
+    .brand {
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      text-align: left;
+    }
+
+    .brand-mark {
+      width: 34px;
+      height: 34px;
+      flex: 0 0 auto;
+      display: block;
+    }
+
+    .brand-mark svg { width: 100%; height: 100%; display: block; filter: drop-shadow(0 7px 12px rgba(240, 75, 63, .2)); }
+
+    .brand-copy { min-width: 0; display: grid; gap: 1px; }
+    .brand-copy strong { overflow: hidden; font-size: 14px; letter-spacing: -.02em; text-overflow: ellipsis; white-space: nowrap; }
+    .brand-copy span { color: var(--muted); font-size: 8px; }
+
+    .header-actions { display: flex; align-items: center; gap: 6px; }
+
+    .round-button,
+    .language-button,
+    .back-button {
+      position: relative;
+      min-width: 34px;
+      height: 34px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      padding: 0;
+      color: #514b47;
+      background: #fff;
+    }
+
+    .language-button { width: auto; min-width: 36px; border-radius: 999px; color: var(--accent); font-size: 9px; font-weight: 900; }
+    .round-button svg,
+    .back-button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    .header-cart-count,
+    .nav-count {
+      position: absolute;
+      display: grid;
+      place-items: center;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border: 2px solid #fff;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--accent);
+      font-size: 8px;
+      line-height: 1;
+    }
+
+    .header-cart-count { top: -4px; right: -4px; }
+
+    .search-wrap { padding: 9px 12px 0; background: #fff; }
+
+    .search-form {
+      position: relative;
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--surface-soft);
+    }
+
+    .search-form svg { position: absolute; left: 11px; width: 16px; height: 16px; fill: none; stroke: #8b837d; stroke-width: 1.8; }
+    .search-form input { width: 100%; height: 39px; border: 0; outline: 0; padding: 0 34px 0 34px; color: var(--text); background: transparent; font-size: 11px; }
+    .search-form input::placeholder { color: #aaa39d; }
+    .search-clear { position: absolute; right: 6px; width: 28px; height: 28px; border: 0; border-radius: 50%; color: #8d857e; background: transparent; font-size: 17px; }
+
+    .home-content { display: grid; gap: 12px; padding: 10px 12px 22px; }
+
+    .hero-card {
+      position: relative;
+      min-height: 191px;
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) 104px;
+      align-items: center;
+      overflow: hidden;
+      border: 1px solid #f0d4cc;
+      border-radius: 17px;
+      padding: 22px 9px 19px 19px;
+      background:
+        radial-gradient(circle at 89% 12%, rgba(215, 48, 255, .13), transparent 31%),
+        var(--gradient-soft),
+        #fff;
+      box-shadow: 0 10px 28px rgba(61, 43, 35, .06);
+    }
+
+    .hero-card::after { content: ""; position: absolute; right: -38px; bottom: -65px; width: 160px; height: 160px; border: 1px solid rgba(215, 48, 255, .15); border-radius: 50%; }
+    .hero-copy { position: relative; z-index: 2; min-width: 0; }
+    .eyebrow { display: block; margin-bottom: 8px; color: var(--accent); font-size: 8px; font-weight: 900; letter-spacing: .14em; }
+    .hero-copy h1 { margin: 0; font-size: 24px; line-height: 1.19; letter-spacing: -.055em; }
+    .hero-copy p { margin: 9px 0 13px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+
+    .primary-button,
+    .secondary-button {
+      min-height: 36px;
+      border: 1px solid transparent;
+      border-radius: 9px;
+      padding: 8px 13px;
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .primary-button { color: #fff; background: var(--gradient); box-shadow: 0 8px 18px rgba(240, 75, 63, .2); }
+    .secondary-button { border-color: var(--line); color: var(--text); background: #fff; }
+    .hero-cover { position: relative; z-index: 2; width: 82px; justify-self: center; transform: rotate(4deg); filter: drop-shadow(0 10px 9px rgba(44, 30, 23, .16)); }
+
+    .topic-scroll { display: flex; gap: 7px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; scroll-snap-type: x proximity; }
+    .topic-scroll::-webkit-scrollbar { display: none; }
+    .topic-chip { min-width: max-content; min-height: 31px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 6px 10px; color: #625b55; background: #fff; font-size: 9px; font-weight: 800; scroll-snap-align: start; }
+    .topic-chip.is-active { border-color: #f0aaa2; color: var(--accent); background: var(--accent-soft); }
+    .topic-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gradient); }
+
+    .section-heading { min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .section-heading h2 { margin: 0; font-size: 15px; letter-spacing: -.02em; }
+    .section-heading span { color: var(--muted); font-size: 9px; }
+
+    .book-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+
+    .book-card {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 9px;
+      background: #fff;
+      box-shadow: 0 7px 19px rgba(55, 38, 31, .045);
+    }
+
+    .book-open { width: 100%; border: 0; padding: 0; background: transparent; text-align: left; }
+    .book-card .cover { width: 96px; margin: 0 auto 9px; }
+    .book-card h3 { min-height: 32px; margin: 0; overflow: hidden; font-size: 12px; line-height: 1.35; letter-spacing: -.015em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .book-author { margin: 3px 0 0; overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+    .book-tag { width: max-content; max-width: 100%; margin-top: 7px; overflow: hidden; border-radius: 5px; padding: 3px 5px; color: #9d4339; background: var(--accent-soft); font-size: 7px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+    .rating-row { display: flex; align-items: center; gap: 4px; margin-top: 6px; }
+    .stars { color: var(--warning); font-size: 8px; letter-spacing: -.06em; }
+    .rating-row small { color: var(--muted); font-size: 7px; }
+    .book-card-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 5px; padding-top: 8px; }
+    .price { color: var(--danger); font-size: 13px; font-weight: 900; }
+    .add-button { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid #f1c8c3; border-radius: 9px; padding: 0; color: var(--accent); background: var(--accent-soft); }
+    .add-button svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+    .benefit-card { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid #ebddd6; border-radius: 13px; background: #fff; }
+    .benefit { min-width: 0; display: grid; justify-items: center; gap: 5px; padding: 12px 4px; text-align: center; }
+    .benefit + .benefit { border-left: 1px solid #efe9e4; }
+    .benefit-icon { width: 27px; height: 27px; display: grid; place-items: center; border-radius: 50%; color: var(--accent); background: var(--accent-soft); }
+    .benefit-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+    .benefit strong { font-size: 8px; }
+    .benefit span { overflow: hidden; color: var(--muted); font-size: 7px; text-overflow: ellipsis; white-space: nowrap; }
+
+    .cover {
+      position: relative;
+      aspect-ratio: 2 / 2.82;
+      overflow: hidden;
+      border: 1px solid rgba(55, 38, 31, .13);
+      border-radius: 4px 7px 7px 4px;
+      background: #eee;
+      box-shadow: 0 8px 14px rgba(39, 25, 20, .14);
+    }
+
+    .cover::after { content: ""; position: absolute; inset: 0 auto 0 0; width: 5px; background: linear-gradient(90deg, rgba(0, 0, 0, .22), rgba(255, 255, 255, .15)); mix-blend-mode: multiply; opacity: .55; }
+    .cover img { width: 100%; height: 100%; display: block; object-fit: cover; }
+    .css-cover { display: flex; align-items: stretch; padding: 7px; color: var(--cover-ink); background: var(--cover-bg); }
+    .css-cover::before { content: ""; position: absolute; inset: 0; background: var(--cover-art); opacity: .85; }
+    .css-cover-inner { position: relative; z-index: 2; width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between; border: 1px solid color-mix(in srgb, var(--cover-ink) 24%, transparent); padding: 11% 7%; text-align: center; }
+    .cover-kicker { font-size: 6px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    .cover-title { white-space: pre-line; font-family: Georgia, "Songti SC", serif; font-size: 12px; font-weight: 900; line-height: 1.22; }
+    .cover-author { font-size: 5px; line-height: 1.2; }
+
+    .page-shell { min-height: 100%; }
+    .page-body { display: grid; gap: 12px; padding: 12px 12px 24px; }
+
+    .page-intro {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid #f1d2c9;
+      border-radius: 16px;
+      padding: 24px 19px;
+      background: var(--gradient-soft), #fff;
+    }
+
+    .page-intro::after { content: ""; position: absolute; right: -28px; top: -38px; width: 130px; height: 130px; border: 1px solid rgba(215, 48, 255, .14); border-radius: 50%; }
+    .page-intro h2 { position: relative; z-index: 2; margin: 0; font-size: 22px; line-height: 1.23; letter-spacing: -.05em; }
+    .page-intro p { position: relative; z-index: 2; margin: 9px 0 0; color: var(--muted); font-size: 10px; line-height: 1.6; }
+
+    .path-list { display: grid; gap: 10px; }
+    .stage-card { border: 1px solid var(--line); border-radius: 15px; padding: 13px; background: #fff; }
+    .stage-head { display: grid; grid-template-columns: 47px minmax(0, 1fr); gap: 11px; align-items: center; }
+    .stage-number { width: 47px; height: 47px; display: grid; place-items: center; border-radius: 14px; color: #fff; background: var(--gradient); font-size: 10px; font-weight: 900; }
+    .stage-copy { min-width: 0; }
+    .stage-copy h3 { margin: 0; font-size: 13px; }
+    .stage-copy p { margin: 5px 0 0; color: var(--muted); font-size: 9px; line-height: 1.52; }
+    .stage-books { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; margin-top: 11px; }
+    .stage-book { min-width: 0; display: grid; grid-template-columns: 38px minmax(0, 1fr); align-items: center; gap: 7px; border: 1px solid var(--line); border-radius: 10px; padding: 7px; background: var(--surface-soft); text-align: left; }
+    .stage-book .cover { width: 38px; box-shadow: 0 4px 8px rgba(39, 25, 20, .12); }
+    .stage-book-copy { min-width: 0; }
+    .stage-book strong { display: -webkit-box; overflow: hidden; font-size: 8px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+    .stage-book span { display: block; margin-top: 3px; overflow: hidden; color: var(--muted); font-size: 6.5px; text-overflow: ellipsis; white-space: nowrap; }
+
+    .detail-hero { padding: 17px 15px 15px; background: linear-gradient(180deg, #fff, #fbf4f1); }
+    .detail-cover-wrap { min-height: 225px; display: grid; place-items: center; }
+    .detail-cover-wrap .cover { width: 136px; box-shadow: 0 17px 26px rgba(42, 28, 23, .2); }
+    .detail-copy { padding-top: 16px; }
+    .detail-copy h2 { margin: 0; font-size: 20px; line-height: 1.25; letter-spacing: -.035em; }
+    .english-title { margin: 5px 0 0; color: var(--muted); font-size: 9px; }
+    .author-line { margin: 9px 0 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+    .tag-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+    .tag { border-radius: 5px; padding: 4px 6px; color: #97443a; background: var(--accent-soft); font-size: 7px; font-weight: 800; }
+    .detail-rating { display: flex; align-items: center; gap: 7px; margin-top: 11px; }
+    .detail-rating .stars { font-size: 13px; }
+    .detail-rating span { color: var(--muted); font-size: 8px; }
+    .detail-price { display: flex; align-items: baseline; gap: 7px; margin-top: 13px; }
+    .detail-price strong { color: var(--danger); font-size: 23px; }
+    .detail-price span { color: #aaa19b; font-size: 8px; text-decoration: line-through; }
+
+    .service-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #eee7e1; margin-top: 15px; padding-top: 12px; }
+    .service-item { min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; color: #665e59; font-size: 7px; }
+    .service-item svg { width: 13px; height: 13px; flex: 0 0 auto; fill: none; stroke: var(--accent); stroke-width: 1.8; }
+
+    .detail-card { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: #fff; }
+    .detail-tabs { position: sticky; top: 54px; z-index: 20; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid var(--line); background: rgba(255, 255, 255, .96); backdrop-filter: blur(14px); }
+    .tab-button { position: relative; min-height: 44px; border: 0; padding: 8px 5px; color: var(--muted); background: transparent; font-size: 10px; font-weight: 800; }
+    .tab-button.is-active { color: var(--accent); }
+    .tab-button.is-active::after { content: ""; position: absolute; right: 22%; bottom: 0; left: 22%; height: 2px; border-radius: 3px; background: var(--gradient); }
+    .detail-tab-content { padding: 17px 15px 20px; }
+    .detail-tab-content h3 { margin: 0 0 10px; font-size: 14px; }
+    .detail-tab-content > p { margin: 0; color: #5f5853; font-size: 10px; line-height: 1.75; }
+    .learn-list,
+    .chapter-list,
+    .audience-list { display: grid; gap: 9px; margin-top: 15px; }
+    .learn-item,
+    .chapter-item,
+    .audience-item { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 9px; border-radius: 10px; padding: 10px; background: var(--surface-soft); }
+    .learn-index,
+    .chapter-index,
+    .audience-index { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; color: #fff; background: var(--gradient); font-size: 8px; font-weight: 900; }
+    .learn-item strong,
+    .chapter-item strong,
+    .audience-item strong { display: block; font-size: 10px; }
+    .learn-item p,
+    .chapter-item p,
+    .audience-item p { margin: 4px 0 0; color: var(--muted); font-size: 8px; line-height: 1.5; }
+
+    .spec-card { border-top: 1px solid var(--line); margin-top: 12px; padding: 16px 15px 24px; background: #fff; }
+    .spec-card h3 { margin: 0 0 12px; font-size: 14px; }
+    .spec-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .spec { border-radius: 9px; padding: 10px; background: var(--surface-soft); }
+    .spec span { display: block; color: var(--muted); font-size: 7px; }
+    .spec strong { display: block; margin-top: 4px; overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+
+    .detail-buy-bar,
+    .cart-checkout-bar,
+    .bottom-nav {
+      position: absolute;
+      z-index: 45;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: rgba(255, 255, 255, .97);
+      backdrop-filter: blur(18px);
+    }
+
+    .detail-buy-bar { height: 68px; display: grid; grid-template-columns: 42px 84px minmax(0, 1fr); align-items: center; gap: 8px; border-top: 1px solid var(--line); padding: 8px 12px; }
+    .favorite-button { width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 10px; color: #716963; background: var(--surface-soft); }
+    .favorite-button.is-active { color: var(--accent); background: var(--accent-soft); }
+    .favorite-button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+    .quantity-control { height: 36px; display: grid; grid-template-columns: 28px minmax(26px, 1fr) 28px; align-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: 9px; background: #fff; }
+    .quantity-control button { height: 100%; border: 0; padding: 0; color: #6b635e; background: transparent; font-size: 16px; }
+    .quantity-control span { text-align: center; font-size: 10px; }
+    .detail-add-button { height: 44px; border: 0; border-radius: 10px; color: #fff; background: var(--gradient); font-size: 11px; font-weight: 900; }
+
+    .cart-page { min-height: 100%; background: var(--page); }
+    .cart-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 13px; border-bottom: 1px solid var(--line); background: #fff; }
+    .check-label { min-width: 0; display: inline-flex; align-items: center; gap: 7px; font-size: 10px; }
+    .check-label input { width: 17px; height: 17px; margin: 0; accent-color: var(--accent); }
+    .cart-toolbar button { border: 0; padding: 4px; color: var(--accent); background: transparent; font-size: 9px; }
+    .cart-list { display: grid; gap: 9px; padding: 10px 10px 0; }
+    .cart-item { display: grid; grid-template-columns: 20px 62px minmax(0, 1fr); gap: 9px; border: 1px solid var(--line); border-radius: 13px; padding: 10px; background: #fff; }
+    .cart-item > input { width: 17px; height: 17px; align-self: center; margin: 0; accent-color: var(--accent); }
+    .cart-item .cover { width: 62px; align-self: center; }
+    .cart-item-copy { min-width: 0; display: flex; flex-direction: column; }
+    .cart-item-copy h3 { margin: 0; overflow: hidden; font-size: 11px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+    .cart-edition { margin-top: 3px; color: var(--muted); font-size: 7px; }
+    .cart-price { margin-top: 8px; color: var(--danger); font-size: 13px; font-weight: 900; }
+    .cart-item-actions { display: flex; align-items: center; justify-content: space-between; gap: 7px; margin-top: auto; padding-top: 8px; }
+    .cart-item-actions .quantity-control { width: 92px; height: 30px; grid-template-columns: 26px 1fr 26px; }
+    .remove-button { width: 28px; height: 28px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #9a918a; background: var(--surface-soft); }
+    .remove-button svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+    .cart-summary { margin: 10px; border: 1px solid var(--line); border-radius: 13px; padding: 13px; background: #fff; }
+    .cart-summary h2 { margin: 0 0 11px; font-size: 13px; }
+    .summary-line { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; color: var(--muted); font-size: 9px; }
+    .summary-line strong { color: var(--text); }
+    .summary-line.total { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 12px; color: var(--text); font-weight: 800; }
+    .summary-line.total strong { color: var(--danger); font-size: 16px; }
+    .shipping-note { display: flex; align-items: flex-start; gap: 7px; margin: 10px; border: 1px solid #eddcd6; border-radius: 12px; padding: 11px; color: #665e59; background: var(--gradient-soft), #fff; font-size: 8px; line-height: 1.55; }
+    .shipping-note svg { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--accent); stroke-width: 1.8; }
+
+    .cart-empty { min-height: 430px; display: grid; place-items: center; padding: 32px; text-align: center; }
+    .empty-mark { width: 66px; height: 66px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 22px; color: var(--accent); background: var(--accent-soft); }
+    .empty-mark svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+    .cart-empty h2 { margin: 0; font-size: 18px; }
+    .cart-empty p { margin: 8px 0 16px; color: var(--muted); font-size: 10px; line-height: 1.55; }
+
+    .cart-checkout-bar { bottom: 64px; height: 62px; display: grid; grid-template-columns: auto minmax(0, 1fr) 124px; align-items: center; gap: 9px; border-top: 1px solid var(--line); padding: 8px 10px; }
+    .checkout-total { min-width: 0; text-align: right; }
+    .checkout-total span { display: block; color: var(--muted); font-size: 7px; }
+    .checkout-total strong { display: block; overflow: hidden; color: var(--danger); font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
+    .checkout-button { height: 42px; border: 0; border-radius: 10px; color: #fff; background: var(--gradient); font-size: 10px; font-weight: 900; }
+    .checkout-button:disabled { color: #aaa39e; background: #eeeae7; cursor: not-allowed; }
+
+    .bottom-nav { height: 64px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; border-top: 1px solid var(--line); padding: 4px 16px 5px; }
+    .nav-button { position: relative; min-width: 0; display: grid; grid-template-rows: 24px 12px; justify-items: center; align-content: center; gap: 1px; border: 0; border-radius: 9px; padding: 3px; color: #8b837d; background: transparent; font-size: 8px; line-height: 1; }
+    .nav-button.is-active { color: var(--accent); background: var(--accent-soft); }
+    .nav-icon { position: relative; width: 24px; height: 24px; display: grid; place-items: center; line-height: 0; }
+    .nav-icon svg { width: 19px; height: 19px; display: block; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; transform: none; }
+    .nav-label { display: block; align-self: center; line-height: 12px; white-space: nowrap; }
+    .nav-count { top: -3px; right: -8px; left: auto; border-color: #fff; }
+
+    .toast {
+      position: absolute;
+      z-index: 100;
+      right: 14px;
+      bottom: 76px;
+      left: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #f1cec8;
+      border-radius: 11px;
+      padding: 10px 12px;
+      color: #4f4641;
+      background: rgba(255, 255, 255, .97);
+      box-shadow: 0 15px 36px rgba(48, 31, 24, .17);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(10px);
+      transition: opacity .18s ease, transform .18s ease;
+      font-size: 9px;
+    }
+
+    .toast.is-visible { opacity: 1; transform: translateY(0); }
+    .toast svg { width: 17px; height: 17px; flex: 0 0 auto; fill: none; stroke: var(--success); stroke-width: 1.9; }
+
+    @media (max-width: 430px), (max-height: 900px) {
+      body { display: block; padding: 0; background: var(--page); }
+      .phone { width: min(100vw, var(--phone-width)); height: min(100dvh, var(--phone-height)); min-height: 640px; margin: auto; border: 0; border-radius: 0; box-shadow: none; }
+    }
+
+    @media (max-width: 350px) {
+      .hero-card { grid-template-columns: minmax(0, 1fr) 82px; padding-left: 15px; }
+      .hero-copy h1 { font-size: 21px; }
+      .hero-cover { width: 70px; }
+      .book-card .cover { width: 84px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="phone" id="phone" aria-label="可观测性书店移动端原型">
+    <div class="statusbar" aria-hidden="true">
+      <span>9:41</span>
+      <span class="status-icons">
+        <span class="signal-bars"><i></i><i></i><i></i><i></i></span>
+        <span class="wifi"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8.288 15.038a5.25 5.25 0 0 1 7.424 0M5.106 11.856c3.807-3.807 9.98-3.807 13.788 0M1.924 8.674c5.565-5.565 14.587-5.565 20.152 0"></path><circle cx="12" cy="18.75" r="1.05" fill="currentColor" stroke="none"></circle></svg></span>
+        <span class="battery"></span>
+      </span>
+    </div>
+    <div class="app-viewport">
+      <div class="screen-scroller" id="screenScroller"></div>
+      <div id="floatingBar"></div>
+      <nav class="bottom-nav" id="bottomNav" aria-label="移动端主导航"></nav>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="m8 12 3 3 5-6"></path></svg>
+      <span id="toastMessage"></span>
+    </div>
+  </main>
+
+  <script>
+    const BOOKS = Object.freeze([
+      {
+        id: 'observability-engineering',
+        price: 99,
+        rating: 4.9,
+        rank: 1,
+        tags: ['foundation', 'tracing', 'reliability', 'team'],
+        image: 'assets/observability-engineering-zh.png',
+        imageEn: 'assets/observability-engineering-en.png',
+        zh: {
+          title: '可观测性工程', englishTitle: 'Observability Engineering', shortTitle: '可观测性工程',
+          author: 'Charity Majors、Liz Fong-Jones、George Miranda', authorShort: 'Charity Majors 等', badge: '综合实践',
+          description: '一本面向现代复杂系统的实践指南，系统解释可观测性为何不同于传统监控，以及团队如何借助结构化事件、分布式追踪、OpenTelemetry、SLO 和组织协作，更快地理解与调试未知问题。',
+          published: '2022 年 5 月', pages: '318 页', level: '中高级', publisher: "O'Reilly Media", isbn: '9781492076438',
+          learn: [['建立正确概念', '理解可观测性、监控与调试方式之间的边界和联系。'], ['组织遥测数据', '用结构化事件、Trace 与 OpenTelemetry 构建可分析的数据。'], ['推动团队实践', '把 SLO、可观测性驱动开发和组织文化融入交付流程。']],
+          parts: [['I', '走向可观测性', '定义、调试差异、规模化经验，以及与 DevOps / SRE 的关系。'], ['II', '可观测性基础', '结构化事件、分布式追踪、OpenTelemetry 与事件分析。'], ['III', '面向团队的实践', '可观测性驱动开发、SLO、告警与组织落地。'], ['IV', '规模化可观测性', '数据存储、采样、遥测管道与成熟度模型。']],
+          audience: [['研发工程师', '需要在微服务和分布式系统中定位未知问题的开发者。'], ['SRE / 运维工程师', '希望减少告警疲劳、建立 SLO 并改进故障响应的团队。'], ['平台工程团队', '负责统一遥测、工具链和内部开发者体验的平台建设者。']]
+        },
+        en: {
+          title: 'Observability Engineering', englishTitle: 'Achieving Production Excellence', shortTitle: 'Observability\nEngineering',
+          author: 'Charity Majors, Liz Fong-Jones, and George Miranda', authorShort: 'Charity Majors et al.', badge: 'End-to-End Practice',
+          description: 'A practical guide to modern, complex systems. It explains how observability differs from traditional monitoring and how teams use structured events, distributed tracing, OpenTelemetry, SLOs, and collaborative practices to debug previously unknown problems.',
+          published: 'May 2022', pages: '318 pages', level: 'Intermediate–advanced', publisher: "O'Reilly Media", isbn: '9781492076438',
+          learn: [['Build the right mental model', 'Understand the boundaries among observability, monitoring, and modern debugging.'], ['Shape useful telemetry', 'Use structured events, traces, and OpenTelemetry to create explorable data.'], ['Make it a team practice', 'Bring SLOs and observability-driven development into delivery.']],
+          parts: [['I', 'The path to observability', 'Definitions, debugging differences, scaling lessons, and DevOps / SRE.'], ['II', 'Observability fundamentals', 'Structured events, distributed tracing, OpenTelemetry, and analysis.'], ['III', 'Practices for teams', 'Team adoption, SLOs, alerting, and observability-driven development.'], ['IV', 'Observability at scale', 'Data stores, sampling, telemetry pipelines, and maturity.']],
+          audience: [['Software engineers', 'Developers debugging unknown behavior in distributed systems.'], ['SRE and operations', 'Teams reducing alert fatigue and improving incident response.'], ['Platform engineers', 'Builders of shared telemetry and internal developer platforms.']]
+        }
+      },
+      {
+        id: 'distributed-observability', price: 49, rating: 4.7, rank: 2, tags: ['foundation', 'tracing', 'systems'],
+        cover: ['#30283d', '#fff8f0', '#ff7a00', 'radial-gradient(circle at 72% 72%, rgba(215,48,255,.48) 0 15%, transparent 16%), linear-gradient(145deg, transparent 42%, rgba(255,255,255,.16) 43% 45%, transparent 46%)'],
+        zh: {title: '分布式系统可观测性', englishTitle: 'Distributed Systems Observability', shortTitle: '分布式系统\n可观测性', author: 'Cindy Sridharan', authorShort: 'Cindy Sridharan', badge: '观测入门', description: '聚焦分布式系统中的监控难题与取舍，讨论日志、指标和追踪各自的优势与局限，并给出逐步演进观测体系的清晰蓝图。', published: '2018 年 7 月', pages: '34 页', level: '中高级', publisher: "O'Reilly Media", isbn: '9781492033431', learn: [['理解三类信号', '比较日志、指标与追踪在调试复杂系统时的不同作用。'], ['识别软失败', '理解分布式架构中局部、隐式和难以监控的失败模式。'], ['演进观测体系', '根据系统复杂度和团队需求选择合适策略。']], parts: [['01', '为什么需要可观测性', '从分布式系统复杂度与运营挑战开始。'], ['02', '监控与可观测性', '告警、信号选择与不可监控故障。'], ['03', '为可观测性编码', '面向失败的代码与测试方法。'], ['04', '日志、指标与追踪', '三类遥测信号的优势、限制与组合。']], audience: [['后端工程师', '正在构建或维护分布式服务的开发者。'], ['SRE', '需要重新评估监控体系和告警策略的工程师。'], ['架构师', '关注观测工具取舍与系统可调试性的负责人。']]},
+        en: {title: 'Distributed Systems Observability', englishTitle: 'A practical introduction to production signals', shortTitle: 'Distributed Systems\nObservability', author: 'Cindy Sridharan', authorShort: 'Cindy Sridharan', badge: 'Observability Primer', description: 'A concise guide to monitoring tradeoffs in distributed systems. It compares logs, metrics, and traces, explains partial and soft failures, and offers a clear path for evolving an observability practice.', published: 'July 2018', pages: '34 pages', level: 'Intermediate–advanced', publisher: "O'Reilly Media", isbn: '9781492033431', learn: [['Compare the three signals', 'Understand the roles of logs, metrics, and traces in complex systems.'], ['Recognize soft failures', 'Identify partial and difficult-to-monitor failure modes.'], ['Evolve your approach', 'Choose practices that match system complexity and team needs.']], parts: [['01', 'Why observability', 'Distributed-system complexity and operational challenges.'], ['02', 'Monitoring and observability', 'Alerts, signal selection, and failures that evade monitoring.'], ['03', 'Coding for observability', 'Failure-aware code and testing methods.'], ['04', 'Logs, metrics, and traces', 'Strengths, limitations, and combinations of the three signals.']], audience: [['Backend engineers', 'Developers building distributed services.'], ['SREs', 'Engineers reassessing monitoring and alerts.'], ['Architects', 'Leaders evaluating observability tradeoffs.']]}
+      },
+      {
+        id: 'implementing-slo', price: 89, rating: 4.8, rank: 3, tags: ['reliability', 'team'],
+        cover: ['#183d47', '#f6fbf7', '#ff8a55', 'linear-gradient(160deg, transparent 0 55%, rgba(255,138,85,.55) 56% 58%, transparent 59%), radial-gradient(circle at 72% 72%, rgba(75,195,174,.55) 0 16%, transparent 17%)'],
+        zh: {title: '实施服务级别目标', englishTitle: 'Implementing Service Level Objectives', shortTitle: '实施 SLO', author: 'Alex Hidalgo', authorShort: 'Alex Hidalgo', badge: 'SLO 实践', description: '从用户视角定义有意义的 SLI 和 SLO，使用错误预算推动数据驱动决策，并从零开始建立支持 SLO 的工具、流程与组织文化。', published: '2020 年 8 月', pages: '402 页', level: '中高级', publisher: "O'Reilly Media", isbn: '9781492076803', learn: [['定义用户可靠性', '选择真正反映用户体验的 SLI 和目标。'], ['使用错误预算', '让稳定性、发布速度和风险讨论建立在共同数据上。'], ['建立 SLO 文化', '从试点、培训到跨团队推广形成可持续流程。']], parts: [['I', 'SLO 开发', '可靠性堆栈、SLI、目标与错误预算。'], ['II', 'SLO 实施', '组织共识、测量、工具与案例。'], ['III', 'SLO 文化', '推广、报告与持续改进。']], audience: [['SRE 团队', '准备建立或改进 SLO 体系的可靠性工程师。'], ['产品与研发', '围绕用户体验讨论可靠性目标的跨职能团队。'], ['工程管理者', '用错误预算协调稳定性与交付速度的负责人。']]},
+        en: {title: 'Implementing Service Level Objectives', englishTitle: 'A Practical Guide to SLIs, SLOs, and Error Budgets', shortTitle: 'Implementing\nSLOs', author: 'Alex Hidalgo', authorShort: 'Alex Hidalgo', badge: 'SLO Practice', description: 'Define meaningful SLIs and SLOs from the user perspective, apply error budgets to data-driven decisions, and build the tooling, process, and culture needed to operate an SLO program.', published: 'August 2020', pages: '402 pages', level: 'Intermediate–advanced', publisher: "O'Reilly Media", isbn: '9781492076803', learn: [['Define user reliability', 'Choose SLIs and objectives that reflect customer experience.'], ['Use error budgets', 'Ground reliability and release discussions in shared data.'], ['Build an SLO culture', 'Move from pilots to sustainable cross-team adoption.']], parts: [['I', 'Developing SLOs', 'The reliability stack, SLIs, objectives, and error budgets.'], ['II', 'Implementing SLOs', 'Alignment, measurement, tooling, and case studies.'], ['III', 'SLO culture', 'Adoption, reporting, and continuous improvement.']], audience: [['SRE teams', 'Engineers building or improving an SLO program.'], ['Product and engineering', 'Teams aligning reliability with user experience.'], ['Engineering managers', 'Leaders balancing reliability and delivery speed.']]}
+      },
+      {
+        id: 'site-reliability-engineering', price: 79, rating: 4.9, rank: 4, tags: ['reliability', 'team', 'systems'],
+        cover: ['#f3ede1', '#372e28', '#f04b3f', 'repeating-linear-gradient(155deg, transparent 0 17px, rgba(240,75,63,.14) 18px 20px), radial-gradient(circle at 73% 72%, rgba(255,122,0,.25) 0 16%, transparent 17%)'],
+        zh: {title: '网站可靠性工程', englishTitle: 'Site Reliability Engineering', shortTitle: 'SRE', author: 'Betsy Beyer、Chris Jones、Jennifer Petoff、Niall Richard Murphy', authorShort: 'Google SRE 团队', badge: 'SRE 经典', description: 'Google SRE 团队总结如何以软件工程方法运行大型生产系统，覆盖风险、SLO、自动化、告警、故障响应、容量与组织协作。', published: '2016 年', pages: '经典合集', level: '中高级', publisher: 'O’Reilly / Google', isbn: 'SRE Book', learn: [['以工程方法做运维', '把重复的运营工作转化为可扩展的软件系统。'], ['平衡风险与可靠性', '使用 SLO、错误预算和容量规划保护用户体验。'], ['建立故障文化', '通过值班、应急响应和复盘持续改进。']], parts: [['I', '概念与背景', 'Google 生产环境与 SRE 的基本定义。'], ['II', '核心原则', '风险、SLO、消除琐务、监控与自动化。'], ['III', '工程实践', '告警、值班、故障响应、容量与系统设计。'], ['IV', '组织与管理', '团队成长、协作和参与模式。']], audience: [['SRE / 运维', '系统学习可靠性工程原则和实践的工程师。'], ['研发工程师', '理解生产系统运行约束与故障模式的开发者。'], ['平台工程师', '建设自动化、监控和内部平台的团队成员。']]},
+        en: {title: 'Site Reliability Engineering', englishTitle: 'How Google Runs Production Systems', shortTitle: 'Site Reliability\nEngineering', author: 'Betsy Beyer, Chris Jones, Jennifer Petoff, and Niall Richard Murphy', authorShort: 'Google SRE team', badge: 'SRE Classic', description: 'Google SRE practitioners explain how software engineering can operate large production systems, covering risk, SLOs, automation, monitoring, incident response, capacity, and organizational collaboration.', published: '2016', pages: 'Classic collection', level: 'Intermediate–advanced', publisher: 'O’Reilly / Google', isbn: 'SRE Book', learn: [['Engineer operations', 'Turn repetitive work into scalable software and systems.'], ['Balance risk and reliability', 'Protect user experience with SLOs and error budgets.'], ['Build a learning culture', 'Improve systems through on-call and postmortems.']], parts: [['I', 'Introduction', 'Google production environments and the definition of SRE.'], ['II', 'Principles', 'Risk, SLOs, toil reduction, monitoring, and automation.'], ['III', 'Practices', 'Alerting, on-call, incident response, capacity, and design.'], ['IV', 'Management', 'Team growth, collaboration, and engagement models.']], audience: [['SRE and operations', 'Engineers seeking a foundation in reliability engineering.'], ['Software engineers', 'Developers learning production constraints.'], ['Platform engineers', 'Teams building automation and internal platforms.']]}
+      },
+      {
+        id: 'sre-workbook', price: 85, rating: 4.8, rank: 5, tags: ['reliability', 'team'],
+        cover: ['#28292c', '#fff7ec', '#d730ff', 'linear-gradient(120deg, transparent 0 48%, rgba(215,48,255,.42) 49% 52%, transparent 53%), radial-gradient(circle at 73% 72%, rgba(255,122,0,.65) 0 9%, transparent 10%)'],
+        zh: {title: 'SRE 实战手册', englishTitle: 'The Site Reliability Workbook', shortTitle: 'SRE\n实战手册', author: 'Betsy Beyer 等', authorShort: 'Betsy Beyer 等', badge: '案例进阶', description: '《网站可靠性工程》的实践伙伴，以 Google 与多家团队的真实案例说明如何落地 SLO、告警、值班、故障响应、消除琐务和组织变革。', published: '2018 年', pages: '案例合集', level: '中高级', publisher: 'O’Reilly / Google', isbn: 'SRE Workbook', learn: [['把原则变成操作', '通过案例与模板将 SRE 原则转化为团队流程。'], ['改进值班与告警', '围绕用户影响设计更可行动的响应机制。'], ['推动组织改变', '从单个团队逐步扩展可靠性实践。']], parts: [['I', '基础', 'SRE 与 DevOps、SLO 和错误预算。'], ['II', '实践', '值班、事故响应、复盘与容量。'], ['III', '流程', '发布、配置、管道与恢复。'], ['IV', '组织', 'SRE 参与模式与变革管理。']], audience: [['SRE 团队', '希望获取具体落地案例的团队。'], ['工程经理', '负责流程、值班和组织改进的管理者。'], ['平台工程师', '建设可靠性工具与标准化流程的工程师。']]},
+        en: {title: 'The Site Reliability Workbook', englishTitle: 'Practical Ways to Implement SRE', shortTitle: 'The SRE\nWorkbook', author: 'Betsy Beyer et al.', authorShort: 'Betsy Beyer et al.', badge: 'Case-Study Playbook', description: 'The hands-on companion to the SRE book, using cases from Google and other organizations to implement SLOs, alerting, on-call, incident response, toil reduction, and organizational change.', published: '2018', pages: 'Case-study collection', level: 'Intermediate–advanced', publisher: 'O’Reilly / Google', isbn: 'SRE Workbook', learn: [['Turn principles into actions', 'Use cases and templates to create team workflows.'], ['Improve on-call and alerts', 'Design actionable response around user impact.'], ['Lead organizational change', 'Grow reliability practices across teams.']], parts: [['I', 'Foundations', 'SRE and DevOps, SLOs, and error budgets.'], ['II', 'Practices', 'On-call, incidents, postmortems, and capacity.'], ['III', 'Processes', 'Releases, configuration, pipelines, and recovery.'], ['IV', 'Organizations', 'SRE engagement and change management.']], audience: [['SRE teams', 'Teams seeking implementation cases.'], ['Engineering managers', 'Leaders improving process and on-call.'], ['Platform engineers', 'Builders of reliability tooling.']]}
+      },
+      {
+        id: 'secure-reliable-systems', price: 88, rating: 4.7, rank: 6, tags: ['reliability', 'systems', 'team'],
+        cover: ['#752f3f', '#fff7ec', '#ffb05b', 'radial-gradient(circle at 72% 70%, rgba(255,176,91,.35) 0 20%, transparent 21%), repeating-linear-gradient(35deg, transparent 0 12px, rgba(255,255,255,.08) 13px 14px)'],
+        zh: {title: '构建安全可靠的系统', englishTitle: 'Building Secure & Reliable Systems', shortTitle: '安全与\n可靠系统', author: 'Heather Adkins、Betsy Beyer 等', authorShort: 'Google 团队', badge: '系统设计', description: '将安全与可靠性作为同一套系统质量来设计，讨论从架构、变更、恢复到组织协作的工程实践，帮助团队构建可扩展的生产系统。', published: '2020 年', pages: '工程参考', level: '中高级', publisher: 'O’Reilly / Google', isbn: 'Secure & Reliable', learn: [['统一安全与可靠性', '从共同风险和运营目标理解两类工程。'], ['设计可恢复系统', '在架构和流程中预先考虑故障、攻击与恢复。'], ['建立协作机制', '让安全、SRE 与研发共享上下文和责任。']], parts: [['I', '设计原则', '安全与可靠性的共同基础。'], ['II', '系统设计', '架构、隔离、最小权限与弹性。'], ['III', '运营实践', '变更、检测、响应和恢复。'], ['IV', '组织协作', '跨团队文化、流程和治理。']], audience: [['系统架构师', '兼顾安全、可靠性与扩展性的设计者。'], ['SRE 团队', '负责生产系统韧性、响应和恢复的工程师。'], ['安全工程师', '希望与可靠性和研发流程协作的团队。']]},
+        en: {title: 'Building Secure & Reliable Systems', englishTitle: 'Best Practices for Designing and Maintaining Systems', shortTitle: 'Secure & Reliable\nSystems', author: 'Heather Adkins, Betsy Beyer et al.', authorShort: 'Google engineering team', badge: 'Resilient Design', description: 'Treat security and reliability as one system quality. The book connects architecture, change, recovery, and organizational collaboration to help teams build scalable and resilient production systems.', published: '2020', pages: 'Engineering reference', level: 'Intermediate–advanced', publisher: 'O’Reilly / Google', isbn: 'Secure & Reliable', learn: [['Unify security and reliability', 'Understand shared risks and operational objectives.'], ['Design for recovery', 'Anticipate failure, attack, and recovery.'], ['Create shared ownership', 'Give security, SRE, and development a common context.']], parts: [['I', 'Design principles', 'The shared foundations of security and reliability.'], ['II', 'System design', 'Architecture, isolation, least privilege, and resilience.'], ['III', 'Operations', 'Change, detection, response, and recovery.'], ['IV', 'Collaboration', 'Cross-team culture, process, and governance.']], audience: [['System architects', 'Designers balancing security and reliability.'], ['SRE teams', 'Engineers responsible for resilience and recovery.'], ['Security engineers', 'Teams integrating with reliability and delivery.']]}
+      }
+    ]);
+
+    const TOPICS = Object.freeze([
+      {id: 'all', zh: '全部书单', en: 'All books'},
+      {id: 'foundation', zh: '观测基础', en: 'Foundations'},
+      {id: 'tracing', zh: '追踪调试', en: 'Tracing'},
+      {id: 'reliability', zh: 'SLO 与可靠性', en: 'Reliability'},
+      {id: 'team', zh: '团队实践', en: 'Team practice'},
+      {id: 'systems', zh: '系统设计', en: 'System design'}
+    ]);
+
+    const STAGES = Object.freeze([
+      {books: ['distributed-observability', 'observability-engineering'], zh: ['共同语言', '理解观测、监控与调试的差异，建立对遥测信号和未知问题的整体认知。'], en: ['Shared vocabulary', 'Understand observability, monitoring, telemetry signals, and unknown problems.']},
+      {books: ['implementing-slo', 'site-reliability-engineering'], zh: ['可靠性实践', '围绕用户体验定义 SLO，用工程化方式改善告警、值班、容量与故障响应。'], en: ['Reliability practice', 'Define SLOs around user experience and improve alerting, on-call, and response.']},
+      {books: ['sre-workbook', 'secure-reliable-systems'], zh: ['规模化落地', '借助案例、流程和系统设计，把安全与可靠性扩展到跨团队协作。'], en: ['Scale the practice', 'Use cases and system design to scale security and reliability across teams.']}
+    ]);
+
+    const COPY = Object.freeze({
+      zh: {
+        documentTitle: '可观测性书店 · 移动端原型', brand: '可观测性书店', brandSub: '技术阅读空间',
+        home: '首页', path: '阅读路径', cart: '购物车', detail: '图书详情',
+        search: '搜索书名 / 作者 / 技术主题', clear: '清空搜索',
+        heroEyebrow: '本周编辑推荐', heroTitle: '理解系统，始于提出更好的问题', heroText: '从真实用户体验一路读到后端行为，建立调试复杂系统的共同语言。', viewBook: '查看本书',
+        shelf: '可观测性主题书单', result: '共 {count} 本', noResult: '没有找到匹配的书籍',
+        authentic: '正版保障', returns: '7 天退换', shippingFast: '24 小时发货', authenticSub: '专业技术读物', returnsSub: '签收后无忧', shippingSub: '现货快速发出',
+        pathEyebrow: 'GUIDED READING', pathTitle: '三阶段可观测性阅读路径', pathText: '先建立共同语言，再掌握 SLO 与生产实践，最后走向安全、可靠且可扩展的系统设计。', stage: '阶段 {index}',
+        edition: '纸质书 · 中文版', score: '{rating} 分 · 编辑推荐', overview: '内容简介', contents: '目录概览', audience: '适读人群', learn: '这本书将帮助你完成什么', specs: '图书资料', published: '出版时间', pages: '篇幅', level: '阅读难度', publisher: '出版信息',
+        addCart: '加入购物车', favorite: '收藏', unfavorite: '取消收藏', shareDone: '图书链接已复制', added: '《{title}》已加入购物车',
+        all: '全选', selected: '已选 {count} 件商品', manage: '删除选中', unitEdition: '纸质书 / 正版', remove: '删除',
+        cartSummary: '结算明细', subtotal: '商品金额', shipping: '配送费', free: '免费', total: '应付合计', checkout: '去结算（{count}）',
+        cartEmpty: '购物车还是空的', cartEmptyText: '从首页或详情页加入一本想读的书吧。', browse: '继续选书', promo: '满 99 元免配送费，专业技术书籍享正版保障。', checkoutToast: '结算预览：共 {count} 本，合计 {total}', removed: '已删除《{title}》', removedSelected: '已删除 {count} 件选中商品'
+      },
+      en: {
+        documentTitle: 'Observability Bookstore · Mobile Prototype', brand: 'Observability Books', brandSub: 'Engineering Reading Room',
+        home: 'Home', path: 'Reading Path', cart: 'Cart', detail: 'Book details',
+        search: 'Search by title, author, or topic', clear: 'Clear search',
+        heroEyebrow: "EDITOR'S PICK", heroTitle: 'Better questions reveal better systems', heroText: 'Connect real user experience to backend behavior and build a shared language for debugging.', viewBook: 'View this book',
+        shelf: 'Observability collection', result: '{count} books', noResult: 'No matching books',
+        authentic: 'Authentic', returns: '7-day returns', shippingFast: 'Ships in 24h', authenticSub: 'Technical editions', returnsSub: 'Shop with confidence', shippingSub: 'In-stock titles',
+        pathEyebrow: 'GUIDED READING', pathTitle: 'A three-stage observability reading path', pathText: 'Build a shared vocabulary, learn SLO and production practices, then design secure, reliable, and scalable systems.', stage: 'Stage {index}',
+        edition: 'Print book · English', score: '{rating} / 5 · Editor’s pick', overview: 'Overview', contents: 'Contents', audience: 'For readers', learn: 'What this book helps you do', specs: 'Book details', published: 'Published', pages: 'Length', level: 'Reading level', publisher: 'Publisher',
+        addCart: 'Add to cart', favorite: 'Favorite', unfavorite: 'Remove favorite', shareDone: 'Book link copied', added: '“{title}” was added to your cart',
+        all: 'All', selected: '{count} selected', manage: 'Remove selected', unitEdition: 'Print / authentic edition', remove: 'Remove',
+        cartSummary: 'Checkout summary', subtotal: 'Merchandise', shipping: 'Shipping', free: 'Free', total: 'Order total', checkout: 'Checkout ({count})',
+        cartEmpty: 'Your cart is empty', cartEmptyText: 'Add a book from the home or detail page to begin.', browse: 'Continue shopping', promo: 'Free shipping over ¥99 with authentic-edition protection.', checkoutToast: 'Checkout preview: {count} books · {total}', removed: 'Removed “{title}”', removedSelected: 'Removed {count} selected items'
+      }
+    });
+
+    const state = {
+      language: new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'zh',
+      route: 'home',
+      bookId: 'observability-engineering',
+      topic: 'all',
+      query: '',
+      detailTab: 'overview',
+      detailQuantity: 1,
+      cart: new Map([['observability-engineering', 1]]),
+      selected: new Set(['observability-engineering']),
+      favorites: new Set(),
+      toastTimer: null,
+      touchStart: null
+    };
+
+    const elements = {
+      phone: document.getElementById('phone'),
+      scroller: document.getElementById('screenScroller'),
+      floatingBar: document.getElementById('floatingBar'),
+      bottomNav: document.getElementById('bottomNav'),
+      toast: document.getElementById('toast'),
+      toastMessage: document.getElementById('toastMessage')
+    };
+
+    const icons = {
+      cart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6.2"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>',
+      home: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7"></path><path d="M5 9v11h14V9"></path><path d="M9 20v-6h6v6"></path></svg>',
+      path: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h5a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4V4Z"></path><path d="M20 4h-5a3 3 0 0 0-3 3v13a3 3 0 0 1 3-3h5V4Z"></path></svg>',
+      back: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"></path></svg>',
+      share: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2"></circle><circle cx="6" cy="12" r="2"></circle><circle cx="18" cy="19" r="2"></circle><path d="m8 11 8-5M8 13l8 5"></path></svg>',
+      plusCart: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6.2"></path><path d="M15 5v6M12 8h6"></path></svg>',
+      trash: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"></path></svg>'
+    };
+
+    function t(key, values = {}) {
+      return Object.entries(values).reduce((text, [name, value]) => text.replaceAll(`{${name}}`, String(value)), COPY[state.language][key] || key);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"]/g, (char) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[char]));
+    }
+
+    function sourceBook(id) { return BOOKS.find((book) => book.id === id) || BOOKS[0]; }
+    function bookText(book) { return book[state.language]; }
+    function money(value) { return `¥${Number(value).toFixed(2)}`; }
+    function cartCount() { return [...state.cart.values()].reduce((sum, quantity) => sum + quantity, 0); }
+
+    function renderCover(book, className = '') {
+      const text = bookText(book);
+      if (book.image) {
+        const source = state.language === 'en' ? book.imageEn : book.image;
+        return `<div class="cover ${className}"><img src="${source}" alt="${escapeHtml(text.title)}" /></div>`;
+      }
+      const [background, ink, accent, art] = book.cover;
+      return `<div class="cover css-cover ${className}" style="--cover-bg:${background};--cover-ink:${ink};--cover-accent:${accent};--cover-art:${art}">
+        <div class="css-cover-inner"><span class="cover-kicker">${escapeHtml(text.badge)}</span><strong class="cover-title">${escapeHtml(text.shortTitle)}</strong><span class="cover-author">${escapeHtml(text.authorShort)}</span></div>
+      </div>`;
+    }
+
+    function brandHeader() {
+      const count = cartCount();
+      return `<header class="app-header">
+        <button class="brand" type="button" data-route="home" aria-label="${escapeHtml(t('home'))}">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" focusable="false"><defs><linearGradient id="bookMarkGradientMobile" x1="4" y1="36" x2="36" y2="4" gradientUnits="userSpaceOnUse"><stop stop-color="#ff7a00"></stop><stop offset=".56" stop-color="#ff3856"></stop><stop offset="1" stop-color="#d730ff"></stop></linearGradient></defs><rect x="2" y="2" width="36" height="36" rx="10" fill="url(#bookMarkGradientMobile)"></rect><path fill="#fff" d="M8.5 11.5c4.2 0 7.5 1.1 10.5 3.5v13.5c-3-2.3-6.3-3.5-10.5-3.5V11.5Zm23 0c-4.2 0-7.5 1.1-10.5 3.5v13.5c3-2.3 6.3-3.5 10.5-3.5V11.5Z"></path></svg></span>
+          <span class="brand-copy"><strong>${escapeHtml(t('brand'))}</strong><span>${escapeHtml(t('brandSub'))}</span></span>
+        </button>
+        <span class="header-actions">
+          <button class="language-button" type="button" data-action="language" aria-label="Language">${state.language === 'zh' ? 'EN' : '中'}</button>
+          <button class="round-button" type="button" data-route="cart" aria-label="${escapeHtml(t('cart'))}">${icons.cart}${count ? `<strong class="header-cart-count">${count}</strong>` : ''}</button>
+        </span>
+      </header>`;
+    }
+
+    function pageHeader(title, action = 'language') {
+      const right = action === 'share'
+        ? `<button class="round-button" type="button" data-action="share" aria-label="Share">${icons.share}</button>`
+        : `<button class="language-button" type="button" data-action="language" aria-label="Language">${state.language === 'zh' ? 'EN' : '中'}</button>`;
+      return `<header class="app-header centered">
+        <button class="back-button" type="button" data-action="back" aria-label="Back">${icons.back}</button>
+        <h1>${escapeHtml(title)}</h1>
+        ${right}
+      </header>`;
+    }
+
+    function renderBookCard(book) {
+      const text = bookText(book);
+      const topic = TOPICS.find((item) => item.id === book.tags[0]);
+      return `<article class="book-card">
+        <button class="book-open" type="button" data-book="${book.id}">
+          ${renderCover(book)}
+          <h3>${escapeHtml(text.title)}</h3>
+          <p class="book-author">${escapeHtml(text.authorShort)}</p>
+          <span class="book-tag">${escapeHtml(topic[state.language])}</span>
+          <span class="rating-row"><span class="stars">★★★★★</span><small>${book.rating}</small></span>
+        </button>
+        <footer class="book-card-footer"><strong class="price">${money(book.price)}</strong><button class="add-button" type="button" data-add="${book.id}" aria-label="${escapeHtml(t('addCart'))}">${icons.plusCart}</button></footer>
+      </article>`;
+    }
+
+    function filteredBooks() {
+      const normalized = state.query.trim().toLocaleLowerCase();
+      return BOOKS.filter((book) => {
+        const text = bookText(book);
+        const topicMatch = state.topic === 'all' || book.tags.includes(state.topic);
+        const haystack = `${text.title} ${text.englishTitle} ${text.author} ${text.badge}`.toLocaleLowerCase();
+        return topicMatch && (!normalized || haystack.includes(normalized));
+      });
+    }
+
+    function renderBenefits() {
+      const items = [
+        ['authentic', 'authenticSub', '<svg viewBox="0 0 24 24"><path d="m12 3 7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"></path><path d="m9 12 2 2 4-5"></path></svg>'],
+        ['returns', 'returnsSub', '<svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6"></path><path d="M4 4v5h5"></path></svg>'],
+        ['shippingFast', 'shippingSub', '<svg viewBox="0 0 24 24"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z"></path><circle cx="7" cy="19" r="2"></circle><circle cx="17" cy="19" r="2"></circle></svg>']
+      ];
+      return `<div class="benefit-card">${items.map(([title, subtitle, icon]) => `<div class="benefit"><span class="benefit-icon">${icon}</span><strong>${escapeHtml(t(title))}</strong><span>${escapeHtml(t(subtitle))}</span></div>`).join('')}</div>`;
+    }
+
+    function renderHome() {
+      const books = filteredBooks();
+      const heroBook = sourceBook('observability-engineering');
+      elements.scroller.innerHTML = `<div class="page-shell">
+        ${brandHeader()}
+        <div class="search-wrap">
+          <form class="search-form" id="searchForm" role="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 5 5"></path></svg>
+            <input id="searchInput" type="search" value="${escapeHtml(state.query)}" placeholder="${escapeHtml(t('search'))}" autocomplete="off" />
+            ${state.query ? `<button class="search-clear" type="button" data-action="clear-search" aria-label="${escapeHtml(t('clear'))}">×</button>` : ''}
+          </form>
+        </div>
+        <div class="home-content">
+          <section class="hero-card">
+            <div class="hero-copy"><span class="eyebrow">${escapeHtml(t('heroEyebrow'))}</span><h1>${escapeHtml(t('heroTitle'))}</h1><p>${escapeHtml(t('heroText'))}</p><button class="primary-button" type="button" data-book="${heroBook.id}">${escapeHtml(t('viewBook'))}</button></div>
+            <div class="hero-cover">${renderCover(heroBook)}</div>
+          </section>
+          <nav class="topic-scroll" aria-label="Topics">${TOPICS.map((topic) => `<button class="topic-chip ${topic.id === state.topic ? 'is-active' : ''}" type="button" data-topic="${topic.id}"><i class="topic-dot"></i>${escapeHtml(topic[state.language])}</button>`).join('')}</nav>
+          <div class="section-heading"><h2>${escapeHtml(t('shelf'))}</h2><span>${escapeHtml(t('result', {count: books.length}))}</span></div>
+          ${books.length ? `<div class="book-grid">${books.map(renderBookCard).join('')}</div>` : `<div class="cart-empty"><div><span class="empty-mark">${icons.path}</span><h2>${escapeHtml(t('noResult'))}</h2><p>${escapeHtml(t('search'))}</p><button class="secondary-button" type="button" data-action="clear-search">${escapeHtml(t('clear'))}</button></div></div>`}
+          ${renderBenefits()}
+        </div>
+      </div>`;
+    }
+
+    function renderPath() {
+      elements.scroller.innerHTML = `<div class="page-shell">
+        ${pageHeader(t('path'))}
+        <div class="page-body">
+          <section class="page-intro"><span class="eyebrow">${escapeHtml(t('pathEyebrow'))}</span><h2>${escapeHtml(t('pathTitle'))}</h2><p>${escapeHtml(t('pathText'))}</p></section>
+          <div class="path-list">${STAGES.map((stage, index) => {
+            const copy = stage[state.language];
+            return `<article class="stage-card">
+              <div class="stage-head"><span class="stage-number">0${index + 1}</span><div class="stage-copy"><h3>${escapeHtml(t('stage', {index: index + 1}))} · ${escapeHtml(copy[0])}</h3><p>${escapeHtml(copy[1])}</p></div></div>
+              <div class="stage-books">${stage.books.map((id) => {
+                const book = sourceBook(id); const text = bookText(book);
+                return `<button class="stage-book" type="button" data-book="${id}">${renderCover(book)}<span class="stage-book-copy"><strong>${escapeHtml(text.title)}</strong><span>${escapeHtml(text.badge)}</span></span></button>`;
+              }).join('')}</div>
+            </article>`;
+          }).join('')}</div>
+        </div>
+      </div>`;
+    }
+
+    function renderTabContent(book) {
+      const text = bookText(book);
+      if (state.detailTab === 'contents') {
+        return `<h3>${escapeHtml(t('contents'))}</h3><div class="chapter-list">${text.parts.map((item) => `<article class="chapter-item"><span class="chapter-index">${escapeHtml(item[0])}</span><div><strong>${escapeHtml(item[1])}</strong><p>${escapeHtml(item[2])}</p></div></article>`).join('')}</div>`;
+      }
+      if (state.detailTab === 'audience') {
+        return `<h3>${escapeHtml(t('audience'))}</h3><div class="audience-list">${text.audience.map((item, index) => `<article class="audience-item"><span class="audience-index">0${index + 1}</span><div><strong>${escapeHtml(item[0])}</strong><p>${escapeHtml(item[1])}</p></div></article>`).join('')}</div>`;
+      }
+      return `<h3>${escapeHtml(t('overview'))}</h3><p>${escapeHtml(text.description)}</p><div class="learn-list"><h3>${escapeHtml(t('learn'))}</h3>${text.learn.map((item, index) => `<article class="learn-item"><span class="learn-index">0${index + 1}</span><div><strong>${escapeHtml(item[0])}</strong><p>${escapeHtml(item[1])}</p></div></article>`).join('')}</div>`;
+    }
+
+    function renderDetail() {
+      const book = sourceBook(state.bookId);
+      const text = bookText(book);
+      elements.scroller.innerHTML = `<div class="page-shell">
+        ${pageHeader(t('detail'), 'share')}
+        <section class="detail-hero">
+          <div class="detail-cover-wrap">${renderCover(book)}</div>
+          <div class="detail-copy">
+            <h2>${escapeHtml(text.title)}</h2><p class="english-title">${escapeHtml(text.englishTitle)}</p>
+            <p class="author-line">${escapeHtml(text.author)}</p>
+            <div class="tag-row">${book.tags.slice(0, 3).map((id) => { const topic = TOPICS.find((item) => item.id === id); return `<span class="tag">${escapeHtml(topic[state.language])}</span>`; }).join('')}</div>
+            <div class="detail-rating"><span class="stars">★★★★★</span><span>${escapeHtml(t('score', {rating: book.rating}))}</span></div>
+            <div class="detail-price"><strong>${money(book.price)}</strong><span>${money(book.price + 20)}</span></div>
+            <div class="service-row">
+              <span class="service-item"><svg viewBox="0 0 24 24"><path d="m12 3 7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"></path></svg>${escapeHtml(t('authentic'))}</span>
+              <span class="service-item"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 3-6"></path><path d="M4 4v5h5"></path></svg>${escapeHtml(t('returns'))}</span>
+              <span class="service-item"><svg viewBox="0 0 24 24"><path d="M3 6h11v11H3zM14 10h4l3 3v4h-7z"></path></svg>${escapeHtml(t('shippingFast'))}</span>
+            </div>
+          </div>
+        </section>
+        <section class="detail-card">
+          <div class="detail-tabs" role="tablist">
+            ${['overview', 'contents', 'audience'].map((tab) => `<button class="tab-button ${state.detailTab === tab ? 'is-active' : ''}" type="button" data-tab="${tab}" role="tab" aria-selected="${state.detailTab === tab}">${escapeHtml(t(tab))}</button>`).join('')}
+          </div>
+          <div class="detail-tab-content">${renderTabContent(book)}</div>
+        </section>
+        <section class="spec-card"><h3>${escapeHtml(t('specs'))}</h3><div class="spec-grid">
+          <div class="spec"><span>${escapeHtml(t('published'))}</span><strong>${escapeHtml(text.published)}</strong></div>
+          <div class="spec"><span>${escapeHtml(t('pages'))}</span><strong>${escapeHtml(text.pages)}</strong></div>
+          <div class="spec"><span>${escapeHtml(t('level'))}</span><strong>${escapeHtml(text.level)}</strong></div>
+          <div class="spec"><span>${escapeHtml(t('publisher'))}</span><strong>${escapeHtml(text.publisher)}</strong></div>
+        </div></section>
+      </div>`;
+    }
+
+    function renderDetailBar() {
+      const active = state.favorites.has(state.bookId);
+      return `<div class="detail-buy-bar">
+        <button class="favorite-button ${active ? 'is-active' : ''}" type="button" data-action="favorite" aria-label="${escapeHtml(t(active ? 'unfavorite' : 'favorite'))}"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"></path></svg></button>
+        <div class="quantity-control"><button type="button" data-detail-qty="-1" aria-label="Decrease">−</button><span>${state.detailQuantity}</span><button type="button" data-detail-qty="1" aria-label="Increase">＋</button></div>
+        <button class="detail-add-button" type="button" data-action="add-detail">${escapeHtml(t('addCart'))}</button>
+      </div>`;
+    }
+
+    function selectedStats() {
+      let count = 0; let total = 0;
+      state.selected.forEach((id) => {
+        const quantity = state.cart.get(id) || 0;
+        const book = sourceBook(id);
+        count += quantity;
+        total += quantity * book.price;
+      });
+      return {count, total};
+    }
+
+    function renderCartItem(id, quantity) {
+      const book = sourceBook(id); const text = bookText(book);
+      return `<article class="cart-item">
+        <input type="checkbox" data-select="${id}" aria-label="${escapeHtml(text.title)}" ${state.selected.has(id) ? 'checked' : ''} />
+        <button class="book-open" type="button" data-book="${id}">${renderCover(book)}</button>
+        <div class="cart-item-copy"><h3>${escapeHtml(text.title)}</h3><span class="cart-edition">${escapeHtml(t('unitEdition'))}</span><strong class="cart-price">${money(book.price)}</strong>
+          <div class="cart-item-actions"><div class="quantity-control"><button type="button" data-cart-qty="-1" data-id="${id}">−</button><span>${quantity}</span><button type="button" data-cart-qty="1" data-id="${id}">＋</button></div><button class="remove-button" type="button" data-remove="${id}" aria-label="${escapeHtml(t('remove'))}">${icons.trash}</button></div>
+        </div>
+      </article>`;
+    }
+
+    function renderCart() {
+      const entries = [...state.cart.entries()];
+      const allSelected = entries.length > 0 && entries.every(([id]) => state.selected.has(id));
+      const stats = selectedStats();
+      elements.scroller.innerHTML = `<div class="cart-page">
+        ${pageHeader(t('cart'))}
+        ${entries.length ? `<div class="cart-toolbar"><label class="check-label"><input type="checkbox" data-action="select-all" ${allSelected ? 'checked' : ''} />${escapeHtml(t('selected', {count: stats.count}))}</label><button type="button" data-action="remove-selected">${escapeHtml(t('manage'))}</button></div>
+          <div class="cart-list">${entries.map(([id, quantity]) => renderCartItem(id, quantity)).join('')}</div>
+          <div class="shipping-note"><svg viewBox="0 0 24 24"><path d="m12 3 7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3Z"></path><path d="m9 12 2 2 4-5"></path></svg><span>${escapeHtml(t('promo'))}</span></div>
+          <section class="cart-summary"><h2>${escapeHtml(t('cartSummary'))}</h2><div class="summary-line"><span>${escapeHtml(t('subtotal'))}</span><strong>${money(stats.total)}</strong></div><div class="summary-line"><span>${escapeHtml(t('shipping'))}</span><strong>${escapeHtml(t('free'))}</strong></div><div class="summary-line total"><span>${escapeHtml(t('total'))}</span><strong>${money(stats.total)}</strong></div></section>`
+        : `<div class="cart-empty"><div><span class="empty-mark">${icons.cart}</span><h2>${escapeHtml(t('cartEmpty'))}</h2><p>${escapeHtml(t('cartEmptyText'))}</p><button class="primary-button" type="button" data-route="home">${escapeHtml(t('browse'))}</button></div></div>`}
+      </div>`;
+    }
+
+    function renderCartBar() {
+      const entries = [...state.cart.entries()];
+      if (!entries.length) return '';
+      const allSelected = entries.every(([id]) => state.selected.has(id));
+      const stats = selectedStats();
+      return `<div class="cart-checkout-bar"><label class="check-label"><input type="checkbox" data-action="select-all" ${allSelected ? 'checked' : ''} />${escapeHtml(t('all'))}</label><div class="checkout-total"><span>${escapeHtml(t('total'))}</span><strong>${money(stats.total)}</strong></div><button class="checkout-button" type="button" data-action="checkout" ${stats.count ? '' : 'disabled'}>${escapeHtml(t('checkout', {count: stats.count}))}</button></div>`;
+    }
+
+    function renderBottomNav() {
+      if (state.route === 'detail') { elements.bottomNav.hidden = true; elements.bottomNav.innerHTML = ''; return; }
+      elements.bottomNav.hidden = false;
+      const count = cartCount();
+      const items = [['home', icons.home], ['path', icons.path], ['cart', icons.cart]];
+      elements.bottomNav.setAttribute('aria-label', state.language === 'zh' ? '移动端主导航' : 'Mobile navigation');
+      elements.bottomNav.innerHTML = items.map(([route, icon]) => `<button class="nav-button ${state.route === route ? 'is-active' : ''}" type="button" data-route="${route}"><span class="nav-icon">${icon}${route === 'cart' && count ? `<strong class="nav-count">${count}</strong>` : ''}</span><span class="nav-label">${escapeHtml(t(route))}</span></button>`).join('');
+    }
+
+    function parseRoute() {
+      const raw = location.hash.replace(/^#\/?/, '');
+      if (raw.startsWith('detail/')) {
+        const id = raw.slice(7);
+        if (BOOKS.some((book) => book.id === id)) state.bookId = id;
+        state.route = 'detail';
+      } else if (['home', 'path', 'cart'].includes(raw)) {
+        state.route = raw;
+      } else {
+        state.route = 'home';
+      }
+    }
+
+    function render(options = {}) {
+      document.documentElement.lang = state.language === 'zh' ? 'zh-CN' : 'en';
+      document.title = t('documentTitle');
+      elements.phone.classList.toggle('is-detail', state.route === 'detail');
+      elements.phone.classList.toggle('is-cart', state.route === 'cart');
+      if (state.route === 'home') renderHome();
+      if (state.route === 'path') renderPath();
+      if (state.route === 'detail') renderDetail();
+      if (state.route === 'cart') renderCart();
+      elements.floatingBar.innerHTML = state.route === 'detail' ? renderDetailBar() : state.route === 'cart' ? renderCartBar() : '';
+      renderBottomNav();
+      if (!options.keepScroll) elements.scroller.scrollTop = 0;
+    }
+
+    function navigate(route, bookId) {
+      if (route === 'detail' && bookId) state.bookId = bookId;
+      const hash = route === 'detail' ? `#detail/${state.bookId}` : `#${route}`;
+      if (location.hash === hash) { state.route = route; render(); } else { location.hash = hash; }
+    }
+
+    function showToast(message) {
+      if (state.toastTimer) clearTimeout(state.toastTimer);
+      elements.toastMessage.textContent = message;
+      elements.toast.classList.add('is-visible');
+      state.toastTimer = setTimeout(() => elements.toast.classList.remove('is-visible'), 2600);
+    }
+
+    function addToCart(id, quantity = 1) {
+      const book = sourceBook(id);
+      state.cart.set(id, (state.cart.get(id) || 0) + quantity);
+      state.selected.add(id);
+      showToast(t('added', {title: bookText(book).title}));
+      render({keepScroll: true});
+    }
+
+    function removeFromCart(id) {
+      const title = bookText(sourceBook(id)).title;
+      state.cart.delete(id);
+      state.selected.delete(id);
+      showToast(t('removed', {title}));
+      render({keepScroll: true});
+    }
+
+    async function shareBook() {
+      const shareUrl = `${location.href.split('#')[0]}#detail/${state.bookId}`;
+      try {
+        if (navigator.share) {
+          await navigator.share({title: bookText(sourceBook(state.bookId)).title, url: shareUrl});
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(shareUrl);
+        }
+      } catch (_) {
+        return;
+      }
+      showToast(t('shareDone'));
+    }
+
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button) return;
+      if (button.dataset.route) return navigate(button.dataset.route);
+      if (button.dataset.book) return navigate('detail', button.dataset.book);
+      if (button.dataset.add) return addToCart(button.dataset.add);
+      if (button.dataset.topic) { state.topic = button.dataset.topic; return render({keepScroll: true}); }
+      if (button.dataset.tab) { state.detailTab = button.dataset.tab; return render({keepScroll: true}); }
+      if (button.dataset.remove) return removeFromCart(button.dataset.remove);
+      if (button.dataset.cartQty) {
+        const id = button.dataset.id;
+        const next = (state.cart.get(id) || 1) + Number(button.dataset.cartQty);
+        if (next <= 0) return removeFromCart(id);
+        state.cart.set(id, Math.min(next, 9));
+        return render({keepScroll: true});
+      }
+      if (button.dataset.detailQty) {
+        state.detailQuantity = Math.min(9, Math.max(1, state.detailQuantity + Number(button.dataset.detailQty)));
+        return render({keepScroll: true});
+      }
+      const action = button.dataset.action;
+      if (action === 'language') { state.language = state.language === 'zh' ? 'en' : 'zh'; return render({keepScroll: true}); }
+      if (action === 'back') return history.length > 1 ? history.back() : navigate('home');
+      if (action === 'share') return shareBook();
+      if (action === 'favorite') {
+        if (state.favorites.has(state.bookId)) state.favorites.delete(state.bookId); else state.favorites.add(state.bookId);
+        return render({keepScroll: true});
+      }
+      if (action === 'add-detail') return addToCart(state.bookId, state.detailQuantity);
+      if (action === 'clear-search') { state.query = ''; state.topic = 'all'; return render({keepScroll: true}); }
+      if (action === 'remove-selected') {
+        const count = state.selected.size;
+        [...state.selected].forEach((id) => state.cart.delete(id));
+        state.selected.clear();
+        showToast(t('removedSelected', {count}));
+        return render({keepScroll: true});
+      }
+      if (action === 'checkout') {
+        const stats = selectedStats();
+        return showToast(t('checkoutToast', {count: stats.count, total: money(stats.total)}));
+      }
+    });
+
+    document.addEventListener('change', (event) => {
+      const input = event.target;
+      if (input.matches('[data-select]')) {
+        if (input.checked) state.selected.add(input.dataset.select); else state.selected.delete(input.dataset.select);
+        render({keepScroll: true});
+      }
+      if (input.matches('[data-action="select-all"]')) {
+        state.selected.clear();
+        if (input.checked) state.cart.forEach((_, id) => state.selected.add(id));
+        render({keepScroll: true});
+      }
+    });
+
+    document.addEventListener('submit', (event) => {
+      if (event.target.id !== 'searchForm') return;
+      event.preventDefault();
+      state.query = document.getElementById('searchInput').value.trim();
+      state.topic = 'all';
+      render({keepScroll: true});
+    });
+
+    elements.scroller.addEventListener('touchstart', (event) => {
+      if (event.touches.length !== 1 || state.route === 'home') return;
+      const touch = event.touches[0];
+      state.touchStart = {x: touch.clientX, y: touch.clientY, time: Date.now()};
+    }, {passive: true});
+
+    elements.scroller.addEventListener('touchend', (event) => {
+      if (!state.touchStart || event.changedTouches.length !== 1) return;
+      const touch = event.changedTouches[0];
+      const deltaX = touch.clientX - state.touchStart.x;
+      const deltaY = Math.abs(touch.clientY - state.touchStart.y);
+      const duration = Date.now() - state.touchStart.time;
+      state.touchStart = null;
+      if (deltaX > 78 && deltaY < 46 && duration < 700) navigate('home');
+    }, {passive: true});
+
+    window.addEventListener('hashchange', () => { parseRoute(); render(); });
+    parseRoute();
+    render();
+  </script>
+</body>
+</html>
