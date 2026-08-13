@@ -22,9 +22,9 @@
       document.documentElement.dataset.demoTheme = supportedThemes.has(demoTheme) ? demoTheme : 'colorful';
     })();
   </script>
-  <script src="assets/checkout-sourcemap-fault.min.js?v=20260805-bookstore-v41"></script>
-  <script src="assets/selfheal-i18n.js?v=20260805-bookstore-v41"></script>
-  <link rel="stylesheet" href="assets/storefront.css?v=20260805-bookstore-v41" />
+  <script src="assets/checkout-sourcemap-fault.min.js?v=20260813-bookstore-v42"></script>
+  <script src="assets/selfheal-i18n.js?v=20260813-bookstore-v42"></script>
+  <link rel="stylesheet" href="assets/storefront.css?v=20260813-bookstore-v42" />
 </head>
 <body>
   <main class="shop-app storefront" id="storeHome" data-store-page="home">
@@ -231,6 +231,7 @@
     const rumResourceContexts = [];
     const PREVIEW_DISPLAY_URL = 'https://demo.dataflux.cn';
     const DEMO_THEME_STORAGE_KEY = 'mall-demo-theme';
+    const STORE_SESSION_STATE_KEY = 'mall-store-session-state-v1';
     const DEMO_THEMES = new Set(['colorful', 'white']);
     const STORE_PAGES = new Set(['home', 'path', 'detail', 'cart']);
     const LEGACY_STORE_PAGE_ALIASES = Object.freeze({ categories: 'home', technology: 'detail', purchase: 'cart' });
@@ -253,6 +254,24 @@
     });
     const initialPreviewParams = new URL(window.location.href).searchParams;
     const initialBookId = I18N.bookById(initialPreviewParams.get('book')).id;
+    const initialStoreSessionState = (() => {
+      const defaultState = {
+        cart: new Map([['observability-engineering', 1]]),
+        selectedCart: new Set(['observability-engineering']),
+      };
+      try {
+        const saved = JSON.parse(window.sessionStorage.getItem(STORE_SESSION_STATE_KEY) || 'null');
+        if (!saved || !Array.isArray(saved.cart) || !Array.isArray(saved.selectedCart)) return defaultState;
+        const productIds = new Set(I18N.products.map((book) => book.id));
+        const cart = new Map(saved.cart
+          .filter((entry) => Array.isArray(entry) && productIds.has(entry[0]) && Number(entry[1]) > 0)
+          .map(([bookId, quantity]) => [bookId, Math.max(1, Math.min(99, Number(quantity) || 1))]));
+        const selectedCart = new Set(saved.selectedCart.filter((bookId) => cart.has(bookId)));
+        return { cart, selectedCart };
+      } catch (_) {
+        return defaultState;
+      }
+    })();
     const state = {
       busy: false,
       rumReady: false,
@@ -275,8 +294,8 @@
       sort: 'recommended',
       detailTab: 'overview',
       detailQuantity: 1,
-      cart: new Map([['observability-engineering', 1]]),
-      selectedCart: new Set(['observability-engineering']),
+      cart: initialStoreSessionState.cart,
+      selectedCart: initialStoreSessionState.selectedCart,
     };
 
     const els = {
@@ -445,6 +464,17 @@
 
     function isInCart(bookId) {
       return state.cart.has(bookId) && Number(state.cart.get(bookId)) > 0;
+    }
+
+    function persistStoreSessionState() {
+      try {
+        window.sessionStorage.setItem(STORE_SESSION_STATE_KEY, JSON.stringify({
+          cart: [...state.cart.entries()],
+          selectedCart: [...state.selectedCart],
+        }));
+      } catch (_) {
+        // Session storage can be unavailable in private browsing contexts.
+      }
     }
 
     function tagLabel(tag) {
@@ -1447,6 +1477,7 @@
       els.trafficBtn.disabled = state.busy || snapshot.totalCopies === 0;
       els.sku.value = ORDER_BACKEND_SKU;
       els.amountCent.value = String(Math.max(1, snapshot.amountCent));
+      persistStoreSessionState();
       applyPreviewObservabilityContext();
     }
 

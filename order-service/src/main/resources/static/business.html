@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>商城 Demo 与故障注入 Demo</title>
   <link rel="icon" href="data:," />
-  <script src="assets/selfheal-i18n.js?v=20260805-bookstore-v41"></script>
+  <script src="assets/selfheal-i18n.js?v=20260813-bookstore-v42"></script>
   <script>
     (() => {
       const supportedThemes = new Set(['colorful', 'white']);
@@ -2038,7 +2038,7 @@
     const I18N = window.SelfhealI18n;
     const apiPrefix = window.location.pathname.startsWith('/selfheal') ? '/selfheal' : '';
     const STATUS_REFRESH_INTERVAL_MS = 60000;
-    const SHOP_BUILD_ID = '20260805-bookstore-v41';
+    const SHOP_BUILD_ID = '20260813-bookstore-v42';
     const USAGE_GUIDE_SLIDES = Object.freeze([
       'assets/guide-carousel/image2-slide-01.png',
       'assets/guide-carousel/image2-slide-02.png?v=20260806-pagination-v2',
@@ -2243,7 +2243,7 @@
       return BUSINESS_SCENARIOS.find((scene) => scene.id === state.selectedSceneId) || BUSINESS_SCENARIOS[0];
     }
 
-    function shopUrl(language) {
+    function shopUrl(language, options = {}) {
       const scene = selectedBusinessScene();
       const url = new URL(scene.frameUrl, window.location.href);
       url.searchParams.set('lang', language);
@@ -2251,6 +2251,17 @@
       url.searchParams.set('view', state.previewMode);
       url.searchParams.set('theme', state.demoTheme);
       url.searchParams.set('v', SHOP_BUILD_ID);
+      if (options.preserveStoreState && els.shopFrame?.contentWindow) {
+        try {
+          const currentUrl = new URL(els.shopFrame.contentWindow.location.href);
+          ['page', 'book'].forEach((key) => {
+            const value = currentUrl.searchParams.get(key);
+            if (value) url.searchParams.set(key, value);
+          });
+        } catch (_) {
+          // The storefront is same-origin in this demo; fall back to its default page if unavailable.
+        }
+      }
       return url.pathname + url.search;
     }
 
@@ -2258,12 +2269,16 @@
       if (element) element.textContent = value;
     }
 
-    function updateFrameUrls() {
-      const nextUrl = shopUrl(state.language);
+    function updateFrameUrls(options = {}) {
+      const nextUrl = shopUrl(state.language, options);
       if (els.openShopLink) els.openShopLink.href = nextUrl;
-      if (!els.shopFrame.getAttribute('src') || els.shopFrame.dataset.sceneId !== state.selectedSceneId) {
+      const frameChanged = els.shopFrame.dataset.sceneId !== state.selectedSceneId;
+      const previewChanged = els.shopFrame.dataset.previewMode !== state.previewMode;
+      if (!els.shopFrame.getAttribute('src') || frameChanged || (options.reloadPreview && previewChanged)) {
+        state.shopReady = false;
         els.shopFrame.src = nextUrl;
         els.shopFrame.dataset.sceneId = state.selectedSceneId;
+        els.shopFrame.dataset.previewMode = state.previewMode;
       }
       els.shopFrame.title = t('frameTitle');
     }
@@ -2367,8 +2382,7 @@
       state.previewMode = mode;
       renderPreviewMode();
       updateWorkbenchUrl();
-      updateFrameUrls();
-      syncPreviewContext();
+      updateFrameUrls({ reloadPreview: true, preserveStoreState: true });
     }
 
     function persistLayoutPreference(side, collapsed) {
@@ -3203,6 +3217,9 @@
         syncPreviewContext();
         if (state.activeClientFault) {
           sendShopMessage('set-client-fault', { scenario: state.activeClientFault });
+        } else if (state.faultMode !== 'none') {
+          const activeBackendFault = scenarioForFault(state.faultMode);
+          if (activeBackendFault) sendShopMessage('set-fault-hint', { scenario: activeBackendFault });
         }
         return;
       }
