@@ -3,13 +3,13 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-readonly DEMO_VERSION="2.3.0"
+readonly DEMO_VERSION="2.3.1"
 readonly DEMO_NAMESPACE="observability-demo"
 readonly DATAKIT_NAMESPACE="datakit"
 readonly DEMO_RELEASE="demo"
 readonly DATAKIT_RELEASE="datakit"
 readonly PROJECT="mall-demo"
-readonly PROVIDER="truewatch"
+readonly PROVIDER="guance"
 readonly LOAD_BALANCER_TIMEOUT_SECONDS="600"
 
 export DEMO_VERSION

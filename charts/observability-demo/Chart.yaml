@@ -2,7 +2,7 @@ apiVersion: v2
 name: observability-demo
 description: A deliberately faultable Java microservice observability demo for DataKit
 type: application
-version: 2.3.0
-appVersion: "2.3.0"
+version: 2.3.1
+appVersion: "2.3.1"
 annotations:
   artifacthub.io/license: Apache-2.0

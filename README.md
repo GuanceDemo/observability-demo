@@ -65,10 +65,10 @@ DataKit 需要开启 `container`、`ddtrace`、`statsd` 和 `profile` inputs，�
 
 ## EKS Workshop：安装 DataKit 与 Demo
 
-Workshop 固定使用 Guance 官方仓库的 `v2.3.0` 源码和 Harbor `2.3.0` 镜像，避免源码、应用版本和 SourceMap 漂移。DataKit 和应用保持为两个独立 Helm Release；最终用户不需要 Maven、Docker build、ECR 或镜像仓库登录。
+Workshop 固定使用 Guance 官方仓库的 `v2.3.1` 源码和 Harbor `2.3.1` 镜像，避免源码、应用版本和 SourceMap 漂移。DataKit 和应用保持为两个独立 Helm Release；最终用户不需要 Maven、Docker build、ECR 或镜像仓库登录。
 
 ```bash
-export DEMO_VERSION="2.3.0"
+export DEMO_VERSION="2.3.1"
 git clone --branch "v${DEMO_VERSION}" --depth 1 \
   https://github.com/GuanceDemo/observability-demo.git
 cd observability-demo
@@ -78,7 +78,6 @@ cd observability-demo
 
 ```bash
 scripts/workshop.sh status
-scripts/workshop.sh verify
 scripts/workshop.sh cleanup                 # 保留 DataKit
 scripts/workshop.sh cleanup --with-datakit  # 同时删除 DataKit
 ```
@@ -90,7 +89,6 @@ scripts/workshop.sh cleanup --with-datakit  # 同时删除 DataKit
 开始前先准备 DataWay URL，并在观测云创建 Web 类型的 RUM 应用、取得 Application ID。然后集中声明本次安装使用的参数；后续命令无需再修改：
 
 ```bash
-export AWS_REGION="ap-northeast-2"
 export EKS_CLUSTER_NAME="observability-demo"
 
 # DataWay URL 包含敏感 token，使用隐藏输入，避免写入 Shell 历史。
@@ -98,10 +96,10 @@ read -rsp 'DataWay URL: ' DATAWAY_URL && export DATAWAY_URL && echo
 
 # RUM Application ID 非敏感，不需要填写 Public DataWay client token。
 read -rp 'RUM Application ID: ' RUM_APPLICATION_ID && export RUM_APPLICATION_ID
-read -rp 'TrueWatch Workspace ID: ' TRUEWATCH_WORKSPACE_ID && export TRUEWATCH_WORKSPACE_ID
+read -rp '观测云 Workspace ID: ' GUANCE_WORKSPACE_ID && export GUANCE_WORKSPACE_ID
 ```
 
-`project=mall-demo`、镜像标签 `2.3.0`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Workshop 固定值，不需要用户声明。
+`project=mall-demo`、镜像标签 `2.3.1`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Workshop 固定值，不需要用户声明。
 
 ### 1. 连接 EKS
 
@@ -109,7 +107,6 @@ read -rp 'TrueWatch Workspace ID: ' TRUEWATCH_WORKSPACE_ID && export TRUEWATCH_W
 
 ```bash
 aws eks update-kubeconfig \
-  --region "$AWS_REGION" \
   --name "$EKS_CLUSTER_NAME"
 
 kubectl config current-context
@@ -123,7 +120,7 @@ kubectl get nodes
 安装官方 DataKit Chart，并通过前面声明的参数传入 DataWay URL 和 EKS 集群名：
 
 ```bash
-helm repo add datakit https://pubrepo.truewatch.com/chartrepo/datakit
+helm repo add datakit https://pubrepo.guance.com/chartrepo/datakit
 helm repo update
 
 helm upgrade --install datakit datakit/datakit \
@@ -146,22 +143,24 @@ kubectl -n datakit logs daemonset/datakit --tail=500 | grep -i ebpf
 
 已有 DataKit Release 不需要卸载。拉取最新仓库后，从 `datakit-dataway-secret` 读取现有 DataWay URL，并重新执行上面的 `helm upgrade --install`，最后运行 `kubectl rollout status daemonset/datakit -n datakit --timeout=5m` 等待滚动升级完成。
 
-如果这个 DataKit 还采集同一集群中的其他项目，应移除全局 `project`，只给 Demo workload 和应用信号设置该标签。参考 [DataKit Helm](https://docs.truewatch.com/datakit/datakit-helm/) 与 [Kubernetes 部署](https://docs.truewatch.com/en/datakit/datakit-daemonset-deploy/)。
+如果这个 DataKit 还采集同一集群中的其他项目，应移除全局 `project`，只给 Demo workload 和应用信号设置该标签。参考 [DataKit Helm](https://docs.guance.com/datakit/datakit-helm/) 与 [Kubernetes 部署](https://docs.guance.com/datakit/datakit-daemonset-deploy/)。
 
 ### 3. 使用公开镜像部署应用
 
-TrueWatch Workshop profile 只把 Gateway 暴露为 `LoadBalancer`；order、inventory、payment、MySQL 和 Redis 仍然是集群内部服务。
+观测云 EKS profile 只把 Gateway 暴露为 `LoadBalancer`；order、inventory、payment、MySQL 和 Redis 仍然是集群内部服务。
 
 ```bash
 helm upgrade --install demo charts/observability-demo \
   --namespace observability-demo \
   --create-namespace \
-  -f charts/observability-demo/values-workshop-truewatch.yaml \
+  -f charts/observability-demo/values-eks.yaml \
+  --set-string rum.enabled=true \
   --set-string rum.applicationId="$RUM_APPLICATION_ID" \
   --set-string observability.clusterName="$EKS_CLUSTER_NAME" \
-  --set-string observabilityConsole.workspaceId="$TRUEWATCH_WORKSPACE_ID"
+  --set-string observabilityConsole.url="https://console.guance.com/" \
+  --set-string observabilityConsole.workspaceId="$GUANCE_WORKSPACE_ID"
 
-unset RUM_APPLICATION_ID TRUEWATCH_WORKSPACE_ID
+unset RUM_APPLICATION_ID GUANCE_WORKSPACE_ID
 
 for deployment in $(kubectl -n observability-demo get deployments -o name); do
   kubectl -n observability-demo rollout status "$deployment" --timeout=8m
@@ -170,15 +169,15 @@ done
 
 Chart 会在 `demo-observability-demo` Secret 中自动生成 Demo 内部 MySQL 密码。
 
-Workshop profile 拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:2.3.0`，并使用 `imagePullPolicy: IfNotPresent`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。
+Workshop profile 拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:2.3.1`，并使用 `imagePullPolicy: IfNotPresent`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。
 
 ### 4. 获取外部 URL
 
-AWS 创建 Load Balancer 通常需要几分钟。脚本会等待最多 10 分钟，并兼容 hostname 和 IP：
+AWS 创建 Load Balancer 通常需要几分钟。重复查看状态，直到输出 `Demo URL`，然后将该地址导出供后续分步验证使用：
 
 ```bash
 scripts/workshop.sh status
-scripts/workshop.sh verify
+read -rp 'Demo URL: ' DEMO_BASE_URL && export DEMO_BASE_URL
 ```
 
 这是 AWS 自动分配的公网 DNS，不要求提前购买或配置自有域名。该 Load Balancer 会产生 AWS 费用；Workshop 结束后应卸载应用。Java 容器使用 UID `10001`、只读根文件系统和最小权限 ServiceAccount；MySQL/Redis 使用 `emptyDir`，不适合保存生产数据。
@@ -186,8 +185,11 @@ scripts/workshop.sh verify
 ### 5. 验证并生成演示流量
 
 ```bash
-scripts/workshop.sh verify
-scripts/package-rum-sourcemap.sh --version 2.3.0
+DATAKIT_PROVIDER=guance DEMO_PROJECT=mall-demo scripts/smoke-test.sh
+scripts/generate-traffic.sh
+scripts/inject-fault.sh payment_slow
+scripts/inject-fault.sh off
+scripts/package-rum-sourcemap.sh --version 2.3.1
 ```
 
 人工验收应覆盖按 `project=mall-demo` 过滤的 Node/Pod/容器指标、完整 Trace、日志关联、JVM、Profile，以及 RUM/Browser Logs/Replay/SourceMap。详见 [故障场景目录](docs/fault-scenarios.md)。
@@ -207,11 +209,10 @@ Agent Teams Runtime 需要部署在能够访问目标工具和数据的环境中
 先在 Agent Workspace 中创建专用 Agent，并从该 Agent 的 **Run & Deploy** 页面取得 Agent ID、Agent API Key 和 Beak Endpoint。然后在安装 DataKit 与 Demo 时使用的管理员终端中执行：
 
 ```bash
-export AWS_REGION="ap-northeast-1"
 export EKS_CLUSTER_NAME="observability-demo"
 
-# 非默认站点时，填写 Run & Deploy 安装命令中的 Endpoint。
-export BEAK_ENDPOINT="https://agent-api.truewatch.com"
+# 填写 Run & Deploy 安装命令中提供的 Endpoint。
+export BEAK_ENDPOINT="<Run & Deploy 页面提供的 Endpoint>"
 
 scripts/install-obs-agent-eks-node-demo.sh
 ```

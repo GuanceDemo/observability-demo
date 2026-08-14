@@ -164,9 +164,11 @@ jobs:
           helm lint charts/observability-demo
           helm lint charts/observability-demo --values charts/observability-demo/values-eks.yaml
           helm lint charts/observability-demo \
-            --values charts/observability-demo/values-workshop-truewatch.yaml \
+            --values charts/observability-demo/values-eks.yaml \
+            --set-string rum.enabled=true \
             --set-string rum.applicationId=test-rum \
             --set-string observability.clusterName=test-cluster \
+            --set-string observabilityConsole.url=https://console.guance.com/ \
             --set-string observabilityConsole.workspaceId=test-workspace
           helm template demo charts/observability-demo --namespace observability-demo >/tmp/rendered.yaml
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/rendered.yaml
@@ -178,17 +180,20 @@ jobs:
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/eks-rendered.yaml
           helm template demo charts/observability-demo \
             --namespace observability-demo \
-            --values charts/observability-demo/values-workshop-truewatch.yaml \
+            --values charts/observability-demo/values-eks.yaml \
+            --set-string rum.enabled=true \
             --set-string rum.applicationId=test-rum \
             --set-string observability.clusterName=test-cluster \
+            --set-string observabilityConsole.url=https://console.guance.com/ \
             --set-string observabilityConsole.workspaceId=test-workspace \
             >/tmp/workshop-rendered.yaml
-          grep -q 'pubrepo.jiagouyun.com/demo/observability-demo-gateway-service:2.3.0' /tmp/workshop-rendered.yaml
+          grep -q 'pubrepo.jiagouyun.com/demo/observability-demo-gateway-service:2.3.1' /tmp/workshop-rendered.yaml
           grep -q 'cluster_name_k8s:test-cluster' /tmp/workshop-rendered.yaml
-          grep -A20 'name: DATAKIT_PROVIDER' /tmp/workshop-rendered.yaml | grep -q 'truewatch'
+          grep -A20 'name: DATAKIT_PROVIDER' /tmp/workshop-rendered.yaml | grep -q 'guance'
+          grep -A20 'name: OBSERVABILITY_CONSOLE_URL' /tmp/workshop-rendered.yaml | grep -q 'https://console.guance.com/'
           grep -A20 'component: gateway-service' /tmp/workshop-rendered.yaml | grep -q 'type: LoadBalancer'
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/workshop-rendered.yaml
-          helm repo add datakit https://pubrepo.truewatch.com/chartrepo/datakit
+          helm repo add datakit https://pubrepo.guance.com/chartrepo/datakit
           helm repo update
           helm template datakit datakit/datakit \
             --version 2.5.0 \
@@ -203,13 +208,19 @@ jobs:
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/datakit-rendered.yaml
       - name: Verify workshop release contract
         run: |
-          grep -q '^version: 2.3.0$' charts/observability-demo/Chart.yaml
-          grep -q '^appVersion: "2.3.0"$' charts/observability-demo/Chart.yaml
+          grep -q '^version: 2.3.1$' charts/observability-demo/Chart.yaml
+          grep -q '^appVersion: "2.3.1"$' charts/observability-demo/Chart.yaml
           grep -q "if: github.repository == 'cherrycove/observability-demo'" .github/workflows/release-images.yml
           if rg 'scripts/workshop\.sh install|install_workshop' README.md docs charts scripts; then
             echo 'removed one-click workshop installer reference found' >&2
             exit 1
           fi
+          if rg 'values-workshop-truewatch\.yaml|TRUEWATCH_WORKSPACE_ID|pubrepo\.truewatch\.com/chartrepo/datakit|export AWS_REGION|--region "\$AWS_REGION"' README.md; then
+            echo 'obsolete Workshop platform or Region reference found in README' >&2
+            exit 1
+          fi
+          grep -q 'readonly PROVIDER="guance"' scripts/workshop.sh
+          grep -q 'observabilityConsole.url="https://console.guance.com/"' README.md
           if rg 'https://github.com/(TrueWatchTech|cherrycove)/observability-demo(\.git)?|demo-control-token|DEMO_CONTROL_TOKEN' \
             README.md docs charts scripts --glob '!release.md'; then
             echo 'obsolete workshop repository or control-token reference found' >&2
