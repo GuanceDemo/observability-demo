@@ -74,16 +74,6 @@ git clone --branch "v${DEMO_VERSION}" --depth 1 \
 cd observability-demo
 ```
 
-### 一键安装（推荐）
-
-在 AWS CloudShell 中声明 EKS 信息，然后运行安装脚本。脚本会隐藏读取 DataWay URL，提示填写 RUM Application ID 和 TrueWatch Workspace ID，依次安装 DataKit 与 Demo，等待公网 URL，并完成自动验证：
-
-```bash
-export AWS_REGION="ap-northeast-2"
-export EKS_CLUSTER_NAME="observability-demo"
-scripts/workshop.sh install
-```
-
 常用维护命令：
 
 ```bash
@@ -93,7 +83,7 @@ scripts/workshop.sh cleanup                 # 保留 DataKit
 scripts/workshop.sh cleanup --with-datakit  # 同时删除 DataKit
 ```
 
-下面的分步命令与一键脚本执行相同的部署契约，适合 Workshop 讲解。
+下面按 Workshop 教程的顺序分步安装 DataKit 和 Demo。
 
 ### 0. 准备信息并声明参数
 

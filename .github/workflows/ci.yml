@@ -206,7 +206,10 @@ jobs:
           grep -q '^version: 2.3.0$' charts/observability-demo/Chart.yaml
           grep -q '^appVersion: "2.3.0"$' charts/observability-demo/Chart.yaml
           grep -q "if: github.repository == 'cherrycove/observability-demo'" .github/workflows/release-images.yml
-          grep -q 'scripts/workshop.sh install' README.md
+          if rg 'scripts/workshop\.sh install|install_workshop' README.md docs charts scripts; then
+            echo 'removed one-click workshop installer reference found' >&2
+            exit 1
+          fi
           if rg 'https://github.com/(TrueWatchTech|cherrycove)/observability-demo(\.git)?|demo-control-token|DEMO_CONTROL_TOKEN' \
             README.md docs charts scripts --glob '!release.md'; then
             echo 'obsolete workshop repository or control-token reference found' >&2

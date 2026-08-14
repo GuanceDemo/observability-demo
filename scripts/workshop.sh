@@ -2,19 +2,14 @@
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 readonly DEMO_VERSION="2.3.0"
-readonly DATAKIT_CHART_VERSION="2.5.0"
 readonly DEMO_NAMESPACE="observability-demo"
 readonly DATAKIT_NAMESPACE="datakit"
 readonly DEMO_RELEASE="demo"
 readonly DATAKIT_RELEASE="datakit"
 readonly PROJECT="mall-demo"
-readonly REGISTRY="pubrepo.jiagouyun.com/demo"
 readonly PROVIDER="truewatch"
-readonly APP_TIMEOUT="8m"
-readonly DATAKIT_TIMEOUT="5m"
 readonly LOAD_BALANCER_TIMEOUT_SECONDS="600"
 
 export DEMO_VERSION
@@ -25,14 +20,9 @@ WITH_DATAKIT=false
 usage() {
   cat <<'EOF'
 Usage:
-  scripts/workshop.sh install [--yes]
   scripts/workshop.sh status
   scripts/workshop.sh verify
   scripts/workshop.sh cleanup [--with-datakit] [--yes]
-
-Install inputs can be supplied through environment variables or entered when
-prompted: EKS_CLUSTER_NAME, AWS_REGION, DATAWAY_URL, RUM_APPLICATION_ID, and
-TRUEWATCH_WORKSPACE_ID. DATAWAY_URL is always read silently when prompted.
 EOF
 }
 
@@ -47,43 +37,6 @@ die() {
 
 require_command() {
   command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"
-}
-
-prompt_required() {
-  local variable_name="$1"
-  local prompt="$2"
-  local value="${!variable_name:-}"
-  if [[ -z "$value" ]]; then
-    read -r -p "$prompt" value
-  fi
-  [[ -n "$value" ]] || die "$variable_name is required"
-  printf -v "$variable_name" '%s' "$value"
-  export "${variable_name?}"
-}
-
-prompt_secret() {
-  local variable_name="$1"
-  local prompt="$2"
-  local value="${!variable_name:-}"
-  if [[ -z "$value" ]]; then
-    read -r -s -p "$prompt" value
-    printf '\n'
-  fi
-  [[ -n "$value" ]] || die "$variable_name is required"
-  printf -v "$variable_name" '%s' "$value"
-  export "${variable_name?}"
-}
-
-confirm_context() {
-  local context
-  context="$(kubectl config current-context)"
-  printf 'Kubernetes context: %s\n' "$context"
-  kubectl get nodes
-  if [[ "$ASSUME_YES" != "true" ]]; then
-    local answer
-    read -r -p "Continue with this cluster? [y/N] " answer
-    [[ "$answer" == "y" || "$answer" == "Y" ]] || die "cancelled"
-  fi
 }
 
 gateway_service_name() {
@@ -170,68 +123,6 @@ run_verify() {
   printf 'verification passed: %s\n' "$DEMO_BASE_URL"
 }
 
-install_workshop() {
-  local detected_region
-  for command in aws kubectl helm curl; do
-    require_command "$command"
-  done
-
-  prompt_required EKS_CLUSTER_NAME 'EKS cluster name: '
-  detected_region="${AWS_REGION:-${AWS_DEFAULT_REGION:-}}"
-  if [[ -z "$detected_region" ]]; then
-    detected_region="$(aws configure get region 2>/dev/null || true)"
-  fi
-  AWS_REGION="$detected_region"
-  prompt_required AWS_REGION 'AWS region: '
-  prompt_secret DATAWAY_URL 'DataWay URL: '
-  prompt_required RUM_APPLICATION_ID 'RUM Application ID: '
-  prompt_required TRUEWATCH_WORKSPACE_ID 'TrueWatch Workspace ID: '
-
-  log "Connecting kubectl to ${EKS_CLUSTER_NAME}"
-  aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
-  confirm_context
-  kubectl wait --for=condition=Ready node --all --timeout=5m
-
-  log "Installing DataKit ${DATAKIT_CHART_VERSION}"
-  helm repo add datakit https://pubrepo.truewatch.com/chartrepo/datakit --force-update
-  helm repo update datakit
-  helm upgrade --install "$DATAKIT_RELEASE" datakit/datakit \
-    --version "$DATAKIT_CHART_VERSION" \
-    --namespace "$DATAKIT_NAMESPACE" \
-    --create-namespace \
-    --values "$REPO_ROOT/observability/datakit-values.example.yaml" \
-    --set-string datakit.dataway_url="$DATAWAY_URL" \
-    --set-string datakit.cluster_name_k8s="$EKS_CLUSTER_NAME"
-  unset DATAWAY_URL
-  kubectl -n "$DATAKIT_NAMESPACE" rollout status daemonset/datakit \
-    --timeout="$DATAKIT_TIMEOUT"
-
-  log "Installing observability demo ${DEMO_VERSION}"
-  helm upgrade --install "$DEMO_RELEASE" "$REPO_ROOT/charts/observability-demo" \
-    --namespace "$DEMO_NAMESPACE" \
-    --create-namespace \
-    --values "$REPO_ROOT/charts/observability-demo/values-workshop-truewatch.yaml" \
-    --set-string image.registry="${REGISTRY%%/*}" \
-    --set-string image.owner="${REGISTRY#*/}" \
-    --set-string image.tag="$DEMO_VERSION" \
-    --set-string rum.applicationId="$RUM_APPLICATION_ID" \
-    --set-string observability.clusterName="$EKS_CLUSTER_NAME" \
-    --set-string observabilityConsole.workspaceId="$TRUEWATCH_WORKSPACE_ID"
-  unset RUM_APPLICATION_ID TRUEWATCH_WORKSPACE_ID
-  kubectl -n "$DEMO_NAMESPACE" wait --for=condition=Available deployment --all \
-    --timeout="$APP_TIMEOUT"
-
-  DEMO_BASE_URL="$(discover_demo_url)"
-  export DEMO_BASE_URL
-  printf 'Demo URL: %s\n' "$DEMO_BASE_URL"
-  run_verify
-
-  printf '\nSourceMap package command:\n'
-  printf '  scripts/package-rum-sourcemap.sh --version %s\n' "$DEMO_VERSION"
-  printf 'SourceMap upload environment: demo\n'
-  printf 'SourceMap upload version: %s\n' "$DEMO_VERSION"
-}
-
 show_status() {
   require_command helm
   require_command kubectl
@@ -309,10 +200,6 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 case "$command_name" in
-  install)
-    [[ "$WITH_DATAKIT" == "false" ]] || die "--with-datakit is only valid with cleanup"
-    install_workshop
-    ;;
   status)
     [[ "$ASSUME_YES" == "false" && "$WITH_DATAKIT" == "false" ]] || die "status does not accept options"
     show_status
