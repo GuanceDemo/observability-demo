@@ -1,0 +1,24 @@
+# TrueWatch EKS workshop profile. This creates an internet-facing demo Gateway
+# and must only be used in an isolated, short-lived workshop environment.
+image:
+  registry: pubrepo.jiagouyun.com
+  owner: demo
+  tag: "2.3.0"
+  pullPolicy: IfNotPresent
+
+environment: demo
+
+observability:
+  project: mall-demo
+
+datakit:
+  provider: truewatch
+
+gateway:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+rum:
+  enabled: true

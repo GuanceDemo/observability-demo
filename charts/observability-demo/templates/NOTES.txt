@@ -5,7 +5,12 @@ Wait for the external address:
 
   kubectl -n {{ .Release.Namespace }} get svc {{ include "observability-demo.fullname" . }}-gateway-service --watch
 
-Then visit the EXTERNAL-IP hostname over HTTP. MySQL, Redis and the internal Java services remain private.
+Then run the repository helper to discover the URL and verify the deployment:
+
+  scripts/workshop.sh status
+  scripts/workshop.sh verify
+
+MySQL, Redis and the internal Java services remain private.
 {{- else }}
 The demo is internal-only. Open it with:
 
@@ -22,3 +27,7 @@ The demo is using the pre-created Secret {{ include "observability-demo.secretNa
 {{- end }}
 
 Fault injection, recovery, and warm-up operations do not require a demo credential.
+
+Remove the application and its public LoadBalancer while preserving DataKit:
+
+  scripts/workshop.sh cleanup

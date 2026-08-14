@@ -303,6 +303,7 @@ class DemoController {
     response.put("logViewerEnabled", true);
     response.put("kubernetesLogReaderEnabled", kubernetesLogReaderEnabled);
     response.put("project", project);
+    response.put("version", rumVersion);
     response.put("datakitProvider", datakitProvider);
     response.put("observabilityConsoleUrl", observabilityConsoleUrl);
     if (!observabilityWorkspaceId.isBlank()) {

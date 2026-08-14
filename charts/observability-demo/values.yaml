@@ -3,8 +3,8 @@ replicaCount: 1
 image:
   registry: pubrepo.jiagouyun.com
   owner: demo
-  tag: latest
-  pullPolicy: Always
+  tag: "2.3.0"
+  pullPolicy: IfNotPresent
 
 imagePullSecrets: []
 nameOverride: ""
@@ -30,8 +30,8 @@ observability:
 datakit:
   provider: guance
 
-# ClusterIP is portable across Kind, EKS and kubeadm. The EKS workshop uses
-# values-eks.yaml to expose only the Gateway through an AWS load balancer.
+# ClusterIP is portable across Kind, EKS and kubeadm. Deployment profiles can
+# expose only the Gateway through a cloud load balancer.
 gateway:
   service:
     type: ClusterIP

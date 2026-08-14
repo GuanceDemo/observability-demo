@@ -4,6 +4,7 @@ set -euo pipefail
 base_url="${DEMO_BASE_URL:-http://127.0.0.1:8080}"
 expected_project="${DEMO_PROJECT:-mall-demo}"
 expected_provider="${DATAKIT_PROVIDER:-guance}"
+expected_version="${DEMO_VERSION:-}"
 
 expect_status() {
   local expected="$1"
@@ -20,6 +21,9 @@ expect_status 200 "${base_url}/actuator/health"
 expect_status 200 "${base_url}/api/demo/config"
 grep -Fq "\"project\":\"${expected_project}\"" /tmp/observability-demo-response
 grep -Fq "\"datakitProvider\":\"${expected_provider}\"" /tmp/observability-demo-response
+if [[ -n "$expected_version" ]]; then
+  grep -Fq "\"version\":\"${expected_version}\"" /tmp/observability-demo-response
+fi
 if grep -Fq 'controlToken' /tmp/observability-demo-response; then
   echo "demo config must not expose or require a control token" >&2
   exit 1

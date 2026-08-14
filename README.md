@@ -63,9 +63,37 @@ DataKit 需要开启 `container`、`ddtrace`、`statsd` 和 `profile` inputs，�
 
 通过 `.env` 的 `DATAKIT_PROVIDER=guance|truewatch` 指明 DataKit 对接的平台。页面右上角会显示 `DataKit → Guance` 或 `DataKit → TrueWatch`，Trace 深链也会自动选择默认域名：Guance 使用 `https://console.guance.com/`，TrueWatch 使用 `https://ap1-console.truewatch.com/`。如需私有化或其他站点，可用 `OBSERVABILITY_CONSOLE_URL` 覆盖。注意，这个变量负责 Demo 的展示和深链；DataKit 实际上报目标仍由 DataKit 自己的 `dataway_url` 决定，两者应保持一致。
 
-## EKS Workshop：分步安装 DataKit 与 Demo
+## EKS Workshop：安装 DataKit 与 Demo
 
-DataKit 和应用保持为两个独立 Helm Release。教程会展示 DataKit 的真实配置；应用直接拉取 `pubrepo.jiagouyun.com/demo` 公开项目中的 `latest` 镜像，不需要 Maven、Docker build 或镜像仓库登录。正式复现和问题排查仍可改用不可变的 SemVer tag。
+Workshop 固定使用 Guance 官方仓库的 `v2.3.0` 源码和 Harbor `2.3.0` 镜像，避免源码、应用版本和 SourceMap 漂移。DataKit 和应用保持为两个独立 Helm Release；最终用户不需要 Maven、Docker build、ECR 或镜像仓库登录。
+
+```bash
+export DEMO_VERSION="2.3.0"
+git clone --branch "v${DEMO_VERSION}" --depth 1 \
+  https://github.com/GuanceDemo/observability-demo.git
+cd observability-demo
+```
+
+### 一键安装（推荐）
+
+在 AWS CloudShell 中声明 EKS 信息，然后运行安装脚本。脚本会隐藏读取 DataWay URL，提示填写 RUM Application ID 和 TrueWatch Workspace ID，依次安装 DataKit 与 Demo，等待公网 URL，并完成自动验证：
+
+```bash
+export AWS_REGION="ap-northeast-2"
+export EKS_CLUSTER_NAME="observability-demo"
+scripts/workshop.sh install
+```
+
+常用维护命令：
+
+```bash
+scripts/workshop.sh status
+scripts/workshop.sh verify
+scripts/workshop.sh cleanup                 # 保留 DataKit
+scripts/workshop.sh cleanup --with-datakit  # 同时删除 DataKit
+```
+
+下面的分步命令与一键脚本执行相同的部署契约，适合 Workshop 讲解。
 
 ### 0. 准备信息并声明参数
 
@@ -80,12 +108,10 @@ read -rsp 'DataWay URL: ' DATAWAY_URL && export DATAWAY_URL && echo
 
 # RUM Application ID 非敏感，不需要填写 Public DataWay client token。
 read -rp 'RUM Application ID: ' RUM_APPLICATION_ID && export RUM_APPLICATION_ID
-
-export DATAKIT_PROVIDER="guance" # 可选值：guance、truewatch
-read -rp 'Workspace ID: ' OBSERVABILITY_WORKSPACE_ID && export OBSERVABILITY_WORKSPACE_ID
+read -rp 'TrueWatch Workspace ID: ' TRUEWATCH_WORKSPACE_ID && export TRUEWATCH_WORKSPACE_ID
 ```
 
-`project=mall-demo`、镜像标签 `latest`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Demo 固定值，不需要用户声明。
+`project=mall-demo`、镜像标签 `2.3.0`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Workshop 固定值，不需要用户声明。
 
 ### 1. 连接 EKS
 
@@ -134,20 +160,18 @@ kubectl -n datakit logs daemonset/datakit --tail=500 | grep -i ebpf
 
 ### 3. 使用公开镜像部署应用
 
-EKS overlay 只把 Gateway 暴露为 `LoadBalancer`；order、inventory、payment、MySQL 和 Redis 仍然是集群内部服务。
+TrueWatch Workshop profile 只把 Gateway 暴露为 `LoadBalancer`；order、inventory、payment、MySQL 和 Redis 仍然是集群内部服务。
 
 ```bash
 helm upgrade --install demo charts/observability-demo \
   --namespace observability-demo \
   --create-namespace \
-  -f charts/observability-demo/values-eks.yaml \
-  --set rum.enabled=true \
+  -f charts/observability-demo/values-workshop-truewatch.yaml \
   --set-string rum.applicationId="$RUM_APPLICATION_ID" \
-  --set-string datakit.provider="$DATAKIT_PROVIDER" \
   --set-string observability.clusterName="$EKS_CLUSTER_NAME" \
-  --set-string observabilityConsole.workspaceId="$OBSERVABILITY_WORKSPACE_ID"
+  --set-string observabilityConsole.workspaceId="$TRUEWATCH_WORKSPACE_ID"
 
-unset RUM_APPLICATION_ID OBSERVABILITY_WORKSPACE_ID
+unset RUM_APPLICATION_ID TRUEWATCH_WORKSPACE_ID
 
 for deployment in $(kubectl -n observability-demo get deployments -o name); do
   kubectl -n observability-demo rollout status "$deployment" --timeout=8m
@@ -156,25 +180,15 @@ done
 
 Chart 会在 `demo-observability-demo` Secret 中自动生成 Demo 内部 MySQL 密码。
 
-Chart 默认拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:latest`，并使用 `imagePullPolicy: Always`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。如需临时回退 GHCR，可通过 `--set-string image.registry=ghcr.io --set-string image.owner=truewatchtech` 覆盖。
+Workshop profile 拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:2.3.0`，并使用 `imagePullPolicy: IfNotPresent`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。
 
 ### 4. 获取外部 URL
 
-AWS 创建 Load Balancer 通常需要几分钟。等待 Gateway Service 的 `EXTERNAL-IP` 从 `<pending>` 变为 `*.elb.amazonaws.com`：
+AWS 创建 Load Balancer 通常需要几分钟。脚本会等待最多 10 分钟，并兼容 hostname 和 IP：
 
 ```bash
-kubectl -n observability-demo get service \
-  -l app.kubernetes.io/component=gateway-service \
-  --watch
-```
-
-出现地址后按 `Ctrl+C`，输出可直接在浏览器打开的 URL：
-
-```bash
-export DEMO_BASE_URL="http://$(kubectl -n observability-demo get service \
-  -l app.kubernetes.io/component=gateway-service \
-  -o jsonpath='{.items[0].status.loadBalancer.ingress[0].hostname}')"
-echo "$DEMO_BASE_URL"
+scripts/workshop.sh status
+scripts/workshop.sh verify
 ```
 
 这是 AWS 自动分配的公网 DNS，不要求提前购买或配置自有域名。该 Load Balancer 会产生 AWS 费用；Workshop 结束后应卸载应用。Java 容器使用 UID `10001`、只读根文件系统和最小权限 ServiceAccount；MySQL/Redis 使用 `emptyDir`，不适合保存生产数据。
@@ -182,19 +196,18 @@ echo "$DEMO_BASE_URL"
 ### 5. 验证并生成演示流量
 
 ```bash
-scripts/smoke-test.sh
-scripts/generate-traffic.sh
-scripts/inject-fault.sh payment_slow
-scripts/inject-fault.sh off
+scripts/workshop.sh verify
+scripts/package-rum-sourcemap.sh --version 2.3.0
 ```
 
 人工验收应覆盖按 `project=mall-demo` 过滤的 Node/Pod/容器指标、完整 Trace、日志关联、JVM、Profile，以及 RUM/Browser Logs/Replay/SourceMap。详见 [故障场景目录](docs/fault-scenarios.md)。
 
+故障注入、恢复和预热无需控制口令，因此公网入口只应用于隔离、短期的 Workshop 集群。
+
 Workshop 结束后删除应用和公网 Load Balancer：
 
 ```bash
-helm uninstall demo --namespace observability-demo
-kubectl delete namespace observability-demo
+scripts/workshop.sh cleanup
 ```
 
 ### 6. 可选：在 EKS 节点部署 Agent Teams Runtime
@@ -246,7 +259,7 @@ helm lint charts/observability-demo
 scripts/secret-scan.sh
 ```
 
-仓库仅保留三个 workflow：CI、SemVer 镜像发布和 CodeQL。推送 SemVer tag 会生成 `linux/amd64`、`linux/arm64` 镜像，同时发布到 GHCR 和 `pubrepo.jiagouyun.com/demo`，生成不可变版本标签、次版本标签和 Workshop 使用的 `latest`，并生成 SBOM、provenance 和漏洞报告。
+仓库仅保留三个 workflow：CI、SemVer 镜像发布和 CodeQL。只有 `GuanceDemo/observability-demo` 的 SemVer tag 会执行镜像发布，生成 `linux/amd64`、`linux/arm64` 的不可变版本标签、次版本标签和兼容用 `latest`，同时生成 SBOM、provenance 和漏洞报告。Workshop 始终使用不可变版本标签。
 
 Harbor 发布使用 `demo` 项目中具备 Repository Pull/Push 权限的机器人账号。需要在 GitHub 仓库的 Actions Secrets 中配置 `HARBOR_USERNAME` 和 `HARBOR_PASSWORD`；不要把机器人 Secret 写入 Workflow、values 或仓库文件。没有配置这两个 Secret 时，Release images Workflow 会在构建前明确失败。
 

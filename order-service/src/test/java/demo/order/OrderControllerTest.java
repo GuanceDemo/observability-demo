@@ -494,6 +494,7 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.controlTokenRequired").doesNotExist())
         .andExpect(jsonPath("$.rumEnabled").value(true))
         .andExpect(jsonPath("$.project").value("mall-demo"))
+        .andExpect(jsonPath("$.version").value("1.0.0"))
         .andExpect(jsonPath("$.datakitProvider").value("guance"))
         .andExpect(jsonPath("$.observabilityConsoleUrl").value("https://console.guance.com"))
         .andExpect(jsonPath("$.workspaceId").doesNotExist())
@@ -517,6 +518,7 @@ class OrderControllerTest {
     demoMvc
         .perform(get("/api/demo/config"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.version").value("1.0.0"))
         .andExpect(jsonPath("$.datakitProvider").value("truewatch"))
         .andExpect(
             jsonPath("$.observabilityConsoleUrl").value("https://ap1-console.truewatch.com"))

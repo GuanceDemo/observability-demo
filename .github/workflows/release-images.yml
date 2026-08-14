@@ -16,6 +16,7 @@ permissions:
 
 jobs:
   publish:
+    if: github.repository == 'GuanceDemo/observability-demo'
     strategy:
       fail-fast: false
       matrix:

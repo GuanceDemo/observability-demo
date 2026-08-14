@@ -163,6 +163,11 @@ jobs:
         run: |
           helm lint charts/observability-demo
           helm lint charts/observability-demo --values charts/observability-demo/values-eks.yaml
+          helm lint charts/observability-demo \
+            --values charts/observability-demo/values-workshop-truewatch.yaml \
+            --set-string rum.applicationId=test-rum \
+            --set-string observability.clusterName=test-cluster \
+            --set-string observabilityConsole.workspaceId=test-workspace
           helm template demo charts/observability-demo --namespace observability-demo >/tmp/rendered.yaml
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/rendered.yaml
           helm template demo charts/observability-demo \
@@ -171,6 +176,18 @@ jobs:
             >/tmp/eks-rendered.yaml
           grep -A20 'component: gateway-service' /tmp/eks-rendered.yaml | grep -q 'type: LoadBalancer'
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/eks-rendered.yaml
+          helm template demo charts/observability-demo \
+            --namespace observability-demo \
+            --values charts/observability-demo/values-workshop-truewatch.yaml \
+            --set-string rum.applicationId=test-rum \
+            --set-string observability.clusterName=test-cluster \
+            --set-string observabilityConsole.workspaceId=test-workspace \
+            >/tmp/workshop-rendered.yaml
+          grep -q 'pubrepo.jiagouyun.com/demo/observability-demo-gateway-service:2.3.0' /tmp/workshop-rendered.yaml
+          grep -q 'cluster_name_k8s:test-cluster' /tmp/workshop-rendered.yaml
+          grep -A20 'name: DATAKIT_PROVIDER' /tmp/workshop-rendered.yaml | grep -q 'truewatch'
+          grep -A20 'component: gateway-service' /tmp/workshop-rendered.yaml | grep -q 'type: LoadBalancer'
+          docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/workshop-rendered.yaml
           helm repo add datakit https://pubrepo.truewatch.com/chartrepo/datakit
           helm repo update
           helm template datakit datakit/datakit \
@@ -184,6 +201,17 @@ jobs:
           grep -q 'route_class' /tmp/datakit-rendered.yaml
           grep -q 'traffic_type' /tmp/datakit-rendered.yaml
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/datakit-rendered.yaml
+      - name: Verify workshop release contract
+        run: |
+          grep -q '^version: 2.3.0$' charts/observability-demo/Chart.yaml
+          grep -q '^appVersion: "2.3.0"$' charts/observability-demo/Chart.yaml
+          grep -q "if: github.repository == 'GuanceDemo/observability-demo'" .github/workflows/release-images.yml
+          grep -q 'scripts/workshop.sh install' README.md
+          if rg 'TrueWatchTech/observability-demo|cherrycove/observability-demo|demo-control-token|DEMO_CONTROL_TOKEN' \
+            README.md docs charts scripts --glob '!release.md'; then
+            echo 'obsolete workshop repository or control-token reference found' >&2
+            exit 1
+          fi
       - name: Verify Gateway observability fields
         run: |
           for properties in */src/main/resources/application.properties; do
@@ -281,6 +309,7 @@ jobs:
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].spec.securityContext.runAsUser}')" = "10001"
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].metadata.labels.project}')" = "mall-demo"
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=mysql -o jsonpath='{.items[0].metadata.labels.project}')" = "mall-demo"
+          # shellcheck disable=SC2016 # The Downward API placeholders must stay literal.
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].spec.containers[0].env[?(@.name=="DD_TAGS")].value}')" = 'project:mall-demo,pod_name:$(POD_NAME),pod_namespace:$(POD_NAMESPACE),host:$(NODE_NAME),container_name:$(CONTAINER_NAME)'
           test "$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=gateway-service -o jsonpath='{.items[0].spec.automountServiceAccountToken}')" = "false"
           log_annotation="$(kubectl -n observability-demo get pod -l app.kubernetes.io/component=order-service -o jsonpath='{.items[0].metadata.annotations.datakit/logs}')"
