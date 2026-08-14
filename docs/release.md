@@ -11,8 +11,9 @@ personal   https://github.com/cherrycove/observability-demo.git
 ```
 
 The local `main` branch tracks `personal/main`, and the default push remote is
-`personal`. The Guance repository is the canonical public and release source.
-The TrueWatch repository preserves its independent history.
+`personal`. The Guance repository is the canonical public source cloned by the
+Workshop. The personal repository is the only Harbor image publisher. The
+TrueWatch repository preserves its independent history and remains unchanged.
 
 Configure an existing checkout with:
 
@@ -30,17 +31,17 @@ git fetch --all --prune
 
 1. Merge and verify the release commit on `personal/main`.
 2. Fast-forward the identical commit to `origin/main`.
-3. Create the SemVer tag in the Guance repository. Only that repository is
-   allowed to publish Harbor images.
-4. Verify the four Harbor manifests, Helm profile, SourceMap package, and
-   workshop contract.
-5. Create `sync/v<version>` from `truewatch/main`, replace its tracked content
-   with the Guance tag tree, and open a normal pull request.
-6. After the TrueWatch pull request merges, create the same semantic tag on its
-   merge commit. Commit IDs may differ; the tracked trees must not.
+3. Create the SemVer tag and push it to `personal`. Only the personal repository
+   is allowed to publish Harbor images.
+4. Verify the four Harbor manifests and their target platforms, Helm profile,
+   SourceMap package, and workshop contract.
+5. Push the same tag, pointing to the same commit, to `origin` so Workshop users
+   can clone the immutable Guance release.
+6. Publish the matching Workshop update. Leave the TrueWatch repository
+   unchanged.
 
-Never force-push `truewatch/main` and never merge the unrelated Guance/personal
-and TrueWatch histories.
+Never force-push `truewatch/main` or merge the unrelated Guance/personal and
+TrueWatch histories. No TrueWatch synchronization is part of this release.
 
 ## Version contract
 

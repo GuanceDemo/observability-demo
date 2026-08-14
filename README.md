@@ -259,9 +259,9 @@ helm lint charts/observability-demo
 scripts/secret-scan.sh
 ```
 
-仓库仅保留三个 workflow：CI、SemVer 镜像发布和 CodeQL。只有 `GuanceDemo/observability-demo` 的 SemVer tag 会执行镜像发布，生成 `linux/amd64`、`linux/arm64` 的不可变版本标签、次版本标签和兼容用 `latest`，同时生成 SBOM、provenance 和漏洞报告。Workshop 始终使用不可变版本标签。
+仓库仅保留三个 workflow：CI、SemVer 镜像发布和 CodeQL。只有 `cherrycove/observability-demo` 的 SemVer tag 会执行镜像发布；同名 tag 会镜像到 `GuanceDemo/observability-demo` 供 Workshop 固定版本克隆，但不会重复发布镜像。发布产物包含 `linux/amd64`、`linux/arm64` 的不可变版本标签、次版本标签和兼容用 `latest`，以及 SBOM、provenance 和漏洞报告。Workshop 始终使用不可变版本标签。
 
-Harbor 发布使用 `demo` 项目中具备 Repository Pull/Push 权限的机器人账号。需要在 GitHub 仓库的 Actions Secrets 中配置 `HARBOR_USERNAME` 和 `HARBOR_PASSWORD`；不要把机器人 Secret 写入 Workflow、values 或仓库文件。没有配置这两个 Secret 时，Release images Workflow 会在构建前明确失败。
+Harbor 发布使用 `demo` 项目中具备 Repository Pull/Push 权限的机器人账号。`cherrycove/observability-demo` 需要在 Actions Secrets 中配置 `HARBOR_USERNAME` 和 `HARBOR_PASSWORD`；Guance 官方仓不需要这两个 Secret。不要把机器人 Secret 写入 Workflow、values 或仓库文件。没有配置时，Release images Workflow 会在构建前明确失败。
 
 ## License
 
