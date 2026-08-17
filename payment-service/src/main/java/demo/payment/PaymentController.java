@@ -40,12 +40,16 @@ class PaymentController {
       @RequestHeader(value = "X-Key-Request", required = false) String keyRequest,
       @RequestHeader(value = "X-Business-Request-Id", required = false) String businessRequestId,
       @RequestHeader(value = "X-Demo-Language", required = false) String language,
-      @RequestHeader(value = "baggage", required = false) String baggage)
+      @RequestHeader(value = "baggage", required = false) String baggage,
+      @RequestHeader(value = "X-Demo-Visitor-Id", required = false) String visitorId,
+      @RequestHeader(value = "X-Demo-User-Id", required = false) String userId,
+      @RequestHeader(value = "X-Demo-User-Tier", required = false) String userTier)
       throws InterruptedException {
     PaymentRequest paymentRequest =
         request == null ? new PaymentRequest("unknown", 1999) : request.withDefaults();
     RequestMetadata metadata =
-        RequestMetadata.from(keyRequest, businessRequestId, language, baggage);
+        RequestMetadata.from(
+            keyRequest, businessRequestId, language, baggage, visitorId, userId, userTier);
     if (paymentRequest.amountCent() <= 0) {
       log.warn(
           metadata

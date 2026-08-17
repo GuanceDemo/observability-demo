@@ -22,9 +22,9 @@
       document.documentElement.dataset.demoTheme = supportedThemes.has(demoTheme) ? demoTheme : 'colorful';
     })();
   </script>
-  <script src="assets/checkout-sourcemap-fault.min.js?v=20260813-bookstore-v42"></script>
-  <script src="assets/selfheal-i18n.js?v=20260813-bookstore-v42"></script>
-  <link rel="stylesheet" href="assets/storefront.css?v=20260813-bookstore-v42" />
+  <script src="assets/checkout-sourcemap-fault.min.js?v=20260817-bookstore-v43"></script>
+  <script src="assets/selfheal-i18n.js?v=20260817-bookstore-v43"></script>
+  <link rel="stylesheet" href="assets/storefront.css?v=20260817-bookstore-v43" />
 </head>
 <body>
   <main class="shop-app storefront" id="storeHome" data-store-page="home">
@@ -79,9 +79,9 @@
             </button>
           </div>
         </div>
-        <button class="account-button" type="button" tabindex="-1" aria-hidden="true">
+        <button class="account-button" id="accountButton" type="button" aria-haspopup="dialog">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6"></path></svg>
-          <span data-store-copy="account">商城账户</span>
+          <span id="accountButtonLabel">商城账户</span>
         </button>
       </div>
     </header>
@@ -224,6 +224,21 @@
     </nav>
   </main>
 
+  <dialog class="auth-dialog" id="authDialog" aria-labelledby="authDialogTitle">
+    <div class="auth-dialog-card">
+      <button class="auth-dialog-close" id="authDialogClose" type="button" aria-label="关闭">×</button>
+      <div class="auth-dialog-heading">
+        <span class="auth-dialog-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6"></path></svg>
+        </span>
+        <div><h2 id="authDialogTitle">选择演示人物</h2><p id="authDialogDescription"></p></div>
+      </div>
+      <div class="auth-persona-list" id="authPersonaList"></div>
+      <div class="auth-current-user" id="authCurrentUser" hidden></div>
+      <p class="auth-synthetic-note" id="authSyntheticNote"></p>
+    </div>
+  </dialog>
+
   <script>
     const I18N = window.SelfhealI18n;
     let PROJECT_NAME = 'mall-demo';
@@ -232,6 +247,8 @@
     const PREVIEW_DISPLAY_URL = 'https://demo.dataflux.cn';
     const DEMO_THEME_STORAGE_KEY = 'mall-demo-theme';
     const STORE_SESSION_STATE_KEY = 'mall-store-session-state-v1';
+    const VISITOR_STORAGE_KEY = 'mall-demo-visitor-id-v1';
+    const VISITOR_TTL_MS = 60 * 24 * 60 * 60 * 1000;
     const DEMO_THEMES = new Set(['colorful', 'white']);
     const STORE_PAGES = new Set(['home', 'path', 'detail', 'cart']);
     const LEGACY_STORE_PAGE_ALIASES = Object.freeze({ categories: 'home', technology: 'detail', purchase: 'cart' });
@@ -244,6 +261,25 @@
       guance: 'https://static.guance.com',
       truewatch: 'https://static.truewatch.com',
     });
+    function createVisitorId() {
+      if (window.crypto?.randomUUID) return `visitor-${window.crypto.randomUUID()}`;
+      return `visitor-${Date.now().toString(16).padStart(8, '0').slice(-8)}-0000-4000-8000-${Math.random().toString(16).slice(2).padEnd(12, '0').slice(0, 12)}`;
+    }
+
+    function loadVisitorId() {
+      const fallback = createVisitorId();
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(VISITOR_STORAGE_KEY) || 'null');
+        const validId = typeof saved?.id === 'string' && /^visitor-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(saved.id);
+        const validAge = Number.isFinite(saved?.createdAt) && Date.now() - saved.createdAt < VISITOR_TTL_MS;
+        if (validId && validAge) return saved.id;
+        const next = { id: fallback, createdAt: Date.now() };
+        window.localStorage.setItem(VISITOR_STORAGE_KEY, JSON.stringify(next));
+      } catch (_) {
+        // Storage can be disabled; the fallback remains stable for this page lifetime.
+      }
+      return fallback;
+    }
     const TOPIC_ICONS = Object.freeze({
       all: '<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5v-16Z"></path><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5v-16Z"></path>',
       foundation: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path>',
@@ -276,6 +312,11 @@
       busy: false,
       rumReady: false,
       browserLogsReady: false,
+      visitorId: loadVisitorId(),
+      authUser: null,
+      authPersonas: [],
+      authRestored: false,
+      pendingCheckout: null,
       rumApplicationId: '',
       rumViewId: '',
       rumSessionId: '',
@@ -307,6 +348,15 @@
       storeSearch: document.getElementById('storeSearch'),
       clearSearch: document.getElementById('clearSearch'),
       languageToggle: document.getElementById('languageToggle'),
+      accountButton: document.getElementById('accountButton'),
+      accountButtonLabel: document.getElementById('accountButtonLabel'),
+      authDialog: document.getElementById('authDialog'),
+      authDialogClose: document.getElementById('authDialogClose'),
+      authDialogTitle: document.getElementById('authDialogTitle'),
+      authDialogDescription: document.getElementById('authDialogDescription'),
+      authPersonaList: document.getElementById('authPersonaList'),
+      authCurrentUser: document.getElementById('authCurrentUser'),
+      authSyntheticNote: document.getElementById('authSyntheticNote'),
       serviceStrip: document.getElementById('serviceStrip'),
       catalogTitle: document.getElementById('catalogTitle'),
       catalogCount: document.getElementById('catalogCount'),
@@ -360,6 +410,196 @@
         .replaceAll('>', '&gt;')
         .replaceAll('"', '&quot;')
         .replaceAll("'", '&#039;');
+    }
+
+    function userTierLabel(tier) {
+      const key = `tier${String(tier || '').charAt(0).toUpperCase()}${String(tier || '').slice(1)}`;
+      const translated = s(key);
+      return translated === key ? String(tier || '-') : translated;
+    }
+
+    function renderAuthUi() {
+      const user = state.authUser;
+      if (els.accountButton) {
+        els.accountButton.dataset.authState = user ? 'authenticated' : 'anonymous';
+        els.accountButton.title = user ? `${user.name} · ${userTierLabel(user.tier)}` : s('account');
+      }
+      if (els.accountButtonLabel) {
+        els.accountButtonLabel.textContent = user ? `${user.name} · ${userTierLabel(user.tier)}` : s('account');
+      }
+      if (!els.authDialog) return;
+      els.authDialogTitle.textContent = user ? s('authAccountTitle') : s('authTitle');
+      els.authDialogDescription.textContent = user ? s('authAccountDescription') : s('authDescription');
+      els.authSyntheticNote.textContent = s('authSyntheticNote');
+      els.authDialogClose.setAttribute('aria-label', s('authClose'));
+      els.authPersonaList.hidden = Boolean(user);
+      els.authCurrentUser.hidden = !user;
+      if (user) {
+        els.authCurrentUser.innerHTML = `
+          <span class="auth-avatar">${escapeHtml(user.name.slice(-1))}</span>
+          <div><strong>${escapeHtml(user.name)}</strong><span>${escapeHtml(user.email)}</span><em>${escapeHtml(userTierLabel(user.tier))}</em></div>
+          <button class="auth-logout-button" type="button" data-auth-logout>${s('authLogout')}</button>`;
+      } else {
+        els.authPersonaList.innerHTML = state.authPersonas.map((persona) => `
+          <button class="auth-persona" type="button" data-auth-user-id="${escapeHtml(persona.id)}">
+            <span class="auth-avatar">${escapeHtml(persona.name.slice(-1))}</span>
+            <span><strong>${escapeHtml(persona.name)}</strong><small>${escapeHtml(persona.email)}</small></span>
+            <em>${escapeHtml(userTierLabel(persona.tier))}</em>
+          </button>`).join('');
+      }
+    }
+
+    function setSdkContext(sdk, key, value) {
+      if (!sdk) return;
+      if (value == null) {
+        sdk.removeGlobalContextProperty?.(key);
+        return;
+      }
+      sdk.setGlobalContextProperty?.(key, value);
+    }
+
+    function applyAuthIdentityToSdks(targets = [window.DATAFLUX_RUM, window.DATAFLUX_LOGS]) {
+      const user = state.authUser;
+      const identity = user ? { id: user.id, name: user.name, email: user.email } : null;
+      targets.forEach((sdk) => {
+        if (!sdk) return;
+        try {
+          if (identity) sdk.setUser?.(identity);
+          else sdk.clearUser?.();
+          setSdkContext(sdk, 'visitor_id', state.visitorId);
+          setSdkContext(sdk, 'auth_state', user ? 'authenticated' : 'anonymous');
+          setSdkContext(sdk, 'user_tier', user?.tier || null);
+        } catch (error) {
+          console.warn('[Observability identity] SDK update skipped', error);
+        }
+      });
+    }
+
+    function startStoreView(reason) {
+      if (!state.rumReady || !window.DATAFLUX_RUM?.startView) return;
+      window.DATAFLUX_RUM.startView({
+        name: `storefront/${state.storePage}`,
+        context: {
+          visitor_id: state.visitorId,
+          auth_state: state.authUser ? 'authenticated' : 'anonymous',
+          user_tier: state.authUser?.tier,
+          view_reason: reason || 'navigation',
+        },
+      });
+    }
+
+    function openAuthDialog(reason = 'account') {
+      renderAuthUi();
+      const alreadyOpen = els.authDialog.open;
+      if (!alreadyOpen) {
+        if (!state.authUser) {
+          addRumAction('auth_login_prompt', { trigger: reason, visitor_id: state.visitorId });
+          log(s('authLogPrompt'), {
+            context: { operation: 'auth_login_prompt', trigger: reason, visitor_id: state.visitorId },
+          });
+        }
+        if (els.authDialog.showModal) els.authDialog.showModal();
+        else els.authDialog.setAttribute('open', '');
+      }
+    }
+
+    function closeAuthDialog() {
+      if (els.authDialog.close) els.authDialog.close();
+      else els.authDialog.removeAttribute('open');
+    }
+
+    function applyAuthSession(body) {
+      state.authUser = body?.authenticated ? body.user : null;
+      state.authPersonas = Array.isArray(body?.personas) ? body.personas : state.authPersonas;
+      renderAuthUi();
+    }
+
+    async function restoreAuthSession() {
+      try {
+        const { response, body } = await requestJson('/api/demo/auth/session');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        applyAuthSession(body);
+      } catch (error) {
+        state.authUser = null;
+        console.warn('[Auth] session restore failed', error);
+      } finally {
+        state.authRestored = true;
+        renderAuthUi();
+      }
+    }
+
+    async function loginAs(userId, button) {
+      if (!userId || button?.disabled) return;
+      if (button) button.disabled = true;
+      try {
+        const { response, body } = await requestJson('/api/demo/auth/session', {
+          method: 'POST',
+          body: JSON.stringify({ userId }),
+        });
+        if (!response.ok) throw new Error(body?.message || body?.error || `HTTP ${response.status}`);
+        applyAuthSession(body);
+        applyAuthIdentityToSdks();
+        addRumAction('auth_login_success', {
+          user_id: state.authUser.id,
+          user_tier: state.authUser.tier,
+          visitor_id: state.visitorId,
+        });
+        log(s('authLogSuccess', { name: state.authUser.name }), {
+          status: 'success',
+          context: { operation: 'auth_login_success', user_id: state.authUser.id, user_tier: state.authUser.tier, visitor_id: state.visitorId },
+        });
+        closeAuthDialog();
+        startStoreView('auth_login');
+        const pendingCheckout = state.pendingCheckout;
+        state.pendingCheckout = null;
+        if (pendingCheckout === 'single') await handleCheckout();
+        if (pendingCheckout === 'traffic') await handleTrafficCheckout();
+      } catch (error) {
+        addRumAction('auth_login_failure', { reason: error.message, visitor_id: state.visitorId });
+        log(s('authLogFailure', { message: error.message }), {
+          status: 'error',
+          context: { operation: 'auth_login_failure', reason: error.message, visitor_id: state.visitorId },
+        });
+        setPhoneResult('failed', s('authFailedTitle'), error.message);
+      } finally {
+        if (button?.isConnected) button.disabled = false;
+      }
+    }
+
+    async function logoutCurrentUser() {
+      if (!state.authUser) return;
+      const user = state.authUser;
+      addRumAction('auth_logout', { user_id: user.id, user_tier: user.tier, visitor_id: state.visitorId });
+      log(s('authLogLogout', { name: user.name }), {
+        context: { operation: 'auth_logout', user_id: user.id, user_tier: user.tier, visitor_id: state.visitorId },
+      });
+      try {
+        const { response } = await requestJson('/api/demo/auth/session', { method: 'DELETE' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        state.authUser = null;
+        state.pendingCheckout = null;
+        applyAuthIdentityToSdks();
+        renderAuthUi();
+        closeAuthDialog();
+        startStoreView('auth_logout');
+      } catch (error) {
+        setPhoneResult('failed', s('authFailedTitle'), error.message);
+      }
+    }
+
+    function handleExpiredSession(pendingCheckout) {
+      const user = state.authUser;
+      addRumAction('auth_login_failure', { reason: 'session_expired', user_id: user?.id, visitor_id: state.visitorId });
+      log(s('authSessionExpired'), {
+        status: 'warn',
+        context: { operation: 'auth_login_failure', reason: 'session_expired', user_id: user?.id, visitor_id: state.visitorId },
+      });
+      state.authUser = null;
+      state.pendingCheckout = pendingCheckout;
+      applyAuthIdentityToSdks();
+      renderAuthUi();
+      startStoreView('auth_session_expired');
+      openAuthDialog('session_expired');
     }
 
     function setThemeMenuOpen(open) {
@@ -598,6 +838,7 @@
         trigger: options.trigger,
         track: options.track,
       });
+      if (previousPage !== state.storePage) startStoreView(options.trigger || 'navigation');
     }
 
     function openBookDetail(bookId, trigger = 'open_book_detail') {
@@ -843,6 +1084,7 @@
           'X-Key-Request': keyRequest,
           'X-Business-Request-Id': bizRequestId,
           'X-Biz-Chain': 'selfheal_checkout',
+          'X-Demo-Visitor-Id': state.visitorId,
           'X-Book-Ids': cart.bookIds.join(',') || state.currentBookId,
           'X-Book-Copies': String(cart.totalCopies || 1),
           baggage,
@@ -890,6 +1132,9 @@
       event.context.preview_mode = state.previewMode;
       event.context.preview_url = PREVIEW_DISPLAY_URL;
       event.context.store_page = state.storePage;
+      event.context.visitor_id = state.visitorId;
+      event.context.auth_state = state.authUser ? 'authenticated' : 'anonymous';
+      if (state.authUser?.tier) event.context.user_tier = state.authUser.tier;
       event.context.book_id = state.currentBookId;
       const cartSnapshot = checkoutSnapshot();
       event.context.cart_total_copies = cartSnapshot.totalCopies;
@@ -938,8 +1183,12 @@
     }
 
     function addRumAction(name, context) {
-      if (window.DATAFLUX_RUM && window.DATAFLUX_RUM.addAction) {
-        window.DATAFLUX_RUM.addAction(name, context || {});
+      if (state.rumReady && window.DATAFLUX_RUM?.addAction) {
+        try {
+          window.DATAFLUX_RUM.addAction(name, context || {});
+        } catch (error) {
+          console.warn('[RUM] action skipped', error);
+        }
       }
     }
 
@@ -1036,10 +1285,12 @@
       }
       const response = await fetch(target, {
         cache: 'no-store',
+        credentials: 'same-origin',
         ...restOptions,
         headers: {
           'Content-Type': 'application/json',
           'X-Demo-Language': state.language,
+          'X-Demo-Visitor-Id': state.visitorId,
           ...headers,
         },
       });
@@ -1241,6 +1492,7 @@
           window.DATAFLUX_LOGS.setGlobalContextProperty('preview_url', PREVIEW_DISPLAY_URL);
         }
         state.browserLogsReady = true;
+        applyAuthIdentityToSdks([window.DATAFLUX_LOGS]);
         applyPreviewObservabilityContext();
       } catch (error) {
         state.browserLogsReady = false;
@@ -1277,6 +1529,7 @@
           sessionReplaySampleRate: body.sessionReplaySampleRate ?? 100,
           sessionReplayOnErrorSampleRate: body.sessionReplayOnErrorSampleRate ?? 100,
           sessionPersistence: BROWSER_SESSION_PERSISTENCE,
+          trackViewsManually: true,
           compressIntakeRequests: body.compressIntakeRequests !== false,
           trackInteractions: true,
           trackResources: true,
@@ -1297,7 +1550,9 @@
           window.DATAFLUX_RUM.setGlobalContextProperty('preview_url', PREVIEW_DISPLAY_URL);
         }
         state.rumReady = true;
+        applyAuthIdentityToSdks();
         applyPreviewObservabilityContext();
+        startStoreView('initial');
         const rumSessionId = getRumSessionId();
         console.info('[RUM] initialized', {
           service,
@@ -1361,6 +1616,7 @@
         els.sortControl.innerHTML = `<option value="recommended">${s('sortRecommended')}</option><option value="rating">${s('sortRating')}</option><option value="price-asc">${s('sortPrice')}</option>`;
         els.sortControl.value = state.sort;
       }
+      renderAuthUi();
     }
 
     function renderHomeProduct() {
@@ -1722,6 +1978,11 @@
       if (cart.totalCopies < 1 || cart.amountCent < 1) {
         return { ok: false, aborted: true, httpStatus: 0, body: { error: 'empty_cart' }, traceId: '' };
       }
+      if (!state.authUser) {
+        state.pendingCheckout = options.pendingCheckout || 'single';
+        openAuthDialog('checkout');
+        return { ok: false, aborted: true, authRequired: true, httpStatus: 401, body: { error: 'authentication_required' }, traceId: '' };
+      }
       if (!options.skipClientFault && triggerClientFaultFromUserAction(actionName)) {
         return { ok: false, aborted: true, httpStatus: 0, body: { error: 'frontend_fault' }, traceId: '' };
       }
@@ -1766,6 +2027,11 @@
           },
           body: JSON.stringify(payload),
         });
+        if (response.status === 401) {
+          hidePurchaseLoading();
+          handleExpiredSession(options.pendingCheckout || 'single');
+          return { ok: false, aborted: true, authRequired: true, httpStatus: 401, body, traceId: '' };
+        }
         if (response.ok) {
           if (updateStatus) {
             hidePurchaseLoading();
@@ -1877,8 +2143,10 @@
             updateStatus: false,
             skipClientFault: true,
             actionName: 'traffic_buy_book_button',
+            pendingCheckout: 'traffic',
           });
           if (result) results.push(result);
+          if (result?.authRequired) return;
           await new Promise((resolve) => setTimeout(resolve, 180));
         }
         const traceIds = [...new Set(results.map((item) => item.traceId).filter(Boolean))];
@@ -1924,6 +2192,25 @@
       }
     }
 
+    async function handleCheckout() {
+      if (!state.authUser) {
+        state.pendingCheckout = 'single';
+        openAuthDialog('checkout');
+        return;
+      }
+      const result = await submitOrder({ pendingCheckout: 'single' });
+      if (result?.ok) clearSelectedCart();
+    }
+
+    async function handleTrafficCheckout() {
+      if (!state.authUser) {
+        state.pendingCheckout = 'traffic';
+        openAuthDialog('traffic_checkout');
+        return;
+      }
+      await runTraffic();
+    }
+
     function handleParentMessage(event) {
       if (event.origin !== window.location.origin) return;
       const data = event.data || {};
@@ -1944,6 +2231,11 @@
       }
     }
 
+    async function bootstrapIdentityAndRum() {
+      await restoreAuthSession();
+      await initRum();
+    }
+
     window.addEventListener('message', handleParentMessage);
     window.addEventListener('popstate', (event) => {
       const previousPage = state.storePage;
@@ -1955,13 +2247,13 @@
       const trigger = state.pendingHistoryTrigger || 'browser_history';
       state.pendingHistoryTrigger = null;
       renderStorePage({ previousPage, trigger });
+      if (previousPage !== state.storePage) startStoreView(trigger);
     });
     els.submitBtn.addEventListener('click', async (event) => {
       if (event.detail > 0) event.currentTarget.blur();
-      const result = await submitOrder();
-      if (result?.ok) clearSelectedCart();
+      await handleCheckout();
     });
-    els.trafficBtn.addEventListener('click', runTraffic);
+    els.trafficBtn.addEventListener('click', handleTrafficCheckout);
     els.storeSearch.addEventListener('input', (event) => {
       state.query = event.currentTarget.value;
       state.activeTopic = 'all';
@@ -1976,6 +2268,20 @@
       els.storeSearch.focus();
     });
     els.languageToggle.addEventListener('click', () => setLanguage(state.language === 'zh' ? 'en' : 'zh'));
+    els.accountButton?.addEventListener('click', () => openAuthDialog('account_button'));
+    els.authDialogClose?.addEventListener('click', closeAuthDialog);
+    els.authDialog?.addEventListener('click', (event) => {
+      if (event.target === els.authDialog) {
+        closeAuthDialog();
+        return;
+      }
+      const persona = event.target.closest('[data-auth-user-id]');
+      if (persona) {
+        loginAs(persona.dataset.authUserId, persona);
+        return;
+      }
+      if (event.target.closest('[data-auth-logout]')) logoutCurrentUser();
+    });
     if (els.storeHome) {
       els.storeHome.addEventListener('click', (event) => {
         const topicTarget = event.target.closest('[data-topic]');
@@ -2110,8 +2416,9 @@
     renderDemoThemePicker();
     renderProducts();
     renderStorePage({ track: false });
+    renderAuthUi();
     hidePhoneResult();
-    initRum();
+    bootstrapIdentityAndRum();
     postToParent('shop-ready', {
       language: state.language,
       theme: state.demoTheme,

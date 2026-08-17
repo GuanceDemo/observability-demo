@@ -2,6 +2,7 @@ package demo.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.headerDoesNotExist;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -146,11 +147,16 @@ class GatewayProxyFilterTest {
         .andExpect(header("X-Key-Request", "checkout_submit_order"))
         .andExpect(header("X-Business-Request-Id", "biz-gateway-1001"))
         .andExpect(header("X-Demo-Language", "en"))
+        .andExpect(header("X-Demo-Visitor-Id", "visitor-12345678-1234-4123-8123-123456789abc"))
+        .andExpect(headerDoesNotExist("X-Demo-User-Id"))
+        .andExpect(headerDoesNotExist("X-Demo-User-Tier"))
         .andExpect(header("X-Gateway-Service", "gateway-service"))
         .andExpect(header("X-Forwarded-For", "198.51.100.21"))
         .andRespond(
             withSuccess("{\"status\":\"CONFIRMED\"}", MediaType.APPLICATION_JSON)
-                .header("ext_trace_id", "downstream-trace"));
+                .header("ext_trace_id", "downstream-trace")
+                .header("X-Demo-Authenticated-User-Id", "demo-reader-001")
+                .header("X-Demo-Authenticated-User-Tier", "standard"));
 
     MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/orders");
     request.setQueryString("source=shop");
@@ -158,6 +164,9 @@ class GatewayProxyFilterTest {
     request.addHeader("X-Key-Request", "checkout_submit_order");
     request.addHeader("X-Business-Request-Id", "biz-gateway-1001");
     request.addHeader("X-Demo-Language", "en");
+    request.addHeader("X-Demo-Visitor-Id", "visitor-12345678-1234-4123-8123-123456789abc");
+    request.addHeader("X-Demo-User-Id", "attacker");
+    request.addHeader("X-Demo-User-Tier", "admin");
     request.addHeader("Host", "demo.example.com");
     request.addHeader("X-Forwarded-For", "203.0.113.10, 10.0.0.9");
     request.addHeader("User-Agent", "MallDemoTest/1.0");
@@ -181,6 +190,8 @@ class GatewayProxyFilterTest {
     assertThat(response.getStatus()).isEqualTo(200);
     assertThat(response.getHeader("X-Gateway-Service")).isEqualTo("gateway-service");
     assertThat(response.getHeader("ext_trace_id")).isNull();
+    assertThat(response.getHeader("X-Demo-Authenticated-User-Id")).isNull();
+    assertThat(response.getHeader("X-Demo-Authenticated-User-Tier")).isNull();
     assertThat(response.getContentAsString()).contains("CONFIRMED");
     assertThat(appender.list)
         .anySatisfy(
@@ -204,6 +215,18 @@ class GatewayProxyFilterTest {
                   .containsEntry("user_agent", "MallDemoTest/1.0")
                   .containsEntry("referer", "https://demo.example.com/shop.html");
             });
+    assertThat(appender.list)
+        .filteredOn(event -> event.getFormattedMessage().contains("Gateway request completed"))
+        .singleElement()
+        .satisfies(
+            event -> {
+              assertThat(event.getMDCPropertyMap())
+                  .containsEntry("visitor_id", "visitor-12345678-1234-4123-8123-123456789abc")
+                  .containsEntry("user_id", "demo-reader-001")
+                  .containsEntry("user_tier", "standard")
+                  .containsEntry("auth_state", "authenticated");
+            });
+    assertThat(MDC.get("user_id")).isNull();
     server.verify();
   }
 }

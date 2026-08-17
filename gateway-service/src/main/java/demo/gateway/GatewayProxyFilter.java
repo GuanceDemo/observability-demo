@@ -11,6 +11,7 @@ import java.time.Duration;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
+import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -66,7 +67,21 @@ class GatewayProxyFilter extends OncePerRequestFilter {
           "x-datadog-sampling-priority",
           "x-datadog-origin",
           "x-datadog-tags");
-  private static final Set<String> GATEWAY_MANAGED_RESPONSE_HEADERS = Set.of("ext_trace_id");
+  private static final Set<String> GATEWAY_MANAGED_RESPONSE_HEADERS =
+      Set.of(
+          "ext_trace_id",
+          "x-demo-authenticated-user-id",
+          "x-demo-authenticated-user-tier");
+  private static final Set<String> CLIENT_IDENTITY_HEADERS =
+      Set.of(
+          "x-demo-visitor-id",
+          "x-demo-user-id",
+          "x-demo-user-tier",
+          "x-demo-auth-state",
+          "x-demo-authenticated-user-id",
+          "x-demo-authenticated-user-tier");
+  private static final Pattern VISITOR_ID =
+      Pattern.compile("visitor-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
 
   private final RestTemplate restTemplate;
   private final String orderUrl;
@@ -92,12 +107,13 @@ class GatewayProxyFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     String keyRequest = valueOrDash(request.getHeader("X-Key-Request"));
     String businessRequestId = valueOrDash(request.getHeader("X-Business-Request-Id"));
+    String visitorId = safeVisitorId(request.getHeader("X-Demo-Visitor-Id"));
     DemoLanguage language = DemoLanguage.from(request.getHeader("X-Demo-Language"));
     PublicRoutePolicy.Decision route =
         publicRoutePolicy.evaluate(request.getMethod(), request.getRequestURI());
     RequestSource source = RequestSource.from(request);
-    putRequestContext(keyRequest, businessRequestId, language, route, source);
-    applyCurrentSpanTags(keyRequest, businessRequestId, language, route, source);
+    putRequestContext(keyRequest, businessRequestId, visitorId, language, route, source);
+    applyCurrentSpanTags(keyRequest, businessRequestId, visitorId, language, route, source);
 
     try {
       if (!route.forwardsDownstream()) {
@@ -126,7 +142,7 @@ class GatewayProxyFilter extends OncePerRequestFilter {
           keyRequest,
           businessRequestId);
       try {
-        HttpHeaders headers = requestHeaders(request);
+        HttpHeaders headers = requestHeaders(request, visitorId);
         byte[] requestBody = request.getInputStream().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
         if (requestBody.length > MAX_REQUEST_BODY_BYTES) {
           response.sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
@@ -137,6 +153,8 @@ class GatewayProxyFilter extends OncePerRequestFilter {
         ResponseEntity<byte[]> downstreamResponse =
             restTemplate.exchange(
                 downstream, HttpMethod.valueOf(request.getMethod()), entity, byte[].class);
+        VerifiedIdentity identity = VerifiedIdentity.from(downstreamResponse.getHeaders());
+        applyVerifiedIdentity(identity);
         writeResponse(response, downstreamResponse);
         long elapsedMs = Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
         log.info(
@@ -231,14 +249,15 @@ class GatewayProxyFilter extends OncePerRequestFilter {
         orderUrl + request.getRequestURI() + (query == null || query.isBlank() ? "" : "?" + query));
   }
 
-  private HttpHeaders requestHeaders(HttpServletRequest request) {
+  private HttpHeaders requestHeaders(HttpServletRequest request, String visitorId) {
     HttpHeaders headers = new HttpHeaders();
     Enumeration<String> names = request.getHeaderNames();
     while (names != null && names.hasMoreElements()) {
       String name = names.nextElement();
       String normalized = name.toLowerCase(Locale.ROOT);
       if (HOP_BY_HOP_HEADERS.contains(normalized)
-          || TRACE_PROPAGATION_HEADERS.contains(normalized)) {
+          || TRACE_PROPAGATION_HEADERS.contains(normalized)
+          || CLIENT_IDENTITY_HEADERS.contains(normalized)) {
         continue;
       }
       Enumeration<String> values = request.getHeaders(name);
@@ -247,9 +266,12 @@ class GatewayProxyFilter extends OncePerRequestFilter {
       }
     }
     headers.set("X-Forwarded-Host", valueOrDash(request.getHeader("Host")));
-    headers.set("X-Forwarded-Proto", request.getScheme());
+    headers.set("X-Forwarded-Proto", forwardedProto(request));
     headers.set("X-Forwarded-For", request.getRemoteAddr());
     headers.set("X-Gateway-Service", "gateway-service");
+    if (visitorId != null) {
+      headers.set("X-Demo-Visitor-Id", visitorId);
+    }
     return headers;
   }
 
@@ -279,6 +301,7 @@ class GatewayProxyFilter extends OncePerRequestFilter {
   private void applyCurrentSpanTags(
       String keyRequest,
       String businessRequestId,
+      String visitorId,
       DemoLanguage language,
       PublicRoutePolicy.Decision route,
       RequestSource source) {
@@ -293,6 +316,8 @@ class GatewayProxyFilter extends OncePerRequestFilter {
             route.forwardsDownstream() ? "order-service" : "gateway-service");
         setTag(span, "key_request", keyRequest);
         setTag(span, "biz_request_id", businessRequestId);
+        setTag(span, "visitor_id", valueOrDash(visitorId));
+        setTag(span, "auth_state", "anonymous");
         setTag(span, "language", language.code());
         setTag(span, "public_route", route.routeId());
         setTag(span, "route_class", route.routeClass());
@@ -317,6 +342,7 @@ class GatewayProxyFilter extends OncePerRequestFilter {
   private void putRequestContext(
       String keyRequest,
       String businessRequestId,
+      String visitorId,
       DemoLanguage language,
       PublicRoutePolicy.Decision route,
       RequestSource source) {
@@ -332,6 +358,10 @@ class GatewayProxyFilter extends OncePerRequestFilter {
     MDC.put("container_name", valueOrDash(System.getenv("CONTAINER_NAME")));
     MDC.put("container_id", hostName);
     MDC.put("language", language.code());
+    MDC.put("auth_state", "anonymous");
+    if (visitorId != null) {
+      MDC.put("visitor_id", visitorId);
+    }
     MDC.put("public_route", route.routeId());
     MDC.put("route_class", route.routeClass());
     MDC.put("traffic_type", route.trafficType());
@@ -363,6 +393,10 @@ class GatewayProxyFilter extends OncePerRequestFilter {
             "container_id",
             "key_request",
             "biz_request_id",
+            "visitor_id",
+            "user_id",
+            "user_tier",
+            "auth_state",
             "language",
             "public_route",
             "route_class",
@@ -374,6 +408,63 @@ class GatewayProxyFilter extends OncePerRequestFilter {
             "user_agent",
             "referer")) {
       MDC.remove(key);
+    }
+  }
+
+  private void applyVerifiedIdentity(VerifiedIdentity identity) {
+    if (identity.userId() == null) {
+      return;
+    }
+    MDC.put("user_id", identity.userId());
+    MDC.put("user_tier", identity.userTier());
+    MDC.put("auth_state", "authenticated");
+    try {
+      Class<?> globalTracer = Class.forName("datadog.trace.api.GlobalTracer");
+      Object tracer = globalTracer.getMethod("get").invoke(null);
+      Object span = tracer.getClass().getMethod("activeSpan").invoke(tracer);
+      if (span != null) {
+        setTag(span, "user_id", identity.userId());
+        setTag(span, "user_tier", identity.userTier());
+        setTag(span, "auth_state", "authenticated");
+      }
+    } catch (ReflectiveOperationException | LinkageError ignored) {
+      // Unit tests and local builds do not require the runtime tracing agent.
+    }
+  }
+
+  private static String safeVisitorId(String value) {
+    if (value == null) {
+      return null;
+    }
+    String candidate = value.trim();
+    return VISITOR_ID.matcher(candidate).matches() ? candidate : null;
+  }
+
+  private static String forwardedProto(HttpServletRequest request) {
+    String forwarded = request.getHeader("X-Forwarded-Proto");
+    if (forwarded != null) {
+      String candidate = forwarded.split(",", 2)[0].trim();
+      if ("http".equalsIgnoreCase(candidate) || "https".equalsIgnoreCase(candidate)) {
+        return candidate.toLowerCase(Locale.ROOT);
+      }
+    }
+    return request.isSecure() ? "https" : "http";
+  }
+
+  private record VerifiedIdentity(String userId, String userTier) {
+    static VerifiedIdentity from(HttpHeaders headers) {
+      String userId = safeIdentity(headers.getFirst("X-Demo-Authenticated-User-Id"));
+      String userTier = safeIdentity(headers.getFirst("X-Demo-Authenticated-User-Tier"));
+      return userId == null || userTier == null
+          ? new VerifiedIdentity(null, null)
+          : new VerifiedIdentity(userId, userTier);
+    }
+
+    private static String safeIdentity(String value) {
+      if (value == null || !value.matches("[A-Za-z0-9_-]{1,128}")) {
+        return null;
+      }
+      return value;
     }
   }
 

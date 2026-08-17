@@ -121,6 +121,24 @@ final class PublicRoutePolicy {
               "business_api"),
           RouteRule.exact(
               Set.of("GET"),
+              "/api/demo/auth/session",
+              Action.FORWARD,
+              "demo.auth.session.get",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("POST"),
+              "/api/demo/auth/session",
+              Action.FORWARD,
+              "demo.auth.session.login",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("DELETE"),
+              "/api/demo/auth/session",
+              Action.FORWARD,
+              "demo.auth.session.logout",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("GET"),
               "/api/demo/config",
               Action.FORWARD,
               "demo.config",

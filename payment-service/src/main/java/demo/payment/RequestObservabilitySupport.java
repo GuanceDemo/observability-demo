@@ -22,7 +22,10 @@ class KeyRequestSpanTagInterceptor implements HandlerInterceptor {
             request.getHeader("X-Key-Request"),
             request.getHeader("X-Business-Request-Id"),
             request.getHeader("X-Demo-Language"),
-            request.getHeader("baggage"));
+            request.getHeader("baggage"),
+            request.getHeader("X-Demo-Visitor-Id"),
+            request.getHeader("X-Demo-User-Id"),
+            request.getHeader("X-Demo-User-Tier"));
     metadata.applyCurrentSpanTags();
     log.info(
         metadata
@@ -107,6 +110,10 @@ final class ProcessIdentity {
     MDC.remove("key_request");
     MDC.remove("biz_request_id");
     MDC.remove("language");
+    MDC.remove("visitor_id");
+    MDC.remove("user_id");
+    MDC.remove("user_tier");
+    MDC.remove("auth_state");
     MDC.remove("fault_id");
     MDC.remove("fault_layer");
     MDC.remove("fault_kind");

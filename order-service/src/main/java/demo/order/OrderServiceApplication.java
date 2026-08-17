@@ -1,9 +1,5 @@
 package demo.order;
 
-
-
-
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.web.client.RestTemplateBuilder;
@@ -24,10 +20,13 @@ public class OrderServiceApplication {
   }
 
   @Bean
-  WebMvcConfigurer keyRequestTagConfigurer() {
+  WebMvcConfigurer keyRequestTagConfigurer(DemoSessionService sessions) {
     return new WebMvcConfigurer() {
       @Override
       public void addInterceptors(InterceptorRegistry registry) {
+        registry
+            .addInterceptor(new DemoIdentityInterceptor(sessions))
+            .addPathPatterns("/api/**");
         registry
             .addInterceptor(new KeyRequestSpanTagInterceptor())
             .addPathPatterns("/api/**", "/admin/**", "/actuator/**", "/rum-proxy/**");

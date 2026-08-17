@@ -14,6 +14,7 @@
 
 - 产品：`project`。
 - 业务：`key_request`、`biz_request_id`。
+- 用户身份：`visitor_id`、`user_id`、`user_tier`、`auth_state`。这些值在日志中保留为字段，不提升为 Tag；`user_id` 和 `user_tier` 只接受 order-service 会话解析后的值。
 - 语言：`language`，值为 `zh` 或 `en`。
 - 故障：`fault_id`、`fault_layer`、`fault_kind`、`fault_target`。
 - 链路：`trace_id`、`span_id`、`service`、`env`、`version`。
@@ -24,6 +25,15 @@
 平台 Pipeline 的规则保存在 `observability/platform-log-pipeline.p`，用于 Workshop 中手工创建并测试中央 Pipeline。规则将业务正文提取到 `log_message`，不会覆盖完整的原始 `message`。
 
 Gateway Span 同步写入 `route_class`、`traffic_type`、`client_ip`、`user_agent` 和 `referer`。实际 DataKit 的 `inputs.ddtrace.customer_tags` 必须包含这些字段，才能在平台保存为可筛选的自定义 Span 属性。公网扫描告警可在限定 `service=gateway-service` 后追加 `route_class != "unmatched"`；日志监控器使用同名 Tag。
+
+## Web 用户身份字段契约
+
+- `visitor_id`：浏览器生成的 `visitor-<uuid>`，保存 60 天；用于访客 UV，不参与鉴权。
+- `userid`：RUM SDK 的账号身份字段，仅在登录后由 `setUser` 写入；不能与 SDK 自动生成的匿名值直接混算账号 UV。
+- `user_id`、`user_tier`：Java 服务的已验证账号字段。Gateway 不信任浏览器同名请求头，order-service 根据 HttpOnly 会话覆盖 baggage 后再传播到库存和支付服务。
+- `auth_state`：`anonymous` 或 `authenticated`。RUM 事件由 `beforeSend` 补充，Java 日志和 Span 由服务端请求上下文补充。
+
+RUM 使用 `trackViewsManually: true`。会话恢复和用户绑定完成后创建首个 `storefront/<page>` View；商城路由变化、登录、退出和会话失效分别创建新的明确 View。PV 由 View 数量计算，访客 UV 使用 `visitor_id`，登录账号 UV 使用登录 View 上的 `userid`。
 
 `client_ip` 仅用于观测，不参与鉴权或访问控制。只有入口负载均衡覆盖而非追加外部传入的 `X-Forwarded-For` / `X-Real-IP` 时，该字段才能被视为可信客户端地址。
 

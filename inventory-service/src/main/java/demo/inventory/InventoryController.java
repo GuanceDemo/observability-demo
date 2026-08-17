@@ -43,11 +43,15 @@ class InventoryController {
       @RequestHeader(value = "X-Key-Request", required = false) String keyRequest,
       @RequestHeader(value = "X-Business-Request-Id", required = false) String businessRequestId,
       @RequestHeader(value = "X-Demo-Language", required = false) String language,
-      @RequestHeader(value = "baggage", required = false) String baggage) {
+      @RequestHeader(value = "baggage", required = false) String baggage,
+      @RequestHeader(value = "X-Demo-Visitor-Id", required = false) String visitorId,
+      @RequestHeader(value = "X-Demo-User-Id", required = false) String userId,
+      @RequestHeader(value = "X-Demo-User-Tier", required = false) String userTier) {
     InventoryRequest inventoryRequest =
         request == null ? new InventoryRequest("unknown", "sku-1001", 1) : request.withDefaults();
     RequestMetadata metadata =
-        RequestMetadata.from(keyRequest, businessRequestId, language, baggage);
+        RequestMetadata.from(
+            keyRequest, businessRequestId, language, baggage, visitorId, userId, userTier);
     log.info(
         metadata
             .language()

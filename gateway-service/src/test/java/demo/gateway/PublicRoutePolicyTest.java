@@ -60,6 +60,12 @@ class PublicRoutePolicyTest {
             new RouteExpectation("POST", "/api/orders", "orders.create", "business_api"),
             new RouteExpectation(
                 "GET", "/api/orders/demo", "orders.demo", "business_api"),
+            new RouteExpectation(
+                "GET", "/api/demo/auth/session", "demo.auth.session.get", "demo_api"),
+            new RouteExpectation(
+                "POST", "/api/demo/auth/session", "demo.auth.session.login", "demo_api"),
+            new RouteExpectation(
+                "DELETE", "/api/demo/auth/session", "demo.auth.session.logout", "demo_api"),
             new RouteExpectation("GET", "/api/demo/config", "demo.config", "demo_api"),
             new RouteExpectation("GET", "/api/demo/status", "demo.status", "demo_api"),
             new RouteExpectation(

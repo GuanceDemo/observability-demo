@@ -39,7 +39,7 @@ dkconfig:
     value: |-
       [[inputs.ddtrace]]
         endpoints = ["/v0.3/traces", "/v0.4/traces", "/v0.5/traces"]
-        customer_tags = ["project", "demo", "component", "release", "key_request", "biz_chain", "biz_request_id", "language", "fault_id", "fault_layer", "fault_kind", "fault_target", "process_id", "host_process_id", "container_process_id", "host", "host_name", "pod_name", "pod_namespace", "container_name", "container_id", "route_class", "traffic_type", "client_ip", "user_agent", "referer"]
+        customer_tags = ["project", "demo", "component", "release", "key_request", "biz_chain", "biz_request_id", "visitor_id", "user_id", "user_tier", "auth_state", "language", "fault_id", "fault_layer", "fault_kind", "fault_target", "process_id", "host_process_id", "container_process_id", "host", "host_name", "pod_name", "pod_namespace", "container_name", "container_id", "route_class", "traffic_type", "client_ip", "user_agent", "referer"]
         # Keep Kubernetes probes active, but do not report them as APM resources.
         [inputs.ddtrace.close_resource]
           "*" = ["GET /actuator/health", "GET /actuator/health/**"]

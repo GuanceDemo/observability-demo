@@ -10,6 +10,7 @@ import java.time.Instant;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -87,5 +88,28 @@ class PaymentControllerTest {
 
     now.set(now.get().plusSeconds(31));
     assertThat(state.current().mode()).isEqualTo("none");
+  }
+
+  @Test
+  void requestMetadataAddsValidatedUserIdentityToMdc() {
+    RequestMetadata metadata =
+        RequestMetadata.from(
+            "checkout_submit_order",
+            "biz-payment-identity",
+            "en",
+            "auth_state=anonymous,user_id=attacker",
+            "visitor-12345678-1234-4123-8123-123456789abc",
+            "demo-reader-001",
+            "standard");
+    try {
+      metadata.applyCurrentSpanTags();
+      assertThat(MDC.get("visitor_id"))
+          .isEqualTo("visitor-12345678-1234-4123-8123-123456789abc");
+      assertThat(MDC.get("user_id")).isEqualTo("demo-reader-001");
+      assertThat(MDC.get("user_tier")).isEqualTo("standard");
+      assertThat(MDC.get("auth_state")).isEqualTo("authenticated");
+    } finally {
+      ProcessIdentity.clearMdc();
+    }
   }
 }

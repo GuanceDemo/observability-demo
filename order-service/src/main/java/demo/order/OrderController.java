@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -60,13 +62,17 @@ class OrderController {
       @RequestHeader(value = "X-Key-Request", required = false) String keyRequest,
       @RequestHeader(value = "X-Business-Request-Id", required = false) String businessRequestId,
       @RequestHeader(value = "X-Demo-Language", required = false) String language,
-      @RequestHeader(value = "baggage", required = false) String baggage) {
+      @RequestHeader(value = "baggage", required = false) String baggage,
+      @RequestAttribute(value = DemoAuthContext.VISITOR_ATTRIBUTE, required = false)
+          String visitorId) {
     return createOrder(
             new OrderRequest("sku-1001", 1, 1999),
             keyRequest,
             businessRequestId,
             language,
-            baggage)
+            baggage,
+            visitorId,
+            null)
         .getBody();
   }
 
@@ -76,13 +82,16 @@ class OrderController {
       @RequestHeader(value = "X-Key-Request", required = false) String keyRequest,
       @RequestHeader(value = "X-Business-Request-Id", required = false) String businessRequestId,
       @RequestHeader(value = "X-Demo-Language", required = false) String language,
-      @RequestHeader(value = "baggage", required = false) String baggage) {
+      @RequestHeader(value = "baggage", required = false) String baggage,
+      @RequestAttribute(value = DemoAuthContext.VISITOR_ATTRIBUTE, required = false)
+          String visitorId,
+      @RequestAttribute(value = DemoAuthContext.USER_ATTRIBUTE, required = false) DemoUser user) {
     OrderRequest orderRequest =
         request == null ? new OrderRequest("sku-1001", 1, 1999) : request.withDefaults();
     String orderId = "ord-" + UUID.randomUUID();
     Instant createdAt = Instant.now();
     RequestMetadata metadata =
-        RequestMetadata.from(keyRequest, businessRequestId, language, baggage);
+        RequestMetadata.from(keyRequest, businessRequestId, language, baggage, visitorId, user);
     FaultSnapshot fault = faultState.current();
 
     log.info(
@@ -142,6 +151,9 @@ class OrderController {
     response.put("amountCent", orderRequest.amountCent());
     response.put("keyRequest", metadata.keyRequest());
     response.put("businessRequestId", metadata.businessRequestId());
+    if (metadata.userId() != null) {
+      response.put("userId", metadata.userId());
+    }
     response.put("status", "CONFIRMED");
     response.put("createdAt", createdAt.toString());
     log.info(
@@ -259,8 +271,8 @@ class JdbcOrderStore implements OrderStore {
         """
         INSERT INTO demo_orders (
             order_id, sku, quantity, amount_cent, status,
-            key_request, business_request_id, created_at, updated_at
-        ) VALUES (?, ?, ?, ?, 'CREATED', ?, ?, ?, ?)
+            key_request, business_request_id, user_id, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, 'CREATED', ?, ?, ?, ?, ?)
         """,
         orderId,
         request.sku(),
@@ -268,6 +280,7 @@ class JdbcOrderStore implements OrderStore {
         request.amountCent(),
         metadata.keyRequest(),
         metadata.businessRequestId(),
+        metadata.userId(),
         java.sql.Timestamp.from(createdAt),
         java.sql.Timestamp.from(createdAt));
   }
@@ -300,17 +313,44 @@ record InventoryRequest(String orderId, String sku, Integer quantity) {}
 record PaymentRequest(String orderId, Integer amountCent) {}
 
 record RequestMetadata(
-    String keyRequest, String businessRequestId, DemoLanguage language, String baggage) {
+    String keyRequest,
+    String businessRequestId,
+    DemoLanguage language,
+    String baggage,
+    String visitorId,
+    String userId,
+    String userTier,
+    String authState) {
   private static final Pattern BAGGAGE_MEMBER_KEY = Pattern.compile("[A-Za-z0-9_.*/-]+");
+  private static final Pattern VISITOR_ID =
+      Pattern.compile("visitor-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+  private static final Set<String> IDENTITY_BAGGAGE_KEYS =
+      Set.of("visitor_id", "user_id", "user_tier", "auth_state");
   private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
   static RequestMetadata from(
       String keyRequest, String businessRequestId, String language, String baggage) {
+    return from(keyRequest, businessRequestId, language, baggage, null, null);
+  }
+
+  static RequestMetadata from(
+      String keyRequest,
+      String businessRequestId,
+      String language,
+      String baggage,
+      String visitorId,
+      DemoUser user) {
+    String safeVisitorId = safeVisitorId(visitorId);
+    String authState = user == null ? "anonymous" : "authenticated";
     return new RequestMetadata(
         blankToNull(keyRequest),
         blankToNull(businessRequestId),
         DemoLanguage.from(language),
-        blankToNull(baggage));
+        trustedBaggage(baggage, safeVisitorId, user, authState),
+        safeVisitorId,
+        user == null ? null : user.id(),
+        user == null ? null : user.tier(),
+        authState);
   }
 
   HttpEntity<Object> withHeaders(Object body) {
@@ -322,6 +362,16 @@ record RequestMetadata(
       headers.set("X-Business-Request-Id", businessRequestId);
     }
     headers.set("X-Demo-Language", language.code());
+    if (visitorId != null) {
+      headers.set("X-Demo-Visitor-Id", visitorId);
+    }
+    if (userId != null) {
+      headers.set("X-Demo-User-Id", userId);
+    }
+    if (userTier != null) {
+      headers.set("X-Demo-User-Tier", userTier);
+    }
+    headers.set("X-Demo-Auth-State", authState);
     if (baggage != null) {
       headers.set("baggage", safeBaggageHeader(baggage));
     }
@@ -357,6 +407,16 @@ record RequestMetadata(
       MDC.put("biz_request_id", businessRequestId);
     }
     MDC.put("language", language.code());
+    if (visitorId != null) {
+      MDC.put("visitor_id", visitorId);
+    }
+    if (userId != null) {
+      MDC.put("user_id", userId);
+    }
+    if (userTier != null) {
+      MDC.put("user_tier", userTier);
+    }
+    MDC.put("auth_state", authState);
     try {
       Class<?> tracerClass =
           Class.forName("datadog.trace.bootstrap.instrumentation.api.AgentTracer");
@@ -400,6 +460,10 @@ record RequestMetadata(
     span.getClass()
         .getMethod("setTag", String.class, String.class)
         .invoke(span, "language", language.code());
+    setIdentityTag(span, "visitor_id", visitorId);
+    setIdentityTag(span, "user_id", userId);
+    setIdentityTag(span, "user_tier", userTier);
+    setIdentityTag(span, "auth_state", authState);
     String bizChain = baggageValue("biz_chain");
     if (bizChain != null) {
       span.getClass()
@@ -409,6 +473,17 @@ record RequestMetadata(
           .getMethod("setBaggageItem", String.class, String.class)
           .invoke(span, "biz_chain", bizChain);
     }
+  }
+
+  private void setIdentityTag(Object span, String key, String value)
+      throws ReflectiveOperationException {
+    if (value == null) {
+      return;
+    }
+    span.getClass().getMethod("setTag", String.class, String.class).invoke(span, key, value);
+    span.getClass()
+        .getMethod("setBaggageItem", String.class, String.class)
+        .invoke(span, key, value);
   }
 
   private String baggageValue(String key) {
@@ -422,6 +497,35 @@ record RequestMetadata(
       }
     }
     return null;
+  }
+
+  private static String trustedBaggage(
+      String value, String visitorId, DemoUser user, String authState) {
+    List<String> members = new ArrayList<>();
+    if (value != null) {
+      for (String item : value.split(",")) {
+        String trimmed = item.trim();
+        if (trimmed.isEmpty()) {
+          continue;
+        }
+        String[] parts = trimmed.split("=", 2);
+        String key = parts[0].trim();
+        if (IDENTITY_BAGGAGE_KEYS.contains(key) || !BAGGAGE_MEMBER_KEY.matcher(key).matches()) {
+          continue;
+        }
+        members.add(
+            parts.length == 1 ? key : key + "=" + encodeBaggageValue(parts[1].trim()));
+      }
+    }
+    if (visitorId != null) {
+      members.add("visitor_id=" + visitorId);
+    }
+    if (user != null) {
+      members.add("user_id=" + user.id());
+      members.add("user_tier=" + user.tier());
+    }
+    members.add("auth_state=" + authState);
+    return String.join(",", members);
   }
 
   private static String safeBaggageHeader(String value) {
@@ -443,6 +547,11 @@ record RequestMetadata(
       }
     }
     return String.join(",", members);
+  }
+
+  static String safeVisitorId(String value) {
+    String candidate = blankToNull(value);
+    return candidate != null && VISITOR_ID.matcher(candidate).matches() ? candidate : null;
   }
 
   private static String encodeBaggageValue(String value) {

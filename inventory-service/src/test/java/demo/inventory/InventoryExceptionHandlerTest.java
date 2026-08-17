@@ -37,6 +37,9 @@ class InventoryExceptionHandlerTest {
               get("/api/inventory/timeout")
                   .header("X-Key-Request", "checkout_submit_order")
                   .header("X-Business-Request-Id", "biz-timeout-test")
+                  .header("X-Demo-Visitor-Id", "visitor-12345678-1234-4123-8123-123456789abc")
+                  .header("X-Demo-User-Id", "demo-reader-002")
+                  .header("X-Demo-User-Tier", "pro")
                   .header("X-Demo-Language", "en"))
           .andExpect(status().isServiceUnavailable())
           .andExpect(jsonPath("$.status").value(503))
@@ -61,6 +64,11 @@ class InventoryExceptionHandlerTest {
       assertThat(context.get("container_name")).isNotBlank();
       assertThat(context.get("key_request")).isEqualTo("checkout_submit_order");
       assertThat(context.get("biz_request_id")).isEqualTo("biz-timeout-test");
+      assertThat(context.get("visitor_id"))
+          .isEqualTo("visitor-12345678-1234-4123-8123-123456789abc");
+      assertThat(context.get("user_id")).isEqualTo("demo-reader-002");
+      assertThat(context.get("user_tier")).isEqualTo("pro");
+      assertThat(context.get("auth_state")).isEqualTo("authenticated");
     } finally {
       logger.detachAppender(appender);
       appender.stop();

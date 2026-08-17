@@ -211,7 +211,8 @@
 
   const storeMessages = Object.freeze({
     zh: {
-      brandTitle: '可观测性书店', brandSubtitle: '技术阅读空间', navHome: '首页', navPath: '阅读路径', navCart: '购物车', account: '商城账户',
+      brandTitle: '可观测性书店', brandSubtitle: '技术阅读空间', navHome: '首页', navPath: '阅读路径', navCart: '购物车', account: '登录',
+      authTitle: '选择演示人物', authDescription: '一键登录固定合成账号，体验跨浏览器账号身份合并。', authAccountTitle: '商城账户', authAccountDescription: '当前账号身份会关联 RUM、浏览器日志与订单链路。', authSyntheticNote: '演示人物和邮箱均为合成数据，不对应真实用户。', authLogout: '退出登录', authClose: '关闭', authFailedTitle: '登录操作失败', authSessionExpired: '登录会话已失效，请重新选择演示人物。', authLogPrompt: '打开演示人物登录选择', authLogSuccess: '登录成功：{name}', authLogFailure: '登录失败：{message}', authLogLogout: '退出登录：{name}', tierStandard: '标准版', tierPro: '专业版', tierVip: 'VIP',
       searchPlaceholder: '搜索书名 / 作者 / 技术主题', searchLabel: '搜索书名、作者或技术主题', switchLanguage: '切换到 English',
       heroEyebrow: '本周编辑推荐', heroTitle: '理解系统，始于提出更好的问题', heroTitleLines: '理解系统，始于|提出更好的问题', heroDescription: '《可观测性工程》从真实用户体验一路读到后端系统行为，帮助研发、SRE 与平台团队建立调试现代系统的共同语言。', viewBook: '查看本书', addCart: '加入购物车', inCart: '已在购物车',
       edition: '中文版', format: '纸质书', metricsSignal: '指标与事件', tracesSignal: '分布式追踪', rumSignal: '真实用户体验',
@@ -224,7 +225,8 @@
       authentic: '正版图书保障', returns: '7 天无理由退换', fastShipping: '24 小时内安排发货', inStock: '现货，下单后 24 小时内发出', authenticity: '正版保障，支持 7 天退换', added: '《{title}》已加入购物车', removed: '已从购物车移除《{title}》', removedSelected: '已删除 {count} 件选中商品',
     },
     en: {
-      brandTitle: 'Observability Books', brandSubtitle: 'Engineering Reading Room', navHome: 'Home', navPath: 'Reading Path', navCart: 'Cart', account: 'Account',
+      brandTitle: 'Observability Books', brandSubtitle: 'Engineering Reading Room', navHome: 'Home', navPath: 'Reading Path', navCart: 'Cart', account: 'Sign in',
+      authTitle: 'Choose a demo persona', authDescription: 'Sign in with a fixed synthetic account to demonstrate account identity across browsers.', authAccountTitle: 'Store account', authAccountDescription: 'This account identity is correlated across RUM, browser logs, and order traces.', authSyntheticNote: 'All personas and email addresses are synthetic and do not represent real users.', authLogout: 'Sign out', authClose: 'Close', authFailedTitle: 'Sign-in failed', authSessionExpired: 'Your demo session expired. Choose a persona to continue.', authLogPrompt: 'Opened the demo persona sign-in prompt', authLogSuccess: 'Signed in as {name}', authLogFailure: 'Sign-in failed: {message}', authLogLogout: 'Signed out {name}', tierStandard: 'Standard', tierPro: 'Pro', tierVip: 'VIP',
       searchPlaceholder: 'Search books or topics', searchLabel: 'Search by title, author, or engineering topic', switchLanguage: '切换到中文',
       heroEyebrow: "EDITOR'S PICK", heroTitle: 'Better questions reveal better systems', heroTitleLines: 'Better questions reveal|better systems', heroDescription: 'Observability Engineering connects real user experience to backend system behavior and gives developers, SREs, and platform teams a shared language for debugging modern systems.', viewBook: 'View this book', addCart: 'Add to cart', inCart: 'In your cart',
       edition: 'English edition', format: 'Paperback', metricsSignal: 'Metrics and events', tracesSignal: 'Distributed tracing', rumSignal: 'Real user experience',

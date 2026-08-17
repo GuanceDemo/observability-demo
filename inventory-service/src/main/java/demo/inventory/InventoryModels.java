@@ -1,7 +1,6 @@
 package demo.inventory;
 
-
-
+import java.util.regex.Pattern;
 import org.slf4j.MDC;
 
 record InventoryRequest(String orderId, String sku, Integer quantity) {
@@ -14,14 +13,41 @@ record InventoryRequest(String orderId, String sku, Integer quantity) {
 }
 
 record RequestMetadata(
-    String keyRequest, String businessRequestId, DemoLanguage language, String baggage) {
+    String keyRequest,
+    String businessRequestId,
+    DemoLanguage language,
+    String baggage,
+    String visitorId,
+    String userId,
+    String userTier,
+    String authState) {
+  private static final Pattern VISITOR_ID =
+      Pattern.compile("visitor-[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}");
+  private static final Pattern IDENTITY_VALUE = Pattern.compile("[A-Za-z0-9_-]{1,128}");
+
   static RequestMetadata from(
       String keyRequest, String businessRequestId, String language, String baggage) {
+    return from(keyRequest, businessRequestId, language, baggage, null, null, null);
+  }
+
+  static RequestMetadata from(
+      String keyRequest,
+      String businessRequestId,
+      String language,
+      String baggage,
+      String visitorId,
+      String userId,
+      String userTier) {
+    String safeUserId = safeIdentity(userId);
     return new RequestMetadata(
         blankToNull(keyRequest),
         blankToNull(businessRequestId),
         DemoLanguage.from(language),
-        blankToNull(baggage));
+        blankToNull(baggage),
+        safeVisitor(visitorId),
+        safeUserId,
+        safeUserId == null ? null : safeIdentity(userTier),
+        safeUserId == null ? "anonymous" : "authenticated");
   }
 
   String keyRequestOrDash() {
@@ -44,6 +70,10 @@ record RequestMetadata(
       MDC.put("biz_request_id", businessRequestId);
     }
     MDC.put("language", language.code());
+    putMdc("visitor_id", visitorId);
+    putMdc("user_id", userId);
+    putMdc("user_tier", userTier);
+    MDC.put("auth_state", authState);
     try {
       Class<?> tracerClass =
           Class.forName("datadog.trace.bootstrap.instrumentation.api.AgentTracer");
@@ -87,6 +117,10 @@ record RequestMetadata(
     span.getClass()
         .getMethod("setTag", String.class, String.class)
         .invoke(span, "language", language.code());
+    setIdentityTag(span, "visitor_id", visitorId);
+    setIdentityTag(span, "user_id", userId);
+    setIdentityTag(span, "user_tier", userTier);
+    setIdentityTag(span, "auth_state", authState);
     String bizChain = baggageValue("biz_chain");
     if (bizChain != null) {
       span.getClass()
@@ -96,6 +130,32 @@ record RequestMetadata(
           .getMethod("setBaggageItem", String.class, String.class)
           .invoke(span, "biz_chain", bizChain);
     }
+  }
+
+  private void setIdentityTag(Object span, String key, String value)
+      throws ReflectiveOperationException {
+    if (value != null) {
+      span.getClass().getMethod("setTag", String.class, String.class).invoke(span, key, value);
+      span.getClass()
+          .getMethod("setBaggageItem", String.class, String.class)
+          .invoke(span, key, value);
+    }
+  }
+
+  private static void putMdc(String key, String value) {
+    if (value != null) {
+      MDC.put(key, value);
+    }
+  }
+
+  private static String safeVisitor(String value) {
+    String candidate = blankToNull(value);
+    return candidate != null && VISITOR_ID.matcher(candidate).matches() ? candidate : null;
+  }
+
+  private static String safeIdentity(String value) {
+    String candidate = blankToNull(value);
+    return candidate != null && IDENTITY_VALUE.matcher(candidate).matches() ? candidate : null;
   }
 
   private String baggageValue(String key) {
