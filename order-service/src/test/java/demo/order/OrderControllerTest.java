@@ -286,6 +286,28 @@ class OrderControllerTest {
   }
 
   @Test
+  void platformEntryPageDescribesTheDemoAndOpensItInANewTab() throws Exception {
+    String entrySource;
+    try (var source = getClass().getResourceAsStream("/static/entry.html")) {
+      assertThat(source).isNotNull();
+      entrySource = new String(source.readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    assertThat(entrySource)
+        .contains("观测云故障演练 Demo")
+        .contains("href=\"https://demo.dataflux.cn/\"")
+        .contains("target=\"_blank\"")
+        .contains("rel=\"noopener noreferrer\"")
+        .contains("data-language=\"zh\"")
+        .contains("data-language=\"en\"")
+        .contains("RUM &amp; Replay")
+        .contains("APM Trace")
+        .contains("Metrics &amp; Infra")
+        .doesNotContain("window.location.replace")
+        .doesNotContain("DATAFLUX_RUM");
+  }
+
+  @Test
   void storefrontUsesCatalogCartAndObservabilityCompatibilityContract() throws Exception {
     String shopSource;
     try (var source = getClass().getResourceAsStream("/static/shop.html")) {

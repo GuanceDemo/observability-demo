@@ -41,6 +41,12 @@ final class PublicRoutePolicy {
               "storefront_page"),
           RouteRule.exact(
               READ_METHODS,
+              "/entry.html",
+              Action.FORWARD,
+              "storefront.entry",
+              "storefront_page"),
+          RouteRule.exact(
+              READ_METHODS,
               "/business.html",
               Action.FORWARD,
               "storefront.business",

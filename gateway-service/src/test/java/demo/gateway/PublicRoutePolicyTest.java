@@ -16,6 +16,8 @@ class PublicRoutePolicyTest {
             new RouteExpectation(
                 "HEAD", "/index.html", "storefront.index", "storefront_page"),
             new RouteExpectation(
+                "GET", "/entry.html", "storefront.entry", "storefront_page"),
+            new RouteExpectation(
                 "GET", "/business.html", "storefront.business", "storefront_page"),
             new RouteExpectation("GET", "/shop.html", "storefront.shop", "storefront_page"),
             new RouteExpectation(

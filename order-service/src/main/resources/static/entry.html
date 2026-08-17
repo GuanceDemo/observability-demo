@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="light" />
+  <title>观测云故障演练 Demo</title>
+  <link rel="icon" href="data:," />
+  <style>
+    :root {
+      --page: #f4f7fd;
+      --surface: rgba(255, 255, 255, .92);
+      --surface-soft: #f8faff;
+      --text: #13213b;
+      --muted: #66758d;
+      --line: #dce5f3;
+      --primary: #216be5;
+      --primary-dark: #1553bc;
+      --cyan: #1ac7cf;
+      --violet: #7559e9;
+      --orange: #ff7a45;
+      --green: #10a66a;
+      --shadow: 0 28px 72px rgba(30, 64, 123, .14);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { min-width: 320px; background: var(--page); }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 7% 4%, rgba(33, 107, 229, .14), transparent 27%),
+        radial-gradient(circle at 93% 12%, rgba(117, 89, 233, .12), transparent 25%),
+        linear-gradient(145deg, #f8faff 0%, #f1f6ff 50%, #f7f5ff 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    button, a { font: inherit; }
+
+    .page-shell {
+      position: relative;
+      width: min(1500px, calc(100% - 48px));
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: 32px 0;
+      display: grid;
+      align-content: center;
+      isolation: isolate;
+    }
+
+    .page-shell::before,
+    .page-shell::after {
+      position: fixed;
+      z-index: -1;
+      width: 280px;
+      height: 280px;
+      border: 1px solid rgba(33, 107, 229, .12);
+      border-radius: 50%;
+      content: "";
+      pointer-events: none;
+    }
+
+    .page-shell::before { top: -145px; left: 22%; }
+    .page-shell::after { right: -110px; bottom: -155px; }
+
+    .entry-card {
+      overflow: hidden;
+      border: 1px solid rgba(200, 213, 235, .94);
+      border-radius: 28px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      min-height: 84px;
+      padding: 18px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      flex: 0 0 48px;
+      display: grid;
+      place-items: center;
+      border-radius: 15px;
+      color: #fff;
+      background: linear-gradient(145deg, #ff721f 4%, #ff3f61 48%, #d928e8 100%);
+      box-shadow: 0 10px 24px rgba(239, 52, 115, .24);
+    }
+
+    .brand-mark svg { width: 30px; height: 30px; }
+
+    .brand-copy { min-width: 0; }
+
+    .brand-name {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -.02em;
+    }
+
+    .brand-note {
+      margin: 3px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .language-switch {
+      padding: 4px;
+      display: inline-flex;
+      flex: 0 0 auto;
+      gap: 4px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: #f4f7fc;
+    }
+
+    .language-button {
+      min-width: 56px;
+      height: 34px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 9px;
+      color: var(--muted);
+      background: transparent;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .language-button[aria-pressed="true"] {
+      color: #fff;
+      background: var(--primary);
+      box-shadow: 0 6px 14px rgba(33, 107, 229, .2);
+    }
+
+    .hero {
+      padding: clamp(34px, 5vw, 72px);
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(420px, .98fr);
+      align-items: center;
+      gap: clamp(44px, 6vw, 96px);
+    }
+
+    .eyebrow {
+      margin-bottom: 20px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--primary);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow-dot {
+      width: 9px;
+      height: 9px;
+      border: 2px solid #fff;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 0 4px rgba(16, 166, 106, .13);
+    }
+
+    h1 {
+      max-width: 760px;
+      margin: 0;
+      font-size: clamp(36px, 4.2vw, 66px);
+      line-height: 1.08;
+      letter-spacing: -.055em;
+    }
+
+    .accent-text {
+      display: block;
+      color: transparent;
+      background: linear-gradient(100deg, var(--primary) 0%, var(--violet) 55%, #dc39b8 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+
+    .hero-description {
+      max-width: 690px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: clamp(15px, 1.5vw, 18px);
+      line-height: 1.8;
+    }
+
+    .hero-actions {
+      margin-top: 32px;
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .primary-action {
+      min-height: 54px;
+      padding: 0 22px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      border-radius: 14px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary) 0%, #5b55e7 100%);
+      box-shadow: 0 14px 30px rgba(33, 107, 229, .25);
+      font-size: 16px;
+      font-weight: 800;
+      text-decoration: none;
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+
+    .primary-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 18px 34px rgba(33, 107, 229, .32);
+    }
+
+    .primary-action:focus-visible,
+    .language-button:focus-visible {
+      outline: 3px solid rgba(33, 107, 229, .3);
+      outline-offset: 3px;
+    }
+
+    .primary-action svg { width: 19px; height: 19px; }
+
+    .action-note {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .action-note svg { width: 17px; height: 17px; color: var(--green); }
+
+    .signal-list {
+      margin: 32px 0 0;
+      padding: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      list-style: none;
+    }
+
+    .signal-list li {
+      padding: 8px 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #465671;
+      background: rgba(248, 250, 255, .82);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .signal-list i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+
+    .signal-list li:nth-child(2) i { background: var(--violet); }
+    .signal-list li:nth-child(3) i { background: var(--orange); }
+    .signal-list li:nth-child(4) i { background: var(--cyan); }
+
+    .demo-visual {
+      position: relative;
+      padding: 20px;
+      border: 1px solid rgba(189, 207, 235, .9);
+      border-radius: 24px;
+      background:
+        linear-gradient(150deg, rgba(255, 255, 255, .98), rgba(243, 247, 255, .92));
+      box-shadow: 0 24px 56px rgba(31, 71, 132, .15);
+    }
+
+    .demo-visual::before {
+      position: absolute;
+      inset: -18px 11% auto;
+      z-index: -1;
+      height: 70px;
+      border-radius: 50%;
+      background: rgba(33, 107, 229, .19);
+      filter: blur(34px);
+      content: "";
+    }
+
+    .visual-bar {
+      height: 36px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .visual-bar > i {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ff665e;
+    }
+
+    .visual-bar > i:nth-child(2) { background: #f6b939; }
+    .visual-bar > i:nth-child(3) { background: #28bd68; }
+
+    .visual-address {
+      min-width: 0;
+      margin-left: 8px;
+      padding: 7px 12px;
+      flex: 1;
+      overflow: hidden;
+      border-radius: 9px;
+      color: #65748c;
+      background: #edf3fb;
+      font-size: 11px;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .scene {
+      position: relative;
+      overflow: hidden;
+      min-height: 322px;
+      padding: 24px;
+      border: 1px solid #e4eaf4;
+      border-radius: 18px;
+      background: #fff;
+    }
+
+    .scene::after {
+      position: absolute;
+      right: -72px;
+      bottom: -92px;
+      width: 230px;
+      height: 230px;
+      border: 1px solid rgba(117, 89, 233, .16);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .scene-heading {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .scene-title {
+      margin: 0;
+      font-size: 17px;
+      font-weight: 800;
+    }
+
+    .scene-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--green);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .scene-status::before {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 4px rgba(16, 166, 106, .1);
+      content: "";
+    }
+
+    .journey {
+      position: relative;
+      z-index: 1;
+      margin-top: 28px;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .journey-step {
+      position: relative;
+      min-width: 0;
+      padding: 15px 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--surface-soft);
+      text-align: center;
+    }
+
+    .journey-step:not(:last-child)::after {
+      position: absolute;
+      top: 50%;
+      right: -11px;
+      z-index: 2;
+      width: 11px;
+      border-top: 1px dashed #94aad0;
+      content: "";
+    }
+
+    .journey-icon {
+      width: 32px;
+      height: 32px;
+      margin: 0 auto 9px;
+      display: grid;
+      place-items: center;
+      border-radius: 10px;
+      color: var(--primary);
+      background: #e9f1ff;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .journey-step:nth-child(2) .journey-icon { color: #e45827; background: #fff0e9; }
+    .journey-step:nth-child(3) .journey-icon { color: #6b4ddb; background: #efebff; }
+    .journey-step:nth-child(4) .journey-icon { color: #078870; background: #e6f8f3; }
+
+    .journey-name {
+      display: block;
+      overflow: hidden;
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .incident-card {
+      position: relative;
+      z-index: 1;
+      margin-top: 18px;
+      padding: 15px 16px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid #f4c9c0;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #fff7f5, #fff);
+    }
+
+    .incident-icon {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 11px;
+      color: #fff;
+      background: linear-gradient(145deg, #ff7849, #ef3f5a);
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .incident-title {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .incident-meta {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 10px;
+    }
+
+    .trace-chip {
+      padding: 7px 9px;
+      border-radius: 8px;
+      color: #315587;
+      background: #edf3fc;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .feature-grid {
+      padding: 0 clamp(34px, 5vw, 72px) clamp(34px, 5vw, 60px);
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .feature-card {
+      min-width: 0;
+      padding: 20px;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 14px;
+      border: 1px solid var(--line);
+      border-radius: 17px;
+      background: rgba(248, 250, 255, .82);
+    }
+
+    .feature-icon {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      color: var(--primary);
+      background: #e8f1ff;
+    }
+
+    .feature-card:nth-child(2) .feature-icon { color: #6b4ddb; background: #efeaff; }
+    .feature-card:nth-child(3) .feature-icon { color: #078870; background: #e5f8f2; }
+    .feature-icon svg { width: 21px; height: 21px; }
+
+    .feature-title {
+      margin: 1px 0 5px;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .feature-description {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+    }
+
+    @media (max-width: 980px) {
+      .page-shell { width: min(760px, calc(100% - 32px)); }
+      .hero { grid-template-columns: 1fr; }
+      .demo-visual { max-width: 660px; width: 100%; justify-self: center; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 560px) {
+      .page-shell { width: calc(100% - 20px); padding: 10px 0; }
+      .entry-card { border-radius: 20px; }
+      .topbar { min-height: 72px; padding: 14px 16px; }
+      .brand-mark { width: 42px; height: 42px; flex-basis: 42px; border-radius: 13px; }
+      .brand-name { font-size: 15px; }
+      .brand-note { display: none; }
+      .language-button { min-width: 44px; padding: 0 9px; }
+      .hero { padding: 30px 20px; gap: 34px; }
+      h1 { font-size: 36px; }
+      .hero-actions { align-items: stretch; }
+      .primary-action { width: 100%; }
+      .action-note { width: 100%; justify-content: center; }
+      .demo-visual { padding: 12px; border-radius: 18px; }
+      .scene { min-height: 300px; padding: 18px 14px; }
+      .journey { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .journey-step:nth-child(2)::after { display: none; }
+      .trace-chip { display: none; }
+      .feature-grid { padding: 0 20px 24px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .primary-action { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-shell">
+    <article class="entry-card">
+      <header class="topbar">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32" fill="none">
+              <path d="M5.5 7.5c4.4-.9 7.8.1 10.5 2.8v15.2c-2.8-2.6-6.3-3.4-10.5-2.5V7.5Z" fill="currentColor" />
+              <path d="M26.5 7.5c-4.4-.9-7.8.1-10.5 2.8v15.2c2.8-2.6 6.3-3.4 10.5-2.5V7.5Z" fill="currentColor" opacity=".94" />
+              <path d="M16 10.5v15" stroke="#fff" stroke-width="1.4" opacity=".72" />
+            </svg>
+          </span>
+          <div class="brand-copy">
+            <p class="brand-name" data-i18n="brandName">观测云故障演练 Demo</p>
+            <p class="brand-note" data-i18n="brandNote">真实业务场景 · 全链路可观测</p>
+          </div>
+        </div>
+        <div class="language-switch" role="group" aria-label="Language">
+          <button class="language-button" type="button" data-language="zh" aria-pressed="true">中文</button>
+          <button class="language-button" type="button" data-language="en" aria-pressed="false">EN</button>
+        </div>
+      </header>
+
+      <main class="hero">
+        <section class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-dot"></span><span data-i18n="eyebrow">OBSERVABILITY WORKSHOP</span></div>
+          <h1>
+            <span data-i18n="heroLineOne">从一次真实购书，</span>
+            <span class="accent-text" data-i18n="heroLineTwo">看见故障的完整旅程</span>
+          </h1>
+          <p class="hero-description" data-i18n="heroDescription">
+            在可交互的图书商城中完成浏览、登录、加购与结算，按需注入前端、后端和基础设施故障，并通过 RUM、APM、日志与指标还原一次真实问题的全链路现场。
+          </p>
+          <div class="hero-actions">
+            <a class="primary-action" id="openDemoLink" href="https://demo.dataflux.cn/" target="_blank" rel="noopener noreferrer">
+              <span data-i18n="openDemo">打开故障演练 Demo</span>
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M8 16 16 8m-6 0h6v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
+            <span class="action-note">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="m5 12 4 4L19 6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+              <span data-i18n="openNote">将在新标签页打开，不影响当前平台</span>
+            </span>
+          </div>
+          <ul class="signal-list" aria-label="Observability signals">
+            <li><i></i>RUM &amp; Replay</li>
+            <li><i></i>APM Trace</li>
+            <li><i></i>Logs</li>
+            <li><i></i>Metrics &amp; Infra</li>
+          </ul>
+        </section>
+
+        <section class="demo-visual" aria-label="Demo workflow preview">
+          <div class="visual-bar" aria-hidden="true">
+            <i></i><i></i><i></i>
+            <span class="visual-address">https://demo.dataflux.cn</span>
+          </div>
+          <div class="scene">
+            <div class="scene-heading">
+              <p class="scene-title" data-i18n="sceneTitle">一次故障，从触发到定位</p>
+              <span class="scene-status" data-i18n="sceneStatus">演练环境</span>
+            </div>
+            <div class="journey">
+              <div class="journey-step">
+                <span class="journey-icon">01</span>
+                <span class="journey-name" data-i18n="journeyShop">用户购书</span>
+              </div>
+              <div class="journey-step">
+                <span class="journey-icon">02</span>
+                <span class="journey-name" data-i18n="journeyFault">注入故障</span>
+              </div>
+              <div class="journey-step">
+                <span class="journey-icon">03</span>
+                <span class="journey-name" data-i18n="journeyObserve">关联观测</span>
+              </div>
+              <div class="journey-step">
+                <span class="journey-icon">04</span>
+                <span class="journey-name" data-i18n="journeyRecover">恢复验证</span>
+              </div>
+            </div>
+            <div class="incident-card">
+              <span class="incident-icon" aria-hidden="true">!</span>
+              <div>
+                <p class="incident-title" data-i18n="incidentTitle">结算请求出现依赖超时</p>
+                <p class="incident-meta" data-i18n="incidentMeta">RUM → Gateway → Order → Inventory → Redis</p>
+              </div>
+              <span class="trace-chip">trace_id · linked</span>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <section class="feature-grid" aria-label="Demo highlights">
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 5.5h6.5A2.5 2.5 0 0 1 13 8v11H6a2 2 0 0 1-2-2V5.5Zm16 0h-4.5A2.5 2.5 0 0 0 13 8v11h5a2 2 0 0 0 2-2V5.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" /></svg>
+          </span>
+          <div>
+            <h2 class="feature-title" data-i18n="featureBusinessTitle">真实业务体验</h2>
+            <p class="feature-description" data-i18n="featureBusinessDescription">以完整图书商城交互承载可观测数据，而不是孤立的测试接口。</p>
+          </div>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v5m0 8v5M3 12h5m8 0h5M5.6 5.6l3.5 3.5m5.8 5.8 3.5 3.5m0-12.8-3.5 3.5m-5.8 5.8-3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" /></svg>
+          </span>
+          <div>
+            <h2 class="feature-title" data-i18n="featureFaultTitle">多层故障注入</h2>
+            <p class="feature-description" data-i18n="featureFaultDescription">覆盖前端异常、服务延迟、支付错误、Redis 超时与 CPU 繁忙。</p>
+          </div>
+        </article>
+        <article class="feature-card">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M4 18V9m5 9V5m5 13v-7m5 7V3" stroke="currentColor" stroke-width="2" stroke-linecap="round" /><path d="M3 21h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+          </span>
+          <div>
+            <h2 class="feature-title" data-i18n="featureObserveTitle">全链路观测闭环</h2>
+            <p class="feature-description" data-i18n="featureObserveDescription">将用户体验、调用链、日志、指标和基础设施上下文关联起来。</p>
+          </div>
+        </article>
+      </section>
+    </article>
+  </div>
+
+  <script>
+    (() => {
+      const messages = {
+        zh: {
+          title: '观测云故障演练 Demo',
+          brandName: '观测云故障演练 Demo',
+          brandNote: '真实业务场景 · 全链路可观测',
+          eyebrow: 'OBSERVABILITY WORKSHOP',
+          heroLineOne: '从一次真实购书，',
+          heroLineTwo: '看见故障的完整旅程',
+          heroDescription: '在可交互的图书商城中完成浏览、登录、加购与结算，按需注入前端、后端和基础设施故障，并通过 RUM、APM、日志与指标还原一次真实问题的全链路现场。',
+          openDemo: '打开故障演练 Demo',
+          openNote: '将在新标签页打开，不影响当前平台',
+          sceneTitle: '一次故障，从触发到定位',
+          sceneStatus: '演练环境',
+          journeyShop: '用户购书',
+          journeyFault: '注入故障',
+          journeyObserve: '关联观测',
+          journeyRecover: '恢复验证',
+          incidentTitle: '结算请求出现依赖超时',
+          incidentMeta: 'RUM → Gateway → Order → Inventory → Redis',
+          featureBusinessTitle: '真实业务体验',
+          featureBusinessDescription: '以完整图书商城交互承载可观测数据，而不是孤立的测试接口。',
+          featureFaultTitle: '多层故障注入',
+          featureFaultDescription: '覆盖前端异常、服务延迟、支付错误、Redis 超时与 CPU 繁忙。',
+          featureObserveTitle: '全链路观测闭环',
+          featureObserveDescription: '将用户体验、调用链、日志、指标和基础设施上下文关联起来。'
+        },
+        en: {
+          title: 'Guance Observability Demo',
+          brandName: 'Guance Observability Demo',
+          brandNote: 'Real workflows · End-to-end observability',
+          eyebrow: 'OBSERVABILITY WORKSHOP',
+          heroLineOne: 'Follow one real checkout',
+          heroLineTwo: 'through the complete failure journey',
+          heroDescription: 'Browse, sign in, add books, and check out in an interactive bookstore. Inject frontend, backend, and infrastructure failures, then reconstruct the incident with RUM, APM, logs, and metrics.',
+          openDemo: 'Open the Demo',
+          openNote: 'Opens in a new tab and keeps this platform available',
+          sceneTitle: 'From failure trigger to root cause',
+          sceneStatus: 'Workshop ready',
+          journeyShop: 'Checkout',
+          journeyFault: 'Inject',
+          journeyObserve: 'Correlate',
+          journeyRecover: 'Recover',
+          incidentTitle: 'A checkout dependency times out',
+          incidentMeta: 'RUM → Gateway → Order → Inventory → Redis',
+          featureBusinessTitle: 'Real user workflow',
+          featureBusinessDescription: 'Observability signals come from a complete bookstore experience, not isolated test APIs.',
+          featureFaultTitle: 'Multi-layer failures',
+          featureFaultDescription: 'Exercise browser errors, service latency, payment failures, Redis timeouts, and CPU pressure.',
+          featureObserveTitle: 'Correlated investigation',
+          featureObserveDescription: 'Connect user experience, traces, logs, metrics, and infrastructure context in one flow.'
+        }
+      };
+
+      const buttons = [...document.querySelectorAll('[data-language]')];
+      const demoLink = document.getElementById('openDemoLink');
+
+      function applyLanguage(language) {
+        const activeLanguage = language === 'en' ? 'en' : 'zh';
+        const dictionary = messages[activeLanguage];
+        document.documentElement.lang = activeLanguage === 'zh' ? 'zh-CN' : 'en';
+        document.title = dictionary.title;
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+          const value = dictionary[element.dataset.i18n];
+          if (value) element.textContent = value;
+        });
+        buttons.forEach((button) => {
+          button.setAttribute('aria-pressed', String(button.dataset.language === activeLanguage));
+        });
+        const demoUrl = new URL('https://demo.dataflux.cn/');
+        demoUrl.searchParams.set('lang', activeLanguage);
+        demoLink.href = demoUrl.toString();
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('lang', activeLanguage);
+        try {
+          window.history.replaceState(window.history.state || {}, '', currentUrl);
+        } catch (_) {
+          // Embedded platforms may restrict history updates; language switching still works.
+        }
+      }
+
+      buttons.forEach((button) => {
+        button.addEventListener('click', () => applyLanguage(button.dataset.language));
+      });
+
+      const requestedLanguage = new URL(window.location.href).searchParams.get('lang');
+      const browserLanguage = navigator.language && navigator.language.toLowerCase().startsWith('en') ? 'en' : 'zh';
+      applyLanguage(requestedLanguage || browserLanguage);
+    })();
+  </script>
+</body>
+</html>
