@@ -77,6 +77,24 @@ final class PublicRoutePolicy {
               "static_asset"),
           RouteRule.exact(
               READ_METHODS,
+              "/assets/avatars/demo-reader-a.png",
+              Action.FORWARD,
+              "asset.demo-avatar-a",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/avatars/demo-reader-b.png",
+              Action.FORWARD,
+              "asset.demo-avatar-b",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/avatars/demo-reader-c.png",
+              Action.FORWARD,
+              "asset.demo-avatar-c",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
               "/assets/selfheal-i18n.js",
               Action.FORWARD,
               "asset.i18n",

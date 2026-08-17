@@ -39,6 +39,21 @@ class PublicRoutePolicyTest {
                 "asset.book-cover-zh",
                 "static_asset"),
             new RouteExpectation(
+                "GET",
+                "/assets/avatars/demo-reader-a.png",
+                "asset.demo-avatar-a",
+                "static_asset"),
+            new RouteExpectation(
+                "HEAD",
+                "/assets/avatars/demo-reader-b.png",
+                "asset.demo-avatar-b",
+                "static_asset"),
+            new RouteExpectation(
+                "GET",
+                "/assets/avatars/demo-reader-c.png",
+                "asset.demo-avatar-c",
+                "static_asset"),
+            new RouteExpectation(
                 "GET", "/assets/selfheal-i18n.js", "asset.i18n", "static_asset"),
             new RouteExpectation(
                 "GET", "/assets/storefront.css", "asset.storefront-css", "static_asset"),
@@ -136,6 +151,7 @@ class PublicRoutePolicyTest {
             new RouteRequest("POST", "/admin/fault/off"),
             new RouteRequest("POST", "/business.html"),
             new RouteRequest("GET", "/assets/new-file.js"),
+            new RouteRequest("GET", "/assets/avatars/demo-reader-d.png"),
             new RouteRequest("GET", "/assets/guide-carousel/image2-slide-06.png"),
             new RouteRequest("GET", "/api/demo/new-endpoint"),
             new RouteRequest("POST", "/rum-proxy/v1/datakit/pull"),

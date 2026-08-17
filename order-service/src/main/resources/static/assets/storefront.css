@@ -4534,6 +4534,128 @@ button:disabled {
   .storefront-cart .cart-summary-card { position: static; }
 }
 
+/* v44: replay-stable account overlay and collision-free Web iframe header. */
+.auth-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  width: auto;
+  max-height: none;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 24px;
+  overflow: auto;
+  border: 0;
+  border-radius: 0;
+  background: rgba(29, 19, 16, .48);
+  backdrop-filter: blur(4px);
+  box-shadow: none;
+}
+
+.auth-dialog[hidden] { display: none !important; }
+
+.auth-dialog-card {
+  width: min(92vw, 520px);
+  max-height: min(86vh, 680px);
+  overflow: auto;
+  box-shadow: 0 28px 90px rgba(45, 25, 18, .28) !important;
+}
+
+.auth-avatar {
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, .92);
+  background: #ece8e4;
+  box-shadow: 0 3px 12px rgba(45, 25, 18, .14) !important;
+}
+
+.auth-avatar img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.auth-avatar-fallback { color: #fff; background: var(--store-gradient); }
+.auth-avatar-fallback svg { width: 55%; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+
+@media (min-width: 681px) {
+  :root[data-preview-mode="web"] .storefront.shop-app {
+    grid-template-rows: 64px minmax(0, 1fr);
+  }
+
+  :root[data-preview-mode="web"] .storefront .appbar {
+    min-height: 64px;
+    grid-template-columns: max-content max-content minmax(180px, 1fr) max-content max-content minmax(42px, max-content);
+    grid-template-areas: none;
+    gap: clamp(8px, 1.1vw, 18px);
+    padding: 0 clamp(14px, 1.8vw, 24px);
+  }
+
+  :root[data-preview-mode="web"] .storefront .brand,
+  :root[data-preview-mode="web"] .storefront .store-nav,
+  :root[data-preview-mode="web"] .storefront .store-search {
+    grid-area: auto;
+    min-width: 0;
+  }
+
+  :root[data-preview-mode="web"] .storefront .header-actions { display: contents; }
+  :root[data-preview-mode="web"] .storefront .header-actions .shop-theme-picker { display: none !important; }
+
+  :root[data-preview-mode="web"] .storefront .language-toggle,
+  :root[data-preview-mode="web"] .storefront .header-cart-button,
+  :root[data-preview-mode="web"] .storefront .account-button {
+    grid-area: auto;
+    min-width: 0;
+    margin: 0;
+  }
+
+  :root[data-preview-mode="web"] .storefront .account-button {
+    max-width: 176px;
+    display: inline-flex !important;
+  }
+
+  :root[data-preview-mode="web"] .storefront .account-button span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 1180px) and (min-width: 681px) {
+  :root[data-preview-mode="web"] .storefront .appbar {
+    grid-template-columns: max-content max-content minmax(150px, 1fr) max-content max-content 38px;
+    gap: 8px;
+    padding-inline: 14px;
+  }
+
+  :root[data-preview-mode="web"] .storefront .account-button {
+    width: 38px;
+    min-width: 38px;
+    padding-inline: 8px !important;
+  }
+
+  :root[data-preview-mode="web"] .storefront .account-button span { display: none; }
+}
+
+@media (max-width: 820px) and (min-width: 681px) {
+  :root[data-preview-mode="web"] .storefront .appbar {
+    grid-template-columns: max-content max-content minmax(110px, 1fr) 34px 36px 36px;
+    gap: 6px;
+    padding-inline: 10px;
+  }
+
+  :root[data-preview-mode="web"] .storefront .brand span { display: none; }
+  :root[data-preview-mode="web"] .storefront .brand strong { font-size: 14px; }
+  :root[data-preview-mode="web"] .storefront .store-nav { gap: 0; }
+  :root[data-preview-mode="web"] .storefront .store-nav a { min-width: 50px; padding-inline: 5px; font-size: 10px; }
+  :root[data-preview-mode="web"] .storefront .language-toggle { width: 34px; min-width: 34px; padding: 0 !important; }
+  :root[data-preview-mode="web"] .storefront .header-cart-button { width: 36px; min-width: 36px; padding-inline: 7px !important; }
+  :root[data-preview-mode="web"] .storefront .header-cart-button > span { display: none; }
+  :root[data-preview-mode="web"] .storefront .account-button { width: 36px; min-width: 36px; }
+}
+
 @media (max-width: 980px) and (min-width: 681px) {
   :root[data-preview-mode="web"] .storefront .account-button {
     width: 38px;
@@ -4705,4 +4827,89 @@ button:disabled {
   .storefront-cart .cart-remove-button { grid-column: 2; grid-row: 3; justify-self: start; padding-left: 0; }
   .storefront-cart .cart-list-footer { flex-wrap: wrap; gap: 10px 14px; padding-inline: 13px; }
   .storefront-cart .cart-summary-card { position: static; }
+}
+
+/* v44.1: a narrow iframe is still Web preview, so keep all six header controls
+   on one compact row and reserve the two-row header for mobile preview only. */
+@media (max-width: 680px) {
+  :root[data-preview-mode="web"] .storefront.shop-app {
+    grid-template-rows: 64px minmax(0, 1fr);
+  }
+
+  :root[data-preview-mode="web"] .storefront .appbar {
+    min-height: 64px;
+    grid-template-columns: max-content max-content minmax(72px, 1fr) 30px 34px 34px;
+    grid-template-areas: none;
+    gap: 5px;
+    padding: 0 8px;
+  }
+
+  :root[data-preview-mode="web"] .storefront .brand,
+  :root[data-preview-mode="web"] .storefront .store-nav,
+  :root[data-preview-mode="web"] .storefront .store-search {
+    grid-area: auto;
+    min-width: 0;
+  }
+
+  :root[data-preview-mode="web"] .storefront .brand {
+    max-width: 120px;
+    overflow: hidden;
+  }
+
+  :root[data-preview-mode="web"] .storefront .brand-text { min-width: 0; }
+  :root[data-preview-mode="web"] .storefront .brand strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  :root[data-preview-mode="web"] .storefront .brand span { display: none; }
+  :root[data-preview-mode="web"] .storefront .store-mark,
+  :root[data-preview-mode="web"] .storefront .store-mark svg { width: 30px; height: 30px; }
+
+  :root[data-preview-mode="web"] .storefront .store-nav {
+    height: 64px;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+  }
+
+  :root[data-preview-mode="web"] .storefront .store-nav a {
+    min-width: 44px;
+    min-height: 64px;
+    padding: 0 4px;
+    font-size: 9px;
+  }
+
+  :root[data-preview-mode="web"] .storefront .store-search { height: 32px; padding-inline: 8px; }
+  :root[data-preview-mode="web"] .storefront .header-actions { display: contents; }
+  :root[data-preview-mode="web"] .storefront .header-actions .shop-theme-picker { display: none !important; }
+  :root[data-preview-mode="web"] .storefront .language-toggle { grid-area: auto; width: 30px; min-width: 30px; height: 30px; min-height: 30px; padding: 0 !important; }
+  :root[data-preview-mode="web"] .storefront .header-cart-button,
+  :root[data-preview-mode="web"] .storefront .account-button {
+    grid-area: auto;
+    width: 34px;
+    min-width: 34px;
+    min-height: 34px !important;
+    display: inline-flex !important;
+    margin: 0;
+    padding: 6px !important;
+  }
+
+  :root[data-preview-mode="web"] .storefront .header-cart-button > span,
+  :root[data-preview-mode="web"] .storefront .account-button > span { display: none; }
+  :root[data-preview-mode="web"] .storefront .header-cart-button svg,
+  :root[data-preview-mode="web"] .storefront .account-button svg { width: 17px; height: 17px; }
+  :root[data-preview-mode="web"] .storefront .mobile-bottom-nav { display: none !important; }
+  :root[data-preview-mode="web"] .storefront .store-page { padding-bottom: 20px; }
+}
+
+@media (max-width: 520px) {
+  :root[data-preview-mode="web"] .storefront .appbar {
+    grid-template-columns: 30px max-content minmax(50px, 1fr) 28px 30px 30px;
+    gap: 4px;
+    padding-inline: 6px;
+  }
+
+  :root[data-preview-mode="web"] .storefront .brand { width: 30px; }
+  :root[data-preview-mode="web"] .storefront .brand-text { display: none; }
+  :root[data-preview-mode="web"] .storefront .store-nav a { min-width: 36px; padding-inline: 2px; font-size: 8px; }
+  :root[data-preview-mode="web"] .storefront .language-toggle { width: 28px; min-width: 28px; }
+  :root[data-preview-mode="web"] .storefront .header-cart-button,
+  :root[data-preview-mode="web"] .storefront .account-button { width: 30px; min-width: 30px; }
 }

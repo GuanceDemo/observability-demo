@@ -310,6 +310,12 @@ class OrderControllerTest {
         assertThat(source).as("usage guide slide %s", slidePath).isNotNull();
       }
     }
+    for (String avatar : List.of("a", "b", "c")) {
+      String avatarPath = "/static/assets/avatars/demo-reader-" + avatar + ".png";
+      try (var source = getClass().getResourceAsStream(avatarPath)) {
+        assertThat(source).as("synthetic persona avatar %s", avatarPath).isNotNull();
+      }
+    }
 
     assertThat(shopSource)
         .contains("const STORE_PAGES = new Set(['home', 'path', 'detail', 'cart'])")
@@ -339,9 +345,9 @@ class OrderControllerTest {
         .contains("id=\"trafficBtn\"")
         .contains("连续下单 5 次")
         .contains("id=\"phoneToast\"")
-        .contains("assets/selfheal-i18n.js?v=20260817-bookstore-v43")
-        .contains("assets/storefront.css?v=20260817-bookstore-v43")
-        .contains("assets/checkout-sourcemap-fault.min.js?v=20260817-bookstore-v43")
+        .contains("assets/selfheal-i18n.js?v=20260817-bookstore-v44")
+        .contains("assets/storefront.css?v=20260817-bookstore-v44")
+        .contains("assets/checkout-sourcemap-fault.min.js?v=20260817-bookstore-v44")
         .contains("const PREVIEW_DISPLAY_URL = 'https://demo.dataflux.cn'")
         .contains("data-i18n-aria-label=\"shopAppLabel\"")
         .contains("data-i18n-aria-label=\"shopHomePageLabel\"")
@@ -361,6 +367,7 @@ class OrderControllerTest {
         .contains("const VISITOR_STORAGE_KEY = 'mall-demo-visitor-id-v1'")
         .contains("const VISITOR_TTL_MS = 60 * 24 * 60 * 60 * 1000")
         .contains("trackViewsManually: true")
+        .contains("defaultPrivacyLevel: 'mask-user-input'")
         .contains("name: `storefront/${state.storePage}`")
         .contains("window.DATAFLUX_RUM.startView")
         .contains("sdk.setUser?.(identity)")
@@ -369,6 +376,18 @@ class OrderControllerTest {
         .contains("auth_login_success")
         .contains("auth_login_failure")
         .contains("auth_logout")
+        .contains("role=\"dialog\" aria-modal=\"true\"")
+        .contains("data-gc-privacy=\"allow\"")
+        .contains("const AUTH_AVATAR_BY_USER_ID = Object.freeze({")
+        .contains("assets/avatars/demo-reader-a.png?v=${STOREFRONT_BUILD_ID}")
+        .contains("assets/avatars/demo-reader-b.png?v=${STOREFRONT_BUILD_ID}")
+        .contains("assets/avatars/demo-reader-c.png?v=${STOREFRONT_BUILD_ID}")
+        .contains("function authAvatarMarkup(user)")
+        .contains("const alreadyOpen = !els.authDialog.hidden")
+        .contains("els.authDialog.hidden = false")
+        .contains("els.authDialog.hidden = true")
+        .doesNotContain("els.authDialog.showModal")
+        .doesNotContain("user.name.slice(-1)")
         .contains("'X-Demo-Visitor-Id': state.visitorId")
         .contains("event.context.visitor_id = state.visitorId")
         .contains("event.context.auth_state = state.authUser ? 'authenticated' : 'anonymous'")
@@ -443,12 +462,18 @@ class OrderControllerTest {
         .contains(":root[data-preview-mode=\"mobile\"] .storefront-detail .detail-product")
         .contains(":root[data-preview-mode=\"mobile\"] .storefront-path .path-stage")
         .contains(":root[data-preview-mode=\"web\"] .storefront .mobile-bottom-nav")
+        .contains("v44: replay-stable account overlay and collision-free Web iframe header")
+        .contains(":root[data-preview-mode=\"web\"] .storefront .header-actions { display: contents; }")
+        .contains("grid-template-columns: max-content max-content minmax(180px, 1fr) max-content max-content minmax(42px, max-content);")
+        .contains("grid-template-columns: max-content max-content minmax(110px, 1fr) 34px 36px 36px;")
+        .contains("v44.1: a narrow iframe is still Web preview")
+        .contains("grid-template-columns: max-content max-content minmax(72px, 1fr) 30px 34px 34px;")
         .contains("z-index: 30;")
         .doesNotContain(".storefront .page-back");
 
     assertThat(businessSource)
-        .contains("const SHOP_BUILD_ID = '20260817-bookstore-v43'")
-        .contains("assets/selfheal-i18n.js?v=20260817-bookstore-v43")
+        .contains("const SHOP_BUILD_ID = '20260817-bookstore-v44'")
+        .contains("assets/selfheal-i18n.js?v=20260817-bookstore-v44")
         .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
         .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
         .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")
