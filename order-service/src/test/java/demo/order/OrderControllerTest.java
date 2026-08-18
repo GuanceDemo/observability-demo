@@ -300,6 +300,7 @@ class OrderControllerTest {
         .contains("rel=\"noopener noreferrer\"")
         .contains("data-language=\"zh\"")
         .contains("data-language=\"en\"")
+        .contains("@media (min-width: 981px) and (max-height: 680px)")
         .contains("RUM &amp; Replay")
         .contains("APM Trace")
         .contains("Metrics &amp; Infra")

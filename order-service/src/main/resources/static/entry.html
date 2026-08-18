@@ -540,6 +540,215 @@
       line-height: 1.65;
     }
 
+    @media (min-width: 981px) and (max-height: 680px) {
+      .page-shell {
+        padding: 10px 0;
+        align-content: stretch;
+      }
+
+      .entry-card {
+        min-height: calc(100vh - 20px);
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        border-radius: 22px;
+      }
+
+      .topbar {
+        min-height: 60px;
+        padding: 8px 20px;
+      }
+
+      .brand {
+        gap: 11px;
+      }
+
+      .brand-mark {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+        border-radius: 12px;
+      }
+
+      .brand-mark svg {
+        width: 25px;
+        height: 25px;
+      }
+
+      .brand-name {
+        font-size: 16px;
+      }
+
+      .brand-note {
+        margin-top: 1px;
+        font-size: 10px;
+      }
+
+      .language-switch {
+        padding: 3px;
+      }
+
+      .language-button {
+        min-width: 50px;
+        height: 30px;
+      }
+
+      .hero {
+        padding: 20px 36px 18px;
+        gap: 46px;
+      }
+
+      .hero-copy {
+        min-height: 386px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+      }
+
+      .eyebrow {
+        margin-bottom: 0;
+        font-size: 11px;
+      }
+
+      h1 {
+        font-size: 46px;
+        line-height: 1.04;
+      }
+
+      .hero-description {
+        margin: 0;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .hero-actions {
+        margin-top: 0;
+        gap: 12px;
+      }
+
+      .primary-action {
+        min-height: 46px;
+        padding: 0 18px;
+        border-radius: 12px;
+        font-size: 14px;
+      }
+
+      .action-note {
+        font-size: 11px;
+      }
+
+      .signal-list {
+        margin-top: 0;
+        gap: 8px;
+      }
+
+      .signal-list li {
+        padding: 7px 10px;
+        font-size: 10px;
+      }
+
+      .demo-visual {
+        padding: 12px;
+        border-radius: 19px;
+      }
+
+      .visual-bar {
+        height: 28px;
+      }
+
+      .visual-address {
+        padding: 5px 10px;
+        font-size: 10px;
+      }
+
+      .scene {
+        min-height: 332px;
+        padding: 16px;
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr) auto;
+        border-radius: 15px;
+      }
+
+      .scene-title {
+        font-size: 14px;
+      }
+
+      .journey {
+        margin-top: 0;
+        align-self: center;
+        gap: 8px;
+      }
+
+      .journey-step {
+        padding: 11px 6px;
+      }
+
+      .journey-step:not(:last-child)::after {
+        right: -9px;
+        width: 9px;
+      }
+
+      .journey-icon {
+        width: 30px;
+        height: 30px;
+        margin-bottom: 7px;
+        border-radius: 8px;
+        font-size: 12px;
+      }
+
+      .journey-name {
+        font-size: 10px;
+      }
+
+      .incident-card {
+        margin-top: 0;
+        padding: 12px 14px;
+        gap: 10px;
+      }
+
+      .incident-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        font-size: 16px;
+      }
+
+      .incident-meta {
+        margin-top: 2px;
+      }
+
+      .feature-grid {
+        padding: 0 36px 14px;
+        gap: 12px;
+      }
+
+      .feature-card {
+        padding: 12px 14px;
+        gap: 11px;
+        border-radius: 14px;
+      }
+
+      .feature-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 11px;
+      }
+
+      .feature-icon svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .feature-title {
+        margin-bottom: 3px;
+        font-size: 12px;
+      }
+
+      .feature-description {
+        font-size: 10px;
+        line-height: 1.45;
+      }
+    }
+
     @media (max-width: 980px) {
       .page-shell { width: min(760px, calc(100% - 32px)); }
       .hero { grid-template-columns: 1fr; }
