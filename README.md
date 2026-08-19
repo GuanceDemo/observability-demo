@@ -65,28 +65,18 @@ DataKit 需要开启 `container`、`ddtrace`、`statsd` 和 `profile` inputs，�
 
 ## EKS Workshop：安装 DataKit 与 Demo
 
-Workshop 固定使用 Guance 官方仓库的 `v2.3.1` 源码和 Harbor `2.3.1` 镜像，避免源码、应用版本和 SourceMap 漂移。DataKit 和应用保持为两个独立 Helm Release；最终用户不需要 Maven、Docker build、ECR 或镜像仓库登录。
+Workshop 固定使用 Guance 官方仓库的 `v2.3.5` 源码和 Harbor `2.3.5` 镜像，避免源码、应用版本和 SourceMap 漂移。DataKit 和应用保持为两个独立 Helm Release；最终用户不需要 Maven、Docker build、ECR 或镜像仓库登录。
 
 ```bash
-export DEMO_VERSION="2.3.1"
+export DEMO_VERSION="2.3.5"
 git clone --branch "v${DEMO_VERSION}" --depth 1 \
   https://github.com/GuanceDemo/observability-demo.git
 cd observability-demo
 ```
 
-常用维护命令：
-
-```bash
-scripts/workshop.sh status
-scripts/workshop.sh cleanup                 # 保留 DataKit
-scripts/workshop.sh cleanup --with-datakit  # 同时删除 DataKit
-```
-
-下面按 Workshop 教程的顺序分步安装 DataKit 和 Demo。
-
 ### 0. 准备信息并声明参数
 
-开始前先准备 DataWay URL，并在观测云创建 Web 类型的 RUM 应用、取得 Application ID。然后集中声明本次安装使用的参数；后续命令无需再修改：
+开始前先准备 DataWay URL，并在观测云创建 Web 类型的 RUM 应用、取得 Application ID 和 Workspace ID。然后集中声明本次安装使用的参数；后续命令无需再修改：
 
 ```bash
 export EKS_CLUSTER_NAME="observability-demo"
@@ -99,7 +89,32 @@ read -rp 'RUM Application ID: ' RUM_APPLICATION_ID && export RUM_APPLICATION_ID
 read -rp '观测云 Workspace ID: ' GUANCE_WORKSPACE_ID && export GUANCE_WORKSPACE_ID
 ```
 
-`project=mall-demo`、镜像标签 `2.3.1`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Workshop 固定值，不需要用户声明。
+`project=mall-demo`、镜像标签 `2.3.5`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Workshop 固定值，不需要用户声明。
+
+可选的快速路径会显示 AWS 身份、目标 kube context 和节点，确认后安装 DataKit 与六个 Demo 工作负载并等待公网地址。它不会运行 smoke test、生成流量或注入故障：
+
+```bash
+scripts/workshop.sh install
+```
+
+自动化环境可增加 `--yes` 跳过确认。如果检测到已有 `datakit/datakit` Release，脚本会默认停止；只有确认该 Release 可以升级时，才显式增加 `--upgrade-existing-datakit`。
+
+安装成功后清理当前 Shell 中的参数：
+
+```bash
+unset DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID
+```
+
+常用维护命令：
+
+```bash
+scripts/workshop.sh status
+scripts/workshop.sh verify
+scripts/workshop.sh cleanup                 # 保留 DataKit
+scripts/workshop.sh cleanup --with-datakit  # 同时删除 DataKit
+```
+
+下面按 Workshop 教程的顺序保留 DataKit 和 Demo 的完整分步安装说明。
 
 ### 1. 连接 EKS
 
@@ -169,7 +184,7 @@ done
 
 Chart 会在 `demo-observability-demo` Secret 中自动生成 Demo 内部 MySQL 密码。
 
-Workshop profile 拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:2.3.1`，并使用 `imagePullPolicy: IfNotPresent`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。
+Workshop profile 拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:2.3.5`，并使用 `imagePullPolicy: IfNotPresent`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。
 
 ### 4. 获取外部 URL
 
@@ -189,7 +204,7 @@ DATAKIT_PROVIDER=guance DEMO_PROJECT=mall-demo scripts/smoke-test.sh
 scripts/generate-traffic.sh
 scripts/inject-fault.sh payment_slow
 scripts/inject-fault.sh off
-scripts/package-rum-sourcemap.sh --version 2.3.1
+scripts/package-rum-sourcemap.sh --version 2.3.5
 ```
 
 人工验收应覆盖按 `project=mall-demo` 过滤的 Node/Pod/容器指标、完整 Trace、日志关联、JVM、Profile，以及 RUM/Browser Logs/Replay/SourceMap。详见 [故障场景目录](docs/fault-scenarios.md)。
