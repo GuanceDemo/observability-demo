@@ -67,7 +67,10 @@ class PaymentController {
     FaultSnapshot fault = faultState.current();
     if (fault.is("payment_error")) {
       fault.applyCurrentSpanTags();
-      log.warn(
+      ResponseStatusException exception =
+          new ResponseStatusException(
+              HttpStatus.BAD_GATEWAY, "simulated payment provider error");
+      log.error(
           metadata
               .language()
               .text(
@@ -78,8 +81,9 @@ class PaymentController {
           fault.layer(),
           fault.target(),
           metadata.keyRequestOrDash(),
-          metadata.businessRequestIdOrDash());
-      throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "simulated payment provider error");
+          metadata.businessRequestIdOrDash(),
+          exception);
+      throw exception;
     }
     if (fault.is("payment_cpu_burn")) {
       fault.applyCurrentSpanTags();

@@ -21,7 +21,7 @@
 | `order_slow` | server | web, android, ios | 服务 / order-service | 入口慢 Span、接口延迟 |
 | `inventory_redis_timeout` | server | web, android, ios | 依赖 / Redis | 依赖超时、错误 Span、关联日志 |
 | `payment_slow` | server | web, android, ios | 服务 / payment-service | 慢 Span、慢方法与 Profile |
-| `payment_error` | server | web, android, ios | 服务 / payment-service | HTTP 5xx、错误率和失败 Trace |
+| `payment_error` | server | web, android, ios | 服务 / payment-service | HTTP 5xx、ERROR 日志、错误中心、错误率和失败 Trace |
 | `payment_cpu_burn` | server | web, android, ios | JVM / payment-service | CPU、JVM 与 Profile 热点 |
 
 示例：

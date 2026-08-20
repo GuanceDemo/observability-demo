@@ -46,7 +46,7 @@ Pipeline 的输出规则如下：
 | ERROR 但堆栈格式未识别 | `logger_name` + 首行 `log_message`，不生成 `error_stack` |
 | ERROR 本身没有堆栈 | `logger_name` + 首行 `log_message`，不生成 `error_stack` |
 
-`message` 始终保留采集到的完整原文，`log_message` 只保存时间戳首行中的业务正文。Gateway 和 Order 会把捕获的 Throwable 作为 SLF4J 最后一个参数输出，因此重新部署后的相应 ERROR 可以得到真实堆栈；Inventory 原本就具备这一行为，Payment 暂无对应错误样本。
+`message` 始终保留采集到的完整原文，`log_message` 只保存时间戳首行中的业务正文。Gateway 和 Order 会把捕获的 Throwable 作为 SLF4J 最后一个参数输出，因此重新部署后的相应 ERROR 可以得到真实堆栈；Inventory 的 Redis 超时和 Payment 的注入 5xx 也都会在故障源服务记录带 Throwable 的 ERROR。Order 与 Gateway 对这次正常透传的 Payment 失败仍保留 WARN/INFO，避免同一故障生成重复 ERROR。
 
 ### 在观测云创建 Pipeline
 
@@ -56,7 +56,7 @@ Pipeline 的输出规则如下：
 4. 将 `observability/platform-log-pipeline.p` 的完整内容粘贴到“定义解析规则”。自定义 Pattern 必须位于第一个 `grok()` 之前。
 5. 在“样本解析测试”中分批粘贴 `observability/fixtures/logs/` 下五个文件的完整内容。平台每次最多添加三条样本，因此至少测试两轮。
 6. 确认 INFO 不含 `error_*`；无堆栈 ERROR 只有 `error_type/error_message`；三个堆栈样本还包含 `error_stack`；所有样本继续包含原有 Trace、业务字段和完整 `message`，然后保存。
-7. 只用保存后新产生的日志验收。分别触发 Inventory、Gateway 和 Order 错误，并在**日志 > 错误追踪**按 `source=java_selfheal_demo`、`service` 检查错误类型、消息、格式化堆栈和关联上下文。
+7. 只用保存后新产生的日志验收。至少分别触发 `inventory_redis_timeout` 和 `payment_error`，再按需验证 Gateway、Order 的独立异常；在**日志 > 错误追踪**按 `source=java_selfheal_demo`、`service` 检查错误类型、消息、格式化堆栈和关联上下文。
 
 中心 Pipeline 在数据上传后处理，属于付费功能。如果工作空间使用本地 Pipeline，应在同一创建页面选择本地类型并保持精确的 Source 绑定；DataKit 默认每分钟拉取一次远程 Pipeline。不要同时为同一 Source 保留两套行为不同的规则。
 
@@ -77,13 +77,13 @@ Pipeline 生成字段后，还需要创建日志错误投递规则：
 - 详情页结构化展示异常类型、异常消息和真实 Java 堆栈，同时仍可查看完整原文。
 - 相同根因按错误指纹和 `service` 聚合为 Error Issue，展示首次/最近发生时间、累计次数和趋势，并支持认领、状态流转和协作记录。
 - 保留的 `trace_id/span_id` 可把日志错误关联到调用链；`service`、主机/Pod/容器字段可继续关联上下文日志、基础设施和 eBPF 网络数据。
-- Gateway、Order 与 Inventory 的真实 Throwable 提供代码行级定位；旧的或无法识别的无堆栈 ERROR 仍能以两字段方式进入错误追踪和错误中心，不会虚构堆栈。
+- Gateway、Order、Inventory 与 Payment 的真实 Throwable 提供代码行级定位；旧的或无法识别的无堆栈 ERROR 仍能以两字段方式进入错误追踪和错误中心，不会虚构堆栈。
 - 现有业务、用户、故障和路由字段全部保留，可继续按 `biz_request_id`、`fault_id`、`route_class` 等条件缩小故障范围。
 
 ### 上线验收与回退
 
 - 确认下一条正常时间戳日志不会被追加到前一条异常，且超长堆栈没有触发 DataKit 单条日志长度截断。
-- 确认 INFO/WARN 不进入错误数据范围，Inventory/Gateway/Order 各至少验证一次真实故障，且 HTTP 状态和正文没有变化。
+- 确认 INFO/WARN 不进入错误数据范围，`inventory_redis_timeout` 与 `payment_error` 各至少验证一次，Gateway/Order 的独立异常按需验证，且 HTTP 状态和正文没有变化。
 - Pipeline 解析异常时可单独恢复旧脚本，原始 `message` 不受影响；Throwable 参数可独立回退以降低日志量；多行规则回退后堆栈会重新拆成多条日志，但不影响应用运行。
 
 参考：[Pipelines](https://docs.guance.com/pipeline/)、[日志错误追踪](https://docs.guance.com/logs/log-tracing/)、[创建错误投递规则](https://docs.guance.com/errors/create-error-rule/)、[错误中心](https://docs.guance.com/errors/)。

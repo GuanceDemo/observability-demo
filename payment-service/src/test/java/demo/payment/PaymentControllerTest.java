@@ -6,14 +6,20 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import java.time.Instant;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 class PaymentControllerTest {
   private MockMvc mockMvc;
@@ -54,6 +60,59 @@ class PaymentControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.amountCent").value(1999))
         .andExpect(jsonPath("$.status").value("PAID"));
+  }
+
+  @Test
+  void paymentErrorLogsThrowableAtErrorAndKeepsBadGatewayResponse() throws Exception {
+    FaultState faultState = new FaultState();
+    faultState.enable("payment_error", 30);
+    MockMvc faultMvc =
+        MockMvcBuilders.standaloneSetup(new PaymentController(faultState, 1800, 1500)).build();
+    Logger logger = (Logger) LoggerFactory.getLogger(PaymentController.class);
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    logger.addAppender(appender);
+
+    try {
+      faultMvc
+          .perform(
+              post("/api/payments/pay")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .header("X-Demo-Language", "en")
+                  .content(
+                      """
+                      {"orderId":"ord-payment-error","amountCent":1999}
+                      """))
+          .andExpect(status().isBadGateway())
+          .andExpect(
+              result ->
+                  assertThat(result.getResolvedException())
+                      .isInstanceOf(ResponseStatusException.class))
+          .andExpect(
+              result ->
+                  assertThat(
+                          ((ResponseStatusException) result.getResolvedException()).getReason())
+                      .isEqualTo("simulated payment provider error"));
+
+      List<ILoggingEvent> faultEvents =
+          appender.list.stream()
+              .filter(
+                  event ->
+                      event.getFormattedMessage().contains("simulating payment-service 5xx"))
+              .toList();
+      assertThat(faultEvents).hasSize(1);
+      ILoggingEvent errorEvent = faultEvents.get(0);
+      assertThat(errorEvent.getLevel().levelStr).isEqualTo("ERROR");
+      assertThat(errorEvent.getFormattedMessage())
+          .contains("order_id=ord-payment-error")
+          .contains("fault_id=payment_error");
+      assertThat(errorEvent.getThrowableProxy()).isNotNull();
+      assertThat(errorEvent.getThrowableProxy().getClassName())
+          .isEqualTo(ResponseStatusException.class.getName());
+    } finally {
+      logger.detachAppender(appender);
+      appender.stop();
+    }
   }
 
   @Test
