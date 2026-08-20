@@ -210,15 +210,15 @@ test_hostname_install() {
   run_install hostname "" --yes
   assert_success
   assert_output_contains "DEMO_BASE_URL=http://demo.example.test"
-  assert_output_contains "SourceMap: scripts/package-rum-sourcemap.sh --version 2.3.5"
-  assert_output_contains "SourceMap upload: Environment=demo, Version=2.3.5"
+  assert_output_contains "SourceMap: scripts/package-rum-sourcemap.sh --version 2.3.6"
+  assert_output_contains "SourceMap upload: Environment=demo, Version=2.3.6"
   assert_output_excludes "$DATAWAY_URL"
   assert_output_excludes "verification passed"
   assert_log_contains "helm repo add datakit https://pubrepo.guance.com/chartrepo/datakit --force-update"
   assert_log_contains "helm upgrade --install datakit datakit/datakit --version 2.5.0"
   assert_log_contains "--set-file datakit.dataway_url="
   assert_log_contains "helm upgrade --install demo"
-  assert_log_contains "--set-string image.tag=2.3.5"
+  assert_log_contains "--set-string image.tag=2.3.6"
   assert_log_contains "--set-string datakit.provider=guance"
   assert_log_contains "--set-string observability.clusterName=eks-workshop"
   assert_log_contains "--set-string observabilityConsole.url=https://console.guance.com/"

@@ -65,10 +65,10 @@ DataKit 需要开启 `container`、`ddtrace`、`statsd` 和 `profile` inputs，�
 
 ## EKS Workshop：安装 DataKit 与 Demo
 
-Workshop 固定使用 Guance 官方仓库的 `v2.3.5` 源码和 Harbor `2.3.5` 镜像，避免源码、应用版本和 SourceMap 漂移。DataKit 和应用保持为两个独立 Helm Release；最终用户不需要 Maven、Docker build、ECR 或镜像仓库登录。
+Workshop 固定使用 Guance 官方仓库的 `v2.3.6` 源码和 Harbor `2.3.6` 镜像，避免源码、应用版本和 SourceMap 漂移。DataKit 和应用保持为两个独立 Helm Release；最终用户不需要 Maven、Docker build、ECR 或镜像仓库登录。
 
 ```bash
-export DEMO_VERSION="2.3.5"
+export DEMO_VERSION="2.3.6"
 git clone --branch "v${DEMO_VERSION}" --depth 1 \
   https://github.com/GuanceDemo/observability-demo.git
 cd observability-demo
@@ -89,7 +89,7 @@ read -rp 'RUM Application ID: ' RUM_APPLICATION_ID && export RUM_APPLICATION_ID
 read -rp '观测云 Workspace ID: ' GUANCE_WORKSPACE_ID && export GUANCE_WORKSPACE_ID
 ```
 
-`project=mall-demo`、镜像标签 `2.3.5`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Workshop 固定值，不需要用户声明。
+`project=mall-demo`、镜像标签 `2.3.6`、DataKit namespace `datakit` 和应用 namespace `observability-demo` 是 Workshop 固定值，不需要用户声明。
 
 可选的快速路径会显示 AWS 身份、目标 kube context 和节点，确认后安装 DataKit 与六个 Demo 工作负载并等待公网地址。它不会运行 smoke test、生成流量或注入故障：
 
@@ -184,7 +184,7 @@ done
 
 Chart 会在 `demo-observability-demo` Secret 中自动生成 Demo 内部 MySQL 密码。
 
-Workshop profile 拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:2.3.5`，并使用 `imagePullPolicy: IfNotPresent`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。
+Workshop profile 拉取 `pubrepo.jiagouyun.com/demo/observability-demo-{gateway,order,inventory,payment}-service:2.3.6`，并使用 `imagePullPolicy: IfNotPresent`。Harbor 的 `demo` 项目为公开项目，最终用户不需要执行 `docker login`。
 
 ### 4. 获取外部 URL
 
@@ -204,7 +204,7 @@ DATAKIT_PROVIDER=guance DEMO_PROJECT=mall-demo scripts/smoke-test.sh
 scripts/generate-traffic.sh
 scripts/inject-fault.sh payment_slow
 scripts/inject-fault.sh off
-scripts/package-rum-sourcemap.sh --version 2.3.5
+scripts/package-rum-sourcemap.sh --version 2.3.6
 ```
 
 人工验收应覆盖按 `project=mall-demo` 过滤的 Node/Pod/容器指标、完整 Trace、日志关联、JVM、Profile，以及 RUM/Browser Logs/Replay/SourceMap。详见 [故障场景目录](docs/fault-scenarios.md)。

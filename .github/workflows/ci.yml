@@ -189,7 +189,7 @@ jobs:
             --set-string observabilityConsole.url=https://console.guance.com/ \
             --set-string observabilityConsole.workspaceId=test-workspace \
             >/tmp/workshop-rendered.yaml
-          grep -q 'pubrepo.jiagouyun.com/demo/observability-demo-gateway-service:2.3.5' /tmp/workshop-rendered.yaml
+          grep -q 'pubrepo.jiagouyun.com/demo/observability-demo-gateway-service:2.3.6' /tmp/workshop-rendered.yaml
           grep -q 'cluster_name_k8s:test-cluster' /tmp/workshop-rendered.yaml
           grep -A20 'name: DATAKIT_PROVIDER' /tmp/workshop-rendered.yaml | grep -q 'guance'
           grep -A20 'name: OBSERVABILITY_CONSOLE_URL' /tmp/workshop-rendered.yaml | grep -q 'https://console.guance.com/'
@@ -210,15 +210,15 @@ jobs:
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/datakit-rendered.yaml
       - name: Verify workshop release contract
         run: |
-          grep -q '^version: 2.3.5$' charts/observability-demo/Chart.yaml
-          grep -q '^appVersion: "2.3.5"$' charts/observability-demo/Chart.yaml
+          grep -q '^version: 2.3.6$' charts/observability-demo/Chart.yaml
+          grep -q '^appVersion: "2.3.6"$' charts/observability-demo/Chart.yaml
           grep -q "if: github.repository == 'cherrycove/observability-demo'" .github/workflows/release-images.yml
           if rg 'values-workshop-truewatch\.yaml|TRUEWATCH_WORKSPACE_ID|pubrepo\.truewatch\.com/chartrepo/datakit|export AWS_REGION|--region "\$AWS_REGION"' README.md; then
             echo 'obsolete Workshop platform or Region reference found in README' >&2
             exit 1
           fi
           grep -q 'scripts/workshop.sh install \[--yes\] \[--upgrade-existing-datakit\]' scripts/workshop.sh
-          grep -q 'readonly DEMO_VERSION="2.3.5"' scripts/workshop.sh
+          grep -q 'readonly DEMO_VERSION="2.3.6"' scripts/workshop.sh
           grep -q 'readonly DATAKIT_CHART_VERSION="2.5.0"' scripts/workshop.sh
           grep -q 'readonly HELM_VERSION="v3.17.3"' scripts/workshop.sh
           for variable in EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID; do

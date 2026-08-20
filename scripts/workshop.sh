@@ -4,7 +4,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-readonly DEMO_VERSION="2.3.5"
+readonly DEMO_VERSION="2.3.6"
 readonly DATAKIT_CHART_VERSION="2.5.0"
 readonly HELM_VERSION="v3.17.3"
 readonly DEMO_NAMESPACE="observability-demo"

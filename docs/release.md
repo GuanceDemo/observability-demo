@@ -45,7 +45,7 @@ TrueWatch histories. No TrueWatch synchronization is part of this release.
 
 ## Version contract
 
-For release `v2.3.5`, all user-visible deployment artifacts use `2.3.5`:
+For release `v2.3.6`, all user-visible deployment artifacts use `2.3.6`:
 
 - Helm Chart `version` and `appVersion`
 - Harbor image tag and `DD_VERSION`
