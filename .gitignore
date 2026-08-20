@@ -5,6 +5,7 @@
 **/target/
 dist/
 *.log
+!observability/fixtures/logs/*.log
 *.pid
 *.tmp
 coverage/

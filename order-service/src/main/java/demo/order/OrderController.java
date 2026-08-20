@@ -192,7 +192,8 @@ class OrderController {
           orderId,
           metadata.keyRequestOrDash(),
           metadata.businessRequestIdOrDash(),
-          persistenceException.getMessage());
+          persistenceException.getMessage(),
+          persistenceException);
     }
   }
 

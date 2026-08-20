@@ -59,7 +59,7 @@ DATAKIT_DOCKER_NETWORK=datakit-demo-net
 docker compose -f compose.yaml -f compose.datakit.yaml up --build -d
 ```
 
-DataKit 需要开启 `container`、`ddtrace`、`statsd` 和 `profile` inputs，并挂载 Docker Socket 才能同时采集容器指标和 stdout 日志。Compose 已通过每个 Java 容器的 `datakit_logs_config` 将日志统一归类到 `source=java_selfheal_demo`，同时保留各自的 `service`。`compose.datakit.yaml` 只接入已有 DataKit，不会新建或修改 DataKit 容器。
+DataKit 需要开启 `container`、`ddtrace`、`statsd` 和 `profile` inputs，并挂载 Docker Socket 才能同时采集容器指标和 stdout 日志。Compose 已通过每个 Java 容器的 `datakit_logs_config` 将日志统一归类到 `source=java_selfheal_demo`，同时保留各自的 `service`；`multiline_match` 会把 Java Exception、`at` 和 `Caused by` 续行合并到对应的时间戳首行。`compose.datakit.yaml` 只接入已有 DataKit，不会新建或修改 DataKit 容器。
 
 通过 `.env` 的 `DATAKIT_PROVIDER=guance|truewatch` 指明 DataKit 对接的平台。页面右上角会显示 `DataKit → Guance` 或 `DataKit → TrueWatch`，Trace 深链也会自动选择默认域名：Guance 使用 `https://console.guance.com/`，TrueWatch 使用 `https://ap1-console.truewatch.com/`。如需私有化或其他站点，可用 `OBSERVABILITY_CONSOLE_URL` 覆盖。注意，这个变量负责 Demo 的展示和深链；DataKit 实际上报目标仍由 DataKit 自己的 `dataway_url` 决定，两者应保持一致。
 
@@ -149,7 +149,7 @@ helm upgrade --install datakit datakit/datakit \
 unset DATAWAY_URL
 ```
 
-仓库中的 values 开启 Kubernetes/容器与进程指标、eBPF L4/L7 网络流、DDTrace、JVM StatsD、Profile、RUM 和日志采集，并为独立 Demo 集群设置 `project=mall-demo`。日志保留完整原始 `message`，业务字段使用 [`observability/platform-log-pipeline.p`](observability/platform-log-pipeline.p) 在平台 Pipeline 中解析。真实 DataWay URL 由 chart 保存到 Kubernetes Secret，不写入仓库。
+仓库中的 values 开启 Kubernetes/容器与进程指标、eBPF L4/L7 网络流、DDTrace、JVM StatsD、Profile、RUM 和日志采集，并为独立 Demo 集群设置 `project=mall-demo`。日志保留完整原始 `message`，业务字段使用 [`observability/platform-log-pipeline.p`](observability/platform-log-pipeline.p) 在平台 Pipeline 中解析；ERROR 日志会额外生成 `error_type`、`error_message` 和可用时的 `error_stack`。详细的平台创建、样本测试、错误投递规则和验收步骤见[可观测信号与字段](docs/observability.md#java-错误日志与平台-pipeline)。真实 DataWay URL 由 chart 保存到 Kubernetes Secret，不写入仓库。
 
 ```bash
 kubectl -n datakit get pods

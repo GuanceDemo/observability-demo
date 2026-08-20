@@ -1,6 +1,7 @@
 package demo.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -33,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.server.ResponseStatusException;
 
 class OrderControllerTest {
   @TempDir private Path tempDir;
@@ -113,6 +115,86 @@ class OrderControllerTest {
     assertThat(appender.list)
         .anySatisfy(
             event -> assertThat(event.getFormattedMessage()).contains("Creating order:"));
+  }
+
+  @Test
+  void logsPersistenceThrowableWhenFailureStatusCannotBeSaved() {
+    RestTemplate failingRestTemplate =
+        new RestTemplate() {
+          @Override
+          public <T> ResponseEntity<T> postForEntity(
+              String url,
+              @Nullable Object request,
+              Class<T> responseType,
+              Object... uriVariables)
+              throws RestClientException {
+            throw new RestClientException("inventory unavailable");
+          }
+        };
+    IllegalStateException persistenceException =
+        new IllegalStateException("mysql unavailable");
+    OrderStore failingOrderStore =
+        new OrderStore() {
+          @Override
+          public void create(
+              String orderId,
+              OrderRequest request,
+              RequestMetadata metadata,
+              java.time.Instant createdAt) {}
+
+          @Override
+          public void updateStatus(
+              String orderId, String status, java.time.Instant updatedAt) {
+            if ("FAILED".equals(status)) {
+              throw persistenceException;
+            }
+          }
+        };
+    OrderController controller =
+        new OrderController(
+            failingRestTemplate,
+            "http://inventory-service.test",
+            "http://payment-service.test",
+            new FaultState(),
+            failingOrderStore,
+            1600);
+    Logger logger = (Logger) LoggerFactory.getLogger(OrderController.class);
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    logger.addAppender(appender);
+
+    try {
+      assertThatThrownBy(
+              () ->
+                  controller.createOrder(
+                      new OrderRequest("sku-1001", 1, 1999),
+                      "checkout_submit_order",
+                      "biz-order-error",
+                      "en",
+                      null,
+                      null,
+                      null))
+          .isInstanceOf(ResponseStatusException.class)
+          .hasMessageContaining("inventory reservation failed");
+    } finally {
+      logger.detachAppender(appender);
+      appender.stop();
+    }
+
+    assertThat(appender.list)
+        .filteredOn(
+            event ->
+                event
+                    .getFormattedMessage()
+                    .contains("Failed to persist order failure status"))
+        .singleElement()
+        .satisfies(
+            event -> {
+              assertThat(event.getFormattedMessage()).contains("reason=mysql unavailable");
+              assertThat(event.getThrowableProxy()).isNotNull();
+              assertThat(event.getThrowableProxy().getClassName())
+                  .isEqualTo(IllegalStateException.class.getName());
+            });
   }
 
   @Test

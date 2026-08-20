@@ -70,7 +70,7 @@ services:
       <<: *java-environment
       DD_SERVICE: inventory-service
       datakit_logs_config: >-
-        [{"disable":false,"source":"java_selfheal_demo","service":"inventory-service"}]
+        [{"disable":false,"source":"java_selfheal_demo","service":"inventory-service","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
       REDIS_HOST: redis
       REDIS_PORT: "6379"
       LOGGING_FILE_NAME: /var/log/observability-demo/inventory-service.log
@@ -89,7 +89,7 @@ services:
       <<: *java-environment
       DD_SERVICE: payment-service
       datakit_logs_config: >-
-        [{"disable":false,"source":"java_selfheal_demo","service":"payment-service"}]
+        [{"disable":false,"source":"java_selfheal_demo","service":"payment-service","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
       LOGGING_FILE_NAME: /var/log/observability-demo/payment-service.log
     volumes:
       - demo-logs:/var/log/observability-demo
@@ -103,7 +103,7 @@ services:
       <<: *java-environment
       DD_SERVICE: order-service
       datakit_logs_config: >-
-        [{"disable":false,"source":"java_selfheal_demo","service":"order-service"}]
+        [{"disable":false,"source":"java_selfheal_demo","service":"order-service","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
       MYSQL_URL: jdbc:mysql://mysql:3306/selfheal?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&connectTimeout=3000&socketTimeout=5000
       MYSQL_USER: selfheal
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?copy .env.example to .env and set MYSQL_PASSWORD}
@@ -144,7 +144,7 @@ services:
       <<: *java-environment
       DD_SERVICE: gateway-service
       datakit_logs_config: >-
-        [{"disable":false,"source":"java_selfheal_demo","service":"gateway-service"}]
+        [{"disable":false,"source":"java_selfheal_demo","service":"gateway-service","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
       ORDER_URL: http://order-service:8080
       LOGGING_FILE_NAME: /var/log/observability-demo/gateway-service.log
     depends_on:

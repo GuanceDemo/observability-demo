@@ -5,6 +5,7 @@ import static org.springframework.test.web.client.match.MockRestRequestMatchers.
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.headerDoesNotExist;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 
 import ch.qos.logback.classic.Logger;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.MDC;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -227,6 +229,48 @@ class GatewayProxyFilterTest {
                   .containsEntry("auth_state", "authenticated");
             });
     assertThat(MDC.get("user_id")).isNull();
+    server.verify();
+  }
+
+  @Test
+  void logsDownstreamThrowableWithoutChangingGatewayResponse() throws Exception {
+    RestTemplate restTemplate = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(restTemplate).build();
+    server
+        .expect(requestTo("http://order-service.test/api/orders"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE).body("downstream unavailable"));
+
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/orders");
+    request.addHeader("Content-Type", "application/json");
+    request.addHeader("X-Demo-Language", "en");
+    request.setContent("{\"sku\":\"sku-1001\"}".getBytes());
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    Logger logger = (Logger) LoggerFactory.getLogger(GatewayProxyFilter.class);
+    ListAppender<ILoggingEvent> appender = new ListAppender<>();
+    appender.start();
+    logger.addAppender(appender);
+
+    try {
+      new GatewayProxyFilter(restTemplate, "http://order-service.test")
+          .doFilter(request, response, new MockFilterChain());
+    } finally {
+      logger.detachAppender(appender);
+      appender.stop();
+    }
+
+    assertThat(response.getStatus()).isEqualTo(502);
+    assertThat(response.getErrorMessage()).isEqualTo("gateway downstream request failed");
+    assertThat(appender.list)
+        .filteredOn(event -> event.getFormattedMessage().contains("Gateway request failed"))
+        .singleElement()
+        .satisfies(
+            event -> {
+              assertThat(event.getFormattedMessage()).contains("reason=503 Service Unavailable");
+              assertThat(event.getThrowableProxy()).isNotNull();
+              assertThat(event.getThrowableProxy().getClassName())
+                  .contains("HttpServerErrorException");
+            });
     server.verify();
   }
 }

@@ -184,7 +184,8 @@ class GatewayProxyFilter extends OncePerRequestFilter {
             route.trafficType(),
             keyRequest,
             businessRequestId,
-            exception.getMessage());
+            exception.getMessage(),
+            exception);
         response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "gateway downstream request failed");
       }
     } finally {

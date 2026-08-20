@@ -1,0 +1,9 @@
+2026-08-20 10:03:00.000 ERROR [http-nio-8080-exec-4] demo.order.OrderController - Failed to persist order failure status: order_id=ord-demo-004 key_request=true biz_request_id=biz-demo-004 reason=Could not open JDBC Connection | source=java_selfheal_demo service=order-service env=demo version=local project=mall-demo trace_id=4234567890123456789 span_id=6876543210987654321 key_request=true biz_request_id=biz-demo-004 visitor_id=visitor-00000000-0000-0000-0000-000000000004 user_id=demo-reader-001 user_tier=standard auth_state=authenticated language=en fault_id=order_mysql_unavailable fault_layer=dependency fault_kind=unavailable fault_target=mysql process_id=104 host_process_id=204 container_process_id=104 host=demo-node host_name=demo-node pod_name=order-demo pod_namespace=observability-demo container_name=order-service container_id=container-demo-order route_class=- traffic_type=- client_ip=- user_agent=- referer=-
+### Error updating database. Cause: java.sql.SQLException: connection unavailable
+### The error may exist in demo/order/OrderMapper.java
+org.springframework.jdbc.CannotGetJdbcConnectionException: Could not open JDBC Connection
+	at demo.order.OrderController.markOrderFailed(OrderController.java:172)
+	at demo.order.OrderController.createOrder(OrderController.java:120)
+Caused by: com.mysql.cj.jdbc.exceptions.CommunicationsException: Communications link failure
+	at com.mysql.cj.jdbc.ConnectionImpl.createNewIO(ConnectionImpl.java:825)
+	... 2 common frames omitted
