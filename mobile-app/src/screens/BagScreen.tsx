@@ -4,10 +4,10 @@ import {AppButton} from '../components/AppButton';
 import {BookCover} from '../components/BookCover';
 import {BOOK} from '../data';
 import {STOREFRONT_PAGE_HORIZONTAL_INSET} from '../layout';
-import type {ThemeTokens} from '../theme';
+import type {DesignTokens} from '../designTokens';
 
 interface Props {
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
   cartQuantity: number;
   busy: boolean;
   onBrowse: () => void;

@@ -14,10 +14,10 @@ import {
   STOREFRONT_PAGE_HORIZONTAL_INSET,
   storefrontLayoutForWidth,
 } from '../layout';
-import type {ThemeTokens} from '../theme';
+import type {DesignTokens} from '../designTokens';
 
 interface Props {
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
   inCart: boolean;
   onViewBook: () => void;
   onToggleCart: () => void;

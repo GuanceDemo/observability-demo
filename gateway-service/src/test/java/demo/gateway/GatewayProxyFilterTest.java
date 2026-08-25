@@ -172,7 +172,7 @@ class GatewayProxyFilterTest {
     request.addHeader("Host", "demo.example.com");
     request.addHeader("X-Forwarded-For", "203.0.113.10, 10.0.0.9");
     request.addHeader("User-Agent", "MallDemoTest/1.0");
-    request.addHeader("Referer", "https://demo.example.com/shop.html?theme=colorful");
+    request.addHeader("Referer", "https://demo.example.com/shop.html?view=web");
     request.setRemoteAddr("198.51.100.21");
     request.setContent("{\"sku\":\"sku-1001\"}".getBytes());
     MockHttpServletResponse response = new MockHttpServletResponse();
@@ -207,7 +207,7 @@ class GatewayProxyFilterTest {
                   .contains("peer_ip=198.51.100.21")
                   .contains("forwarded_for=203.0.113.10, 10.0.0.9")
                   .contains("referer=https://demo.example.com/shop.html")
-                  .doesNotContain("theme=colorful");
+                  .doesNotContain("view=web");
               assertThat(event.getMDCPropertyMap())
                   .containsEntry("language", "en")
                   .containsEntry("public_route", "orders.create")

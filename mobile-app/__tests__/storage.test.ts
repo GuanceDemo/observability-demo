@@ -17,14 +17,12 @@ describe('persistent mobile state', () => {
     await AsyncStorage.clear();
   });
 
-  it('round-trips theme and shopping bag preferences', async () => {
+  it('round-trips shopping bag preferences', async () => {
     await persistStore({
-      theme: 'white',
       cartQuantity: 1,
       selectedSku: 'sku-1001',
     });
     await expect(loadPersistedStore()).resolves.toEqual({
-      theme: 'white',
       cartQuantity: 1,
       selectedSku: 'sku-1001',
     });

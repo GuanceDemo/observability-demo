@@ -1,5 +1,6 @@
-import React, {useEffect, useMemo, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+  AccessibilityInfo,
   Animated,
   Modal,
   PanResponder,
@@ -16,13 +17,24 @@ import {
   FAULT_EDGE_TAG_MIN_HEIGHT,
   faultDrawerSafeSpacing,
 } from '../layout';
-import type {ThemeTokens} from '../theme';
+import type {DesignTokens} from '../designTokens';
 import type {FaultHistoryItem, FaultScenario} from '../types';
 import {openTraceUrl} from '../traceLink';
 import {AppButton} from './AppButton';
 
+const DRAWER_SPRING = {
+  damping: 24,
+  stiffness: 220,
+  mass: 0.8,
+  useNativeDriver: true,
+};
+const DRAWER_EXIT_DURATION_MS = 220;
+const BACKDROP_VISIBLE_OPACITY = 1;
+const OPPOSING_DRAG_RESISTANCE = 0.2;
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 interface EdgeTagProps {
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
   activeFault: FaultScenario | null;
   onPress: () => void;
 }
@@ -70,7 +82,7 @@ export function FaultEdgeTag({
 
 interface DrawerProps {
   visible: boolean;
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
   scenarios: FaultScenario[];
   selectedScenarioId: string | null;
   activeFault: FaultScenario | null;
@@ -104,6 +116,12 @@ export function FaultDrawer({
   const safeSpacing = faultDrawerSafeSpacing(insets);
   const width = Math.min(screenWidth * 0.88, 360);
   const translateX = useRef(new Animated.Value(width)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const [rendered, setRendered] = useState(visible);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const animationGeneration = useRef(0);
+  const activeAnimation = useRef<Animated.CompositeAnimation | null>(null);
+  const releaseVelocity = useRef(0);
   const selected =
     scenarios.find(item => item.id === selectedScenarioId) ??
     scenarios[0] ??
@@ -114,41 +132,179 @@ export function FaultDrawer({
   );
   const selectedLayer = selected?.layer ?? layers[0];
 
+  const stopCurrentAnimation = useCallback(() => {
+    activeAnimation.current?.stop();
+    activeAnimation.current = null;
+    translateX.stopAnimation();
+    backdropOpacity.stopAnimation();
+  }, [backdropOpacity, translateX]);
+
   useEffect(() => {
+    let subscribed = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then(enabled => {
+        if (subscribed) setReduceMotion(enabled);
+      })
+      .catch(() => undefined);
+    const subscription = AccessibilityInfo.addEventListener(
+      'reduceMotionChanged',
+      setReduceMotion,
+    );
+    return () => {
+      subscribed = false;
+      subscription.remove();
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      animationGeneration.current += 1;
+      stopCurrentAnimation();
+    },
+    [stopCurrentAnimation],
+  );
+
+  useEffect(() => {
+    const generation = ++animationGeneration.current;
+    stopCurrentAnimation();
+
+    if (visible && !rendered) {
+      setRendered(true);
+      return;
+    }
+
     if (visible) {
+      releaseVelocity.current = 0;
+      if (reduceMotion) {
+        translateX.setValue(0);
+        backdropOpacity.setValue(BACKDROP_VISIBLE_OPACITY);
+        return;
+      }
+      const animation = Animated.parallel([
+        Animated.spring(translateX, {
+          toValue: 0,
+          ...DRAWER_SPRING,
+        }),
+        Animated.timing(backdropOpacity, {
+          toValue: BACKDROP_VISIBLE_OPACITY,
+          duration: DRAWER_EXIT_DURATION_MS,
+          useNativeDriver: true,
+        }),
+      ]);
+      activeAnimation.current = animation;
+      animation.start(({finished}) => {
+        if (finished && generation === animationGeneration.current) {
+          activeAnimation.current = null;
+        }
+      });
+      return;
+    }
+
+    if (!rendered) {
+      releaseVelocity.current = 0;
       translateX.setValue(width);
+      backdropOpacity.setValue(0);
+      return;
+    }
+
+    const finalizeExit = () => {
+      if (generation !== animationGeneration.current) return;
+      activeAnimation.current = null;
+      setRendered(false);
+    };
+    if (reduceMotion) {
+      releaseVelocity.current = 0;
+      translateX.setValue(width);
+      backdropOpacity.setValue(0);
+      finalizeExit();
+      return;
+    }
+
+    const velocity = releaseVelocity.current;
+    releaseVelocity.current = 0;
+    const animation = Animated.parallel([
+      Animated.spring(translateX, {
+        toValue: width,
+        velocity,
+        ...DRAWER_SPRING,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: 0,
+        duration: DRAWER_EXIT_DURATION_MS,
+        useNativeDriver: true,
+      }),
+    ]);
+    activeAnimation.current = animation;
+    animation.start(({finished}) => {
+      if (finished) finalizeExit();
+    });
+  }, [
+    backdropOpacity,
+    reduceMotion,
+    rendered,
+    stopCurrentAnimation,
+    translateX,
+    visible,
+    width,
+  ]);
+
+  const settleDrawerOpen = useCallback(() => {
+    const generation = ++animationGeneration.current;
+    stopCurrentAnimation();
+    releaseVelocity.current = 0;
+    if (reduceMotion) {
+      translateX.setValue(0);
+      backdropOpacity.setValue(BACKDROP_VISIBLE_OPACITY);
+      return;
+    }
+    const animation = Animated.parallel([
       Animated.spring(translateX, {
         toValue: 0,
-        damping: 24,
-        stiffness: 220,
-        mass: 0.8,
+        ...DRAWER_SPRING,
+      }),
+      Animated.timing(backdropOpacity, {
+        toValue: BACKDROP_VISIBLE_OPACITY,
+        duration: DRAWER_EXIT_DURATION_MS,
         useNativeDriver: true,
-      }).start();
-    }
-  }, [translateX, visible, width]);
+      }),
+    ]);
+    activeAnimation.current = animation;
+    animation.start(({finished}) => {
+      if (finished && generation === animationGeneration.current) {
+        activeAnimation.current = null;
+      }
+    });
+  }, [backdropOpacity, reduceMotion, stopCurrentAnimation, translateX]);
 
   const swipe = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (_, gesture) =>
-          gesture.dx > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+          visible &&
+          Math.abs(gesture.dx) > 10 &&
+          Math.abs(gesture.dx) > Math.abs(gesture.dy),
+        onPanResponderGrant: () => {
+          animationGeneration.current += 1;
+          stopCurrentAnimation();
+        },
         onPanResponderMove: (_, gesture) => {
-          translateX.setValue(Math.max(0, gesture.dx));
+          translateX.setValue(
+            gesture.dx >= 0
+              ? gesture.dx
+              : gesture.dx * OPPOSING_DRAG_RESISTANCE,
+          );
         },
         onPanResponderRelease: (_, gesture) => {
           if (gesture.dx > 54 || gesture.vx > 0.65) {
+            releaseVelocity.current = Math.max(0, gesture.vx);
             onClose();
           } else {
-            Animated.spring(translateX, {
-              toValue: 0,
-              damping: 24,
-              stiffness: 220,
-              useNativeDriver: true,
-            }).start();
+            settleDrawerOpen();
           }
         },
+        onPanResponderTerminate: settleDrawerOpen,
       }),
-    [onClose, translateX],
+    [onClose, settleDrawerOpen, stopCurrentAnimation, translateX, visible],
   );
 
   return (
@@ -159,15 +315,18 @@ export function FaultDrawer({
       presentationStyle="overFullScreen"
       statusBarTranslucent
       transparent
-      visible={visible}>
+      visible={rendered}>
       <View style={styles.modal}>
-        <Pressable
+        <AnimatedPressable
           testID="fault-drawer-backdrop"
           accessibilityLabel="关闭故障抽屉"
           onPress={onClose}
           style={[
             StyleSheet.absoluteFill,
-            {backgroundColor: tokens.colors.overlay},
+            {
+              backgroundColor: tokens.colors.overlay,
+              opacity: backdropOpacity,
+            },
           ]}
         />
         <Animated.View
@@ -459,7 +618,7 @@ function SectionTitle({
   tokens,
 }: {
   title: string;
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
 }) {
   return (
     <Text style={[styles.sectionTitle, {color: tokens.colors.text}]}>
@@ -468,7 +627,7 @@ function SectionTitle({
   );
 }
 
-function Pill({text, tokens}: {text: string; tokens: ThemeTokens}) {
+function Pill({text, tokens}: {text: string; tokens: DesignTokens}) {
   return (
     <View
       style={[
@@ -490,7 +649,7 @@ function Meta({
 }: {
   label: string;
   value: string;
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
 }) {
   return (
     <View style={styles.metaRow}>

@@ -1,7 +1,6 @@
 export type MobilePlatform = 'android' | 'ios';
 export type FaultPlatform = MobilePlatform | 'web';
 export type StoreScreen = 'home' | 'detail' | 'purchase';
-export type ThemeName = 'colorful' | 'white';
 
 export interface FaultScenario {
   id: string;

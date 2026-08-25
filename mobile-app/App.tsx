@@ -49,7 +49,7 @@ import {
   type ToastState,
 } from './src/store';
 import {loadPersistedStore, persistStore} from './src/storage';
-import {themeFor} from './src/theme';
+import {storefrontTokens} from './src/designTokens';
 import {buildTraceUrl} from './src/traceLink';
 import type {
   DemoPublicConfig,
@@ -58,7 +58,6 @@ import type {
   MobileRumConfig,
   OrderResult,
   StoreScreen,
-  ThemeName,
 } from './src/types';
 
 const DEFAULT_MOBILE_CONFIG: MobileRumConfig = {
@@ -96,7 +95,7 @@ function Storefront() {
   });
   const [traceId, setTraceId] = useState('');
   const api = useMemo(() => new DemoApi(gatewayUrl), []);
-  const tokens = themeFor(state.theme);
+  const tokens = storefrontTokens;
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showToast = useCallback((toast: ToastState) => {
@@ -188,7 +187,6 @@ function Storefront() {
       return;
     }
     runSilently(persistStore({
-      theme: state.theme,
       cartQuantity: state.cartQuantity,
       selectedSku: state.selectedSku,
     }));
@@ -196,7 +194,6 @@ function Storefront() {
     hydrated,
     state.cartQuantity,
     state.selectedSku,
-    state.theme,
   ]);
 
   useEffect(() => {
@@ -476,10 +473,6 @@ function Storefront() {
         screen={state.screen}
         cartQuantity={state.cartQuantity}
         onNavigate={navigate}
-        onThemeChange={(theme: ThemeName) => {
-          rumAction('business_switch_theme', {theme});
-          dispatch({type: 'setTheme', theme});
-        }}
       />
       <View style={styles.screen}>
         {state.screen === 'home' && (

@@ -8,18 +8,8 @@
   <script>
     (() => {
       const params = new URL(window.location.href).searchParams;
-      const supportedThemes = new Set(['colorful', 'white']);
-      let demoTheme = params.get('theme');
-      if (!supportedThemes.has(demoTheme)) {
-        try {
-          demoTheme = window.localStorage.getItem('mall-demo-theme');
-        } catch (_) {
-          demoTheme = 'colorful';
-        }
-      }
       document.documentElement.dataset.businessScene = params.get('scene') || 'bookstore';
       document.documentElement.dataset.previewMode = params.get('view') === 'mobile' ? 'mobile' : 'web';
-      document.documentElement.dataset.demoTheme = supportedThemes.has(demoTheme) ? demoTheme : 'colorful';
     })();
   </script>
   <script src="assets/checkout-sourcemap-fault.min.js?v=20260817-bookstore-v44"></script>
@@ -64,21 +54,6 @@
           <span data-store-copy="navCart">购物车</span>
           <strong class="cart-badge" id="cartBadge" aria-label="购物车内有 1 本书" hidden>1</strong>
         </button>
-        <div class="shop-theme-picker" id="shopThemePicker" data-open="false" aria-hidden="true">
-          <button class="shop-theme-trigger" id="shopThemeTrigger" type="button" aria-haspopup="menu" aria-expanded="false" tabindex="-1">
-            <span class="shop-theme-swatch colorful" id="currentThemeSwatch" aria-hidden="true"></span>
-            <span data-i18n="shopThemeTrigger">主题</span>
-            <span class="theme-chevron" aria-hidden="true"></span>
-          </button>
-          <div class="shop-theme-menu" id="shopThemeMenu" role="menu" aria-label="选择主题" data-i18n-aria-label="shopThemeMenuLabel">
-            <button type="button" role="menuitemradio" data-demo-theme="colorful" aria-checked="true" title="绚彩" data-i18n-title="themeColorful">
-              <span class="shop-theme-swatch colorful" aria-hidden="true"></span><span data-i18n="themeColorful">绚彩</span>
-            </button>
-            <button type="button" role="menuitemradio" data-demo-theme="white" aria-checked="false" title="黑白线条" data-i18n-title="themeWhite">
-              <span class="shop-theme-swatch white" aria-hidden="true"></span><span data-i18n="themeWhite">黑白线条</span>
-            </button>
-          </div>
-        </div>
         <button class="account-button" id="accountButton" type="button" aria-haspopup="dialog">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"></circle><path d="M5 20c.7-4 3-6 7-6s6.3 2 7 6"></path></svg>
           <span id="accountButtonLabel">商城账户</span>
@@ -245,7 +220,6 @@
     const apiPrefix = window.location.pathname.startsWith('/selfheal') ? '/selfheal' : '';
     const rumResourceContexts = [];
     const PREVIEW_DISPLAY_URL = 'https://demo.dataflux.cn';
-    const DEMO_THEME_STORAGE_KEY = 'mall-demo-theme';
     const STORE_SESSION_STATE_KEY = 'mall-store-session-state-v1';
     const VISITOR_STORAGE_KEY = 'mall-demo-visitor-id-v1';
     const VISITOR_TTL_MS = 60 * 24 * 60 * 60 * 1000;
@@ -255,9 +229,10 @@
       'demo-reader-002': `assets/avatars/demo-reader-b.png?v=${STOREFRONT_BUILD_ID}`,
       'demo-reader-003': `assets/avatars/demo-reader-c.png?v=${STOREFRONT_BUILD_ID}`,
     });
-    const DEMO_THEMES = new Set(['colorful', 'white']);
     const STORE_PAGES = new Set(['home', 'path', 'detail', 'cart']);
     const LEGACY_STORE_PAGE_ALIASES = Object.freeze({ categories: 'home', technology: 'detail', purchase: 'cart' });
+    const DETAIL_TABS = Object.freeze(['overview', 'chapters', 'audience']);
+    const SINGLE_SELECT_KEYS = new Set(['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End']);
     const ORDER_BACKEND_SKU = 'sku-1001';
     const SWIPE_BACK_MIN_DISTANCE = 72;
     const SWIPE_BACK_MAX_VERTICAL_DISTANCE = 48;
@@ -328,7 +303,6 @@
       rumSessionId: '',
       activeClientFault: null,
       language: I18N.setLanguage(I18N.detectLanguage(), { updateUrl: true }),
-      demoTheme: DEMO_THEMES.has(document.documentElement.dataset.demoTheme) ? document.documentElement.dataset.demoTheme : 'colorful',
       businessScene: initialPreviewParams.get('scene') || 'bookstore',
       previewMode: initialPreviewParams.get('view') === 'mobile' ? 'mobile' : 'web',
       storePage: normalizeStorePage(initialPreviewParams.get('page')),
@@ -396,10 +370,47 @@
       submitBtn: document.getElementById('submitBtn'),
       trafficBtn: document.getElementById('trafficBtn'),
       storeNav: document.querySelector('.store-nav'),
-      shopThemePicker: document.getElementById('shopThemePicker'),
-      shopThemeTrigger: document.getElementById('shopThemeTrigger'),
-      currentThemeSwatch: document.getElementById('currentThemeSwatch'),
     };
+
+    const AUTH_DIALOG_TRANSITION_MS = 220;
+    const FOCUSABLE_SELECTOR = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+    let authDialogReturnFocus = null;
+    let authDialogFrame = null;
+    let authDialogExitTimer = null;
+    let authDialogGeneration = 0;
+
+    function getFocusableElements(container) {
+      if (!container) return [];
+      return [...container.querySelectorAll(FOCUSABLE_SELECTOR)].filter((element) => (
+        !element.hidden
+        && !element.closest('[hidden], [inert], [aria-hidden="true"]')
+        && window.getComputedStyle(element).display !== 'none'
+        && window.getComputedStyle(element).visibility !== 'hidden'
+      ));
+    }
+
+    function cancelAuthDialogCallbacks() {
+      if (authDialogFrame !== null) window.cancelAnimationFrame(authDialogFrame);
+      if (authDialogExitTimer !== null) window.clearTimeout(authDialogExitTimer);
+      authDialogFrame = null;
+      authDialogExitTimer = null;
+    }
+
+    function restoreAuthDialogFocus() {
+      const returnTarget = authDialogReturnFocus?.isConnected
+        && !authDialogReturnFocus.closest?.('[hidden], [inert]')
+        ? authDialogReturnFocus
+        : els.accountButton;
+      authDialogReturnFocus = null;
+      returnTarget?.focus({ preventScroll: true });
+    }
 
     function t(key, params) {
       return I18N.t(key, params, state.language);
@@ -505,23 +516,69 @@
 
     function openAuthDialog(reason = 'account') {
       renderAuthUi();
-      const alreadyOpen = !els.authDialog.hidden;
-      if (!alreadyOpen) {
+      const wasHidden = els.authDialog.hidden;
+      if (!wasHidden && els.authDialog.dataset.state === 'open') {
+        els.authDialogClose?.focus({ preventScroll: true });
+        return;
+      }
+      const generation = ++authDialogGeneration;
+      cancelAuthDialogCallbacks();
+      if (wasHidden) {
+        authDialogReturnFocus = document.activeElement;
         if (!state.authUser) {
           addRumAction('auth_login_prompt', { trigger: reason, visitor_id: state.visitorId });
           log(s('authLogPrompt'), {
             context: { operation: 'auth_login_prompt', trigger: reason, visitor_id: state.visitorId },
           });
         }
-        els.authDialog.hidden = false;
-        els.authDialog.dataset.open = 'true';
-        window.requestAnimationFrame(() => els.authDialogClose?.focus());
       }
+      els.authDialog.hidden = false;
+      els.authDialog.dataset.state = 'opening';
+      authDialogFrame = window.requestAnimationFrame(() => {
+        authDialogFrame = null;
+        if (generation !== authDialogGeneration || els.authDialog.hidden) return;
+        els.authDialog.dataset.state = 'open';
+        els.authDialogClose?.focus({ preventScroll: true });
+      });
     }
 
-    function closeAuthDialog() {
-      els.authDialog.hidden = true;
-      delete els.authDialog.dataset.open;
+    function closeAuthDialog(options = {}) {
+      if (!els.authDialog || els.authDialog.hidden) return;
+      const generation = ++authDialogGeneration;
+      cancelAuthDialogCallbacks();
+      const finalize = () => {
+        if (generation !== authDialogGeneration) return;
+        authDialogExitTimer = null;
+        els.authDialog.hidden = true;
+        delete els.authDialog.dataset.state;
+        restoreAuthDialogFocus();
+      };
+      if (options.immediate) {
+        finalize();
+        return;
+      }
+      els.authDialog.dataset.state = 'closing';
+      authDialogExitTimer = window.setTimeout(finalize, AUTH_DIALOG_TRANSITION_MS);
+    }
+
+    function trapAuthDialogFocus(event) {
+      if (event.key !== 'Tab' || els.authDialog?.dataset.state === 'closing') return;
+      const focusable = getFocusableElements(els.authDialog);
+      if (!focusable.length) {
+        event.preventDefault();
+        els.authDialog?.focus({ preventScroll: true });
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const focusOutside = !els.authDialog.contains(document.activeElement);
+      if (event.shiftKey && (document.activeElement === first || focusOutside)) {
+        event.preventDefault();
+        last.focus({ preventScroll: true });
+      } else if (!event.shiftKey && (document.activeElement === last || focusOutside)) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
+      }
     }
 
     function applyAuthSession(body) {
@@ -564,7 +621,7 @@
           status: 'success',
           context: { operation: 'auth_login_success', user_id: state.authUser.id, user_tier: state.authUser.tier, visitor_id: state.visitorId },
         });
-        closeAuthDialog();
+        closeAuthDialog({ immediate: true });
         startStoreView('auth_login');
         const pendingCheckout = state.pendingCheckout;
         state.pendingCheckout = null;
@@ -596,7 +653,7 @@
         state.pendingCheckout = null;
         applyAuthIdentityToSdks();
         renderAuthUi();
-        closeAuthDialog();
+        closeAuthDialog({ immediate: true });
         startStoreView('auth_logout');
       } catch (error) {
         setPhoneResult('failed', s('authFailedTitle'), error.message);
@@ -616,50 +673,6 @@
       renderAuthUi();
       startStoreView('auth_session_expired');
       openAuthDialog('session_expired');
-    }
-
-    function setThemeMenuOpen(open) {
-      if (!els.shopThemePicker || !els.shopThemeTrigger) return;
-      els.shopThemePicker.dataset.open = open ? 'true' : 'false';
-      els.shopThemeTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-    }
-
-    function renderDemoThemePicker() {
-      if (!els.shopThemePicker) return;
-      els.shopThemePicker.querySelectorAll('[data-demo-theme]').forEach((button) => {
-        const active = button.dataset.demoTheme === state.demoTheme;
-        button.classList.toggle('active', active);
-        button.setAttribute('aria-checked', active ? 'true' : 'false');
-      });
-      if (els.currentThemeSwatch) {
-        els.currentThemeSwatch.className = `shop-theme-swatch ${state.demoTheme}`;
-      }
-    }
-
-    function setDemoTheme(theme, options = {}) {
-      state.demoTheme = DEMO_THEMES.has(theme) ? theme : 'colorful';
-      document.documentElement.dataset.demoTheme = state.demoTheme;
-      renderDemoThemePicker();
-      renderProducts();
-      renderStorePage({ track: false });
-      setThemeMenuOpen(false);
-      if (options.persist !== false) {
-        try {
-          localStorage.setItem(DEMO_THEME_STORAGE_KEY, state.demoTheme);
-        } catch (_) {
-          // localStorage can be unavailable in private browsing contexts.
-        }
-      }
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.set('theme', state.demoTheme);
-        window.history.replaceState(window.history.state || {}, '', url);
-      } catch (_) {
-        // Embedded history updates may be restricted by the browser.
-      }
-      if (options.notify !== false) {
-        postToParent('demo-theme-changed', { theme: state.demoTheme });
-      }
     }
 
     function normalizeStorePage(page) {
@@ -737,6 +750,34 @@
       return I18N.topics.find((topic) => topic.id === tag)?.[state.language] || tag;
     }
 
+    function handleSingleSelectKeydown(event, { selector, activate }) {
+      if (!SINGLE_SELECT_KEYS.has(event.key)) return false;
+      const controls = [...event.currentTarget.querySelectorAll(selector)]
+        .filter((control) => !control.disabled && control.dataset.selectable !== 'false');
+      if (!controls.length) return false;
+      const current = event.target.closest(selector);
+      const currentIndex = Math.max(0, controls.indexOf(current));
+      let nextIndex;
+      if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = controls.length - 1;
+      else {
+        const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+        nextIndex = (currentIndex + step + controls.length) % controls.length;
+      }
+      event.preventDefault();
+      const selectedControl = activate(controls[nextIndex]);
+      selectedControl?.focus({ preventScroll: true });
+      return true;
+    }
+
+    function selectDetailTab(tab) {
+      if (!DETAIL_TABS.includes(tab)) return null;
+      state.detailTab = tab;
+      renderBookDetail();
+      addRumAction('business_view_book_detail_tab', { book_id: state.currentBookId, tab: state.detailTab });
+      return els.bookDetail?.querySelector(`[data-detail-tab="${tab}"]`) || null;
+    }
+
     function renderBookDetail() {
       if (!els.bookDetail) return;
       const book = currentBook();
@@ -747,6 +788,14 @@
         : state.detailTab === 'audience'
           ? `<div class="audience-grid">${text.audience.map((item) => `<article class="audience-card"><span class="audience-icon">◎</span><span><strong>${escapeHtml(item[0])}</strong><p>${escapeHtml(item[1])}</p></span></article>`).join('')}</div>`
           : `<h2>${s('overview')}</h2><p class="tab-lead">${escapeHtml(text.description)}</p><div class="learn-grid">${text.learn.map((item, index) => `<article class="learn-card"><span>0${index + 1}</span><strong>${escapeHtml(item[0])}</strong><p>${escapeHtml(item[1])}</p></article>`).join('')}</div>`;
+      const detailTabMarkup = [
+        ['overview', s('overview')],
+        ['chapters', s('contents')],
+        ['audience', s('audience')],
+      ].map(([tab, label]) => {
+        const active = state.detailTab === tab;
+        return `<button id="detail-tab-${tab}" class="tab-button ${active ? 'is-active' : ''}" type="button" role="tab" data-detail-tab="${tab}" aria-selected="${active ? 'true' : 'false'}" aria-controls="detail-tabpanel" tabindex="${active ? '0' : '-1'}">${escapeHtml(label)}</button>`;
+      }).join('');
       els.bookDetail.innerHTML = `
         <nav class="detail-breadcrumb" aria-label="Breadcrumb">
           <button type="button" data-store-route="home">${s('navHome')}</button><span>›</span><span>${s('detail')}</span><span>›</span><strong>${escapeHtml(text.title)}</strong>
@@ -773,8 +822,8 @@
         </section>
         <div class="detail-body">
           <section class="detail-content-card">
-            <div class="detail-tabs" role="tablist"><button class="tab-button ${state.detailTab === 'overview' ? 'is-active' : ''}" type="button" data-detail-tab="overview">${s('overview')}</button><button class="tab-button ${state.detailTab === 'chapters' ? 'is-active' : ''}" type="button" data-detail-tab="chapters">${s('contents')}</button><button class="tab-button ${state.detailTab === 'audience' ? 'is-active' : ''}" type="button" data-detail-tab="audience">${s('audience')}</button></div>
-            <div class="tab-panel">${detailPanel}</div>
+            <div class="detail-tabs" role="tablist" aria-label="${escapeHtml(s('detail'))}" aria-orientation="horizontal">${detailTabMarkup}</div>
+            <div class="tab-panel" id="detail-tabpanel" role="tabpanel" aria-labelledby="detail-tab-${state.detailTab}">${detailPanel}</div>
           </section>
           <aside class="detail-side">
             <section class="detail-side-card"><h2>${s('suggestedPath')}</h2><div class="reading-path">${I18N.readingStages.map((stage, index) => { const stageText = stage[state.language] || stage.zh; return `<article class="reading-step"><span>${index + 1}</span><div><strong>${escapeHtml(stageText[0])}</strong><p>${escapeHtml(stageText[1])}</p></div></article>`; }).join('')}</div></section>
@@ -951,7 +1000,7 @@
     }
 
     function selectedProductText() {
-      return I18N.getProductText(selectedProduct(), state.language, state.demoTheme);
+      return I18N.getProductText(selectedProduct(), state.language);
     }
 
     function selectedCartLines() {
@@ -999,7 +1048,7 @@
     }
 
     function showPurchaseLoading(title, detail) {
-      hidePhoneResult();
+      hidePhoneResult({ immediate: true });
       els.purchaseLoadingTitle.textContent = title || '';
       els.purchaseLoadingDetail.textContent = detail || '';
       els.purchaseLoading.hidden = false;
@@ -1011,17 +1060,44 @@
       els.purchaseLoadingDetail.textContent = '';
     }
 
+    const TOAST_TRANSITION_MS = 180;
     let phoneToastTimer = null;
+    let phoneToastExitTimer = null;
+    let phoneToastFrame = null;
+    let phoneToastGeneration = 0;
 
-    function hidePhoneResult() {
-      if (phoneToastTimer) {
-        clearTimeout(phoneToastTimer);
+    function cancelPhoneToastCallbacks() {
+      if (phoneToastTimer !== null) {
+        window.clearTimeout(phoneToastTimer);
         phoneToastTimer = null;
       }
-      els.phoneToast.className = 'phone-toast';
-      els.phoneToast.hidden = true;
-      els.phoneToastTitle.textContent = '';
-      els.phoneToastDetail.textContent = '';
+      if (phoneToastExitTimer !== null) {
+        window.clearTimeout(phoneToastExitTimer);
+        phoneToastExitTimer = null;
+      }
+      if (phoneToastFrame !== null) {
+        window.cancelAnimationFrame(phoneToastFrame);
+        phoneToastFrame = null;
+      }
+    }
+
+    function hidePhoneResult(options = {}) {
+      const generation = ++phoneToastGeneration;
+      cancelPhoneToastCallbacks();
+      const finalize = () => {
+        if (generation !== phoneToastGeneration) return;
+        phoneToastExitTimer = null;
+        els.phoneToast.className = 'phone-toast';
+        els.phoneToast.hidden = true;
+        els.phoneToastTitle.textContent = '';
+        els.phoneToastDetail.textContent = '';
+      };
+      if (options.immediate === true || els.phoneToast.hidden) {
+        finalize();
+        return;
+      }
+      els.phoneToast.classList.remove('show');
+      phoneToastExitTimer = window.setTimeout(finalize, TOAST_TRANSITION_MS);
     }
 
     function setPhoneResult(kind, title, detail, options = {}) {
@@ -1029,18 +1105,30 @@
         hidePhoneResult();
         return;
       }
-      if (phoneToastTimer) {
-        clearTimeout(phoneToastTimer);
-        phoneToastTimer = null;
-      }
+      const wasHidden = els.phoneToast.hidden;
+      const generation = ++phoneToastGeneration;
+      cancelPhoneToastCallbacks();
       const toastKind = kind || 'info';
-      els.phoneToast.hidden = false;
-      els.phoneToast.className = `phone-toast ${toastKind} show`;
       els.phoneToastTitle.textContent = title || '';
       els.phoneToastDetail.textContent = detail || '';
+      if (wasHidden) {
+        els.phoneToast.className = `phone-toast ${toastKind}`;
+        els.phoneToast.hidden = false;
+        phoneToastFrame = window.requestAnimationFrame(() => {
+          if (generation !== phoneToastGeneration) return;
+          phoneToastFrame = null;
+          els.phoneToast.classList.add('show');
+        });
+      } else {
+        els.phoneToast.className = `phone-toast ${toastKind} show`;
+      }
       const shouldAutoHide = toastKind !== 'processing' && options.sticky !== true;
       if (shouldAutoHide) {
-        phoneToastTimer = setTimeout(hidePhoneResult, options.durationMs || 4000);
+        phoneToastTimer = window.setTimeout(() => {
+          if (generation !== phoneToastGeneration) return;
+          phoneToastTimer = null;
+          hidePhoneResult();
+        }, options.durationMs || 4000);
       }
     }
 
@@ -2235,8 +2323,6 @@
       const payload = data.payload || {};
       if (data.type === 'set-language') {
         setLanguage(payload.language, { notify: false });
-      } else if (data.type === 'set-demo-theme') {
-        setDemoTheme(payload.theme, { persist: false, notify: false });
       } else if (data.type === 'set-preview-context') {
         setPreviewContext(payload.sceneId, payload.view);
       } else if (data.type === 'set-client-fault') {
@@ -2300,10 +2386,12 @@
       if (event.target.closest('[data-auth-logout]')) logoutCurrentUser();
     });
     els.authDialog?.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      closeAuthDialog();
-      els.accountButton?.focus();
+      if (event.key === 'Tab') {
+        trapAuthDialogFocus(event);
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        closeAuthDialog();
+      }
     });
     if (els.storeHome) {
       els.storeHome.addEventListener('click', (event) => {
@@ -2352,9 +2440,7 @@
         const detailTabTarget = event.target.closest('[data-detail-tab]');
         if (detailTabTarget) {
           event.preventDefault();
-          state.detailTab = detailTabTarget.dataset.detailTab;
-          renderBookDetail();
-          addRumAction('business_view_book_detail_tab', { book_id: state.currentBookId, tab: state.detailTab });
+          selectDetailTab(detailTabTarget.dataset.detailTab);
           return;
         }
         const removeSelectedTarget = event.target.closest('[data-remove-selected]');
@@ -2413,30 +2499,15 @@
         state.swipeBackStart = null;
       }, { passive: true });
     }
-    if (els.shopThemePicker) {
-      els.shopThemeTrigger.addEventListener('click', (event) => {
-        event.stopPropagation();
-        setThemeMenuOpen(els.shopThemePicker.dataset.open !== 'true');
+    els.bookDetail?.addEventListener('keydown', (event) => {
+      if (!event.target.closest('[data-detail-tab]')) return;
+      handleSingleSelectKeydown(event, {
+        selector: 'button[data-detail-tab]',
+        activate: (button) => selectDetailTab(button.dataset.detailTab),
       });
-      els.shopThemePicker.addEventListener('click', (event) => {
-        const button = event.target.closest('[data-demo-theme]');
-        if (!button) return;
-        event.stopPropagation();
-        setDemoTheme(button.dataset.demoTheme);
-        els.shopThemeTrigger.focus();
-      });
-      els.shopThemePicker.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') return;
-        setThemeMenuOpen(false);
-        els.shopThemeTrigger.focus();
-      });
-      document.addEventListener('click', (event) => {
-        if (!event.target.closest('#shopThemePicker')) setThemeMenuOpen(false);
-      });
-    }
+    });
     initializeStoreHistory();
     applyPreviewObservabilityContext();
-    renderDemoThemePicker();
     renderProducts();
     renderStorePage({ track: false });
     renderAuthUi();
@@ -2444,7 +2515,6 @@
     bootstrapIdentityAndRum();
     postToParent('shop-ready', {
       language: state.language,
-      theme: state.demoTheme,
       sceneId: state.businessScene,
       view: state.previewMode,
       page: state.storePage,

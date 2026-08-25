@@ -3,9 +3,9 @@ import {StyleSheet, Text} from 'react-native';
 import TestRenderer, {act} from 'react-test-renderer';
 import {BagScreen} from '../src/screens/BagScreen';
 import {HomeScreen} from '../src/screens/HomeScreen';
-import {themeFor} from '../src/theme';
+import {storefrontTokens} from '../src/designTokens';
 
-const tokens = themeFor('colorful');
+const tokens = storefrontTokens;
 const noop = () => undefined;
 
 function flattenedStyle(node: TestRenderer.ReactTestInstance) {

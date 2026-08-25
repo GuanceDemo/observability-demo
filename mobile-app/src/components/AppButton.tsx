@@ -6,11 +6,11 @@ import {
   Text,
   type PressableProps,
 } from 'react-native';
-import type {ThemeTokens} from '../theme';
+import type {DesignTokens} from '../designTokens';
 
 interface Props extends PressableProps {
   label: string;
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
   variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
   compact?: boolean;
   busy?: boolean;

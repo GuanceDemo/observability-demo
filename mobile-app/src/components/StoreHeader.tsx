@@ -1,14 +1,13 @@
 import React from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import type {ThemeTokens} from '../theme';
-import type {StoreScreen, ThemeName} from '../types';
+import type {DesignTokens} from '../designTokens';
+import type {StoreScreen} from '../types';
 
 interface Props {
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
   screen: StoreScreen;
   cartQuantity: number;
   onNavigate: (screen: StoreScreen) => void;
-  onThemeChange: (theme: ThemeName) => void;
 }
 
 const NAV_ITEMS: {screen: StoreScreen; label: string}[] = [
@@ -22,9 +21,7 @@ export function StoreHeader({
   screen,
   cartQuantity,
   onNavigate,
-  onThemeChange,
 }: Props) {
-  const nextTheme = tokens.name === 'colorful' ? 'white' : 'colorful';
   return (
     <View
       style={[
@@ -50,33 +47,6 @@ export function StoreHeader({
             图书商城
           </Text>
         </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`切换为${nextTheme === 'white' ? '黑白线条' : '绚彩'}主题`}
-          onPress={() => onThemeChange(nextTheme)}
-          style={({pressed}) => [
-            styles.themeButton,
-            {
-              borderColor: tokens.colors.line,
-              backgroundColor: tokens.colors.surface,
-              opacity: pressed ? 0.7 : 1,
-            },
-          ]}>
-          <View
-            style={[
-              styles.themeSwatch,
-              {
-                backgroundColor:
-                  tokens.name === 'colorful'
-                    ? tokens.colors.accent
-                    : tokens.colors.text,
-              },
-            ]}
-          />
-          <Text style={[styles.themeLabel, {color: tokens.colors.text}]}>
-            {tokens.name === 'colorful' ? '绚彩' : '黑白'}
-          </Text>
-        </Pressable>
       </View>
       <View style={styles.nav} accessibilityRole="tablist">
         {NAV_ITEMS.map(item => {
@@ -173,24 +143,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
     fontSize: 10,
     lineHeight: 13,
-  },
-  themeButton: {
-    minHeight: 32,
-    paddingHorizontal: 9,
-    borderWidth: 1,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  themeSwatch: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  themeLabel: {
-    fontSize: 11,
-    fontWeight: '800',
   },
   nav: {
     minHeight: 42,

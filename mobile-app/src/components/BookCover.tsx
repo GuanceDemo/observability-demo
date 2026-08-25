@@ -6,16 +6,15 @@ import {
   STOREFRONT_BOOK_COVER_WIDTH,
   bookCoverArtLayout,
 } from '../layout';
-import type {ThemeTokens} from '../theme';
+import type {DesignTokens} from '../designTokens';
 
 interface Props {
-  tokens: ThemeTokens;
+  tokens: DesignTokens;
   compact?: boolean;
   width?: number;
 }
 
 export function BookCover({tokens, compact = false, width}: Props) {
-  const white = tokens.name === 'white';
   const coverWidth =
     width ??
     (compact ? STOREFRONT_BAG_COVER_WIDTH : STOREFRONT_BOOK_COVER_WIDTH);
@@ -31,7 +30,7 @@ export function BookCover({tokens, compact = false, width}: Props) {
         styles.cover,
         compact && styles.compact,
         {width: coverWidth},
-        white ? styles.whiteCover : styles.colorfulCover,
+        styles.coverBackground,
         {
           borderColor: tokens.colors.accent,
         },
@@ -237,10 +236,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderRadius: 8,
   },
-  whiteCover: {
-    backgroundColor: '#fff',
-  },
-  colorfulCover: {
+  coverBackground: {
     backgroundColor: '#fff4f1',
   },
   accentBar: {

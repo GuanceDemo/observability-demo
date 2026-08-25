@@ -2,7 +2,6 @@ import type {
   FaultHistoryItem,
   FaultScenario,
   StoreScreen,
-  ThemeName,
 } from './types';
 
 export interface ToastState {
@@ -13,7 +12,6 @@ export interface ToastState {
 
 export interface StoreState {
   screen: StoreScreen;
-  theme: ThemeName;
   cartQuantity: number;
   selectedSku: string;
   loading: boolean;
@@ -28,9 +26,8 @@ export interface StoreState {
 }
 
 export type StoreAction =
-  | {type: 'hydrate'; theme: ThemeName; cartQuantity: number; selectedSku: string}
+  | {type: 'hydrate'; cartQuantity: number; selectedSku: string}
   | {type: 'navigate'; screen: StoreScreen}
-  | {type: 'setTheme'; theme: ThemeName}
   | {type: 'setCart'; quantity: number}
   | {type: 'setSelectedSku'; sku: string}
   | {type: 'setLoading'; loading: boolean; title?: string; detail?: string}
@@ -46,7 +43,6 @@ export type StoreAction =
 
 export const initialStoreState: StoreState = {
   screen: 'home',
-  theme: 'colorful',
   cartQuantity: 0,
   selectedSku: 'sku-1001',
   loading: false,
@@ -75,14 +71,11 @@ export function storeReducer(
     case 'hydrate':
       return {
         ...state,
-        theme: action.theme,
         cartQuantity: Math.max(0, Math.min(1, action.cartQuantity)),
         selectedSku: action.selectedSku,
       };
     case 'navigate':
       return {...state, screen: action.screen};
-    case 'setTheme':
-      return {...state, theme: action.theme};
     case 'setCart':
       return {...state, cartQuantity: Math.max(0, Math.min(1, action.quantity))};
     case 'setSelectedSku':

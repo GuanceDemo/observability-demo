@@ -2,30 +2,16 @@
   const DEFAULT_LANGUAGE = 'zh';
   const STORAGE_KEY = 'mall-selfheal-demo-lang';
   const SUPPORTED_LANGUAGES = new Set(['zh', 'en']);
-  const SUPPORTED_THEMES = new Set(['colorful', 'white']);
-  const BOOK_COVER_PALETTES = Object.freeze({
-    colorful: Object.freeze({
-      backgroundStart: '#fff8f3',
-      backgroundEnd: '#fff0f6',
-      accentStart: '#ff7a00',
-      accentMiddle: '#ff3856',
-      accentEnd: '#d730ff',
-      title: '#24152f',
-      label: '#9b3d56',
-      muted: '#684f70',
-      surface: '#fff',
-    }),
-    white: Object.freeze({
-      backgroundStart: '#ffffff',
-      backgroundEnd: '#ffffff',
-      accentStart: '#111111',
-      accentMiddle: '#111111',
-      accentEnd: '#111111',
-      title: '#111111',
-      label: '#111111',
-      muted: '#525252',
-      surface: '#ffffff',
-    }),
+  const BOOK_COVER_PALETTE = Object.freeze({
+    backgroundStart: '#fff8f3',
+    backgroundEnd: '#fff0f6',
+    accentStart: '#ff7a00',
+    accentMiddle: '#ff3856',
+    accentEnd: '#d730ff',
+    title: '#24152f',
+    label: '#9b3d56',
+    muted: '#684f70',
+    surface: '#fff',
   });
 
   function escapeSvgText(value) {
@@ -75,7 +61,7 @@
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg.replace(/\s+/g, ' ').trim())}`;
   }
 
-  function createThemeBookCovers(palette) {
+  function createBookCovers(palette) {
     return Object.freeze({
       zh: createBookCoverDataUri({
         label: 'MALL DEMO',
@@ -96,10 +82,7 @@
     });
   }
 
-  const bookCovers = Object.freeze({
-    colorful: createThemeBookCovers(BOOK_COVER_PALETTES.colorful),
-    white: createThemeBookCovers(BOOK_COVER_PALETTES.white),
-  });
+  const bookCovers = createBookCovers(BOOK_COVER_PALETTE);
 
   const legacyProducts = [
     {
@@ -108,7 +91,7 @@
       amountCent: 9900,
       zh: {
         name: '可观测性工程',
-        cover: bookCovers.colorful.zh,
+        cover: bookCovers.zh,
         coverAlt: '《可观测性工程》中文版封面',
         badge: '技术书籍',
         tagline: '从指标、日志、链路、事件到协作流程，系统理解现代可观测性实践。',
@@ -120,7 +103,7 @@
       },
       en: {
         name: 'Observability Engineering',
-        cover: bookCovers.colorful.en,
+        cover: bookCovers.en,
         coverAlt: 'Observability Engineering English book cover',
         badge: 'Technical book',
         tagline: 'A practical guide to modern observability across telemetry, debugging, and team workflows.',
@@ -249,7 +232,6 @@
       commonNormal: '正常',
       commonUnknown: 'UNKNOWN',
       commonNone: 'none',
-      commonTheme: '主题',
       usageGuideOpen: '使用说明',
       usageGuideTitle: '故障演练使用说明',
       usageGuideClose: '关闭使用说明',
@@ -258,8 +240,6 @@
       usageGuideProgress: '第 {current} / {total} 页',
       usageGuideSlideAlt: '故障演练操作指引第 {index} 页',
       usageGuideDotLabel: '查看第 {index} 页',
-      themeColorful: '绚彩',
-      themeWhite: '黑白线条',
       appTitle: '商城 Demo',
       appSubtitle: '图书商城',
       frameTitle: '商城 Demo',
@@ -365,8 +345,6 @@
       shopNavBook: '本书',
       shopNavBag: '购物车',
       shopBagCountLabel: '购物车内有 {count} 本书',
-      shopThemeTrigger: '主题',
-      shopThemeMenuLabel: '选择主题',
       shopHomeEyebrow: '本周编辑推荐',
       shopHomeTitle: '理解系统，始于提出更好的问题',
       shopHomeDescription: '一本写给研发、SRE 与平台团队的可观测性实践指南，从真实用户体验一路读到后端系统行为。',
@@ -473,7 +451,6 @@
       commonNormal: 'Normal',
       commonUnknown: 'UNKNOWN',
       commonNone: 'none',
-      commonTheme: 'Theme',
       usageGuideOpen: 'Usage Guide',
       usageGuideTitle: 'Fault Exercise Usage Guide',
       usageGuideClose: 'Close usage guide',
@@ -482,8 +459,6 @@
       usageGuideProgress: 'Page {current} of {total}',
       usageGuideSlideAlt: 'Fault exercise guide page {index}',
       usageGuideDotLabel: 'View page {index}',
-      themeColorful: 'Colorful',
-      themeWhite: 'Black & white',
       appTitle: 'Store Demo',
       appSubtitle: 'Bookstore',
       frameTitle: 'Store Demo',
@@ -589,8 +564,6 @@
       shopNavBook: 'This Book',
       shopNavBag: 'Cart',
       shopBagCountLabel: '{count} books in the cart',
-      shopThemeTrigger: 'Theme',
-      shopThemeMenuLabel: 'Choose theme',
       shopHomeEyebrow: 'Editors’ Pick',
       shopHomeTitle: 'Understand systems by asking better questions',
       shopHomeDescription: 'A practical observability guide for engineers, SREs, and platform teams, connecting real user experience to backend system behavior.',
@@ -834,7 +807,7 @@
     return interpolate(table[key] || messages[DEFAULT_LANGUAGE][key] || key, params || {});
   }
 
-  function getProductText(product, language, theme) {
+  function getProductText(product, language) {
     const lang = normalizeLanguage(language || currentLanguage);
     const text = product?.[lang] || product?.[DEFAULT_LANGUAGE] || products[0][lang];
     const cover = product?.image ? (lang === 'en' && product.imageEn ? product.imageEn : product.image) : null;
@@ -848,7 +821,6 @@
       bullets: Array.isArray(text.learn) ? text.learn.map((item) => item[0]) : [],
       cover,
       coverAlt: cover ? (lang === 'en' ? `${text.title} book cover` : `《${text.title}》封面`) : '',
-      theme: SUPPORTED_THEMES.has(theme) ? theme : 'colorful',
     };
   }
 

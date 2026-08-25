@@ -1,11 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type {ThemeName} from './types';
 
 const STORE_KEY = 'mall-demo-mobile:store:v1';
 const CRASH_MARKER_KEY = 'mall-demo-mobile:crash-marker:v1';
 
 export interface PersistedStore {
-  theme: ThemeName;
   cartQuantity: number;
   selectedSku: string;
 }
@@ -18,18 +16,17 @@ export interface CrashMarker {
 export async function loadPersistedStore(): Promise<PersistedStore> {
   const raw = await AsyncStorage.getItem(STORE_KEY);
   if (!raw) {
-    return {theme: 'colorful', cartQuantity: 0, selectedSku: 'sku-1001'};
+    return {cartQuantity: 0, selectedSku: 'sku-1001'};
   }
   try {
     const parsed = JSON.parse(raw) as Partial<PersistedStore>;
     return {
-      theme: parsed.theme === 'white' ? 'white' : 'colorful',
       cartQuantity: parsed.cartQuantity === 1 ? 1 : 0,
       selectedSku:
         typeof parsed.selectedSku === 'string' ? parsed.selectedSku : 'sku-1001',
     };
   } catch {
-    return {theme: 'colorful', cartQuantity: 0, selectedSku: 'sku-1001'};
+    return {cartQuantity: 0, selectedSku: 'sku-1001'};
   }
 }
 

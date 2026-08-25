@@ -29,24 +29,21 @@ function reduce(
 }
 
 describe('store reducer', () => {
-  it('owns navigation, theme and shopping bag transitions', () => {
+  it('owns navigation and shopping bag transitions', () => {
     const state = reduce(initialStoreState, [
       {type: 'navigate', screen: 'detail'},
       {type: 'setCart', quantity: 1},
-      {type: 'setTheme', theme: 'white'},
       {type: 'navigate', screen: 'purchase'},
     ]);
     expect(state).toMatchObject({
       screen: 'purchase',
       cartQuantity: 1,
-      theme: 'white',
     });
   });
 
   it('normalizes persisted cart data', () => {
     const state = storeReducer(initialStoreState, {
       type: 'hydrate',
-      theme: 'white',
       cartQuantity: 99,
       selectedSku: 'sku-1001',
     });

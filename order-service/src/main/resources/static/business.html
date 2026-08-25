@@ -8,19 +8,12 @@
   <script src="assets/selfheal-i18n.js?v=20260817-bookstore-v44"></script>
   <script>
     (() => {
-      const supportedThemes = new Set(['colorful', 'white']);
       try {
         document.documentElement.dataset.leftCollapsed = localStorage.getItem('mall-workbench-left-collapsed') === 'true' ? 'true' : 'false';
         document.documentElement.dataset.rightCollapsed = localStorage.getItem('mall-workbench-right-collapsed') === 'true' ? 'true' : 'false';
-        const requestedTheme = new URL(window.location.href).searchParams.get('theme');
-        const storedTheme = localStorage.getItem('mall-demo-theme');
-        document.documentElement.dataset.demoTheme = supportedThemes.has(requestedTheme)
-          ? requestedTheme
-          : supportedThemes.has(storedTheme) ? storedTheme : 'colorful';
       } catch (_) {
         document.documentElement.dataset.leftCollapsed = 'false';
         document.documentElement.dataset.rightCollapsed = 'false';
-        document.documentElement.dataset.demoTheme = 'colorful';
       }
     })();
   </script>
@@ -41,6 +34,7 @@
       --gc-muted: #65758b;
       --gc-ink: #101828;
       --gc-shadow: 0 18px 48px rgba(16, 24, 40, .12);
+      --gc-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     * { box-sizing: border-box; }
@@ -70,13 +64,17 @@
       background: var(--gc-primary);
       cursor: pointer;
       font-weight: 800;
-      transition: transform .14s ease, filter .14s ease, box-shadow .14s ease;
+      transition: transform 140ms var(--gc-ease-out);
     }
 
-    button:hover {
-      filter: brightness(.98);
-      transform: translateY(-1px);
-      box-shadow: 0 10px 22px rgba(23, 112, 230, .18);
+    button:not(.drawer-backdrop):not(.usage-guide-nav):active:not(:disabled) {
+      transform: scale(.97);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+      button:hover {
+        filter: brightness(.98);
+      }
     }
 
     button:disabled {
@@ -493,7 +491,8 @@
       box-shadow: 0 8px 18px rgba(16, 24, 40, .08);
     }
 
-    .tab-button[aria-selected="true"] {
+    .tab-button[aria-selected="true"],
+    .tab-button[aria-checked="true"] {
       border-color: var(--gc-primary);
       color: #fff;
       background: var(--gc-primary);
@@ -906,7 +905,6 @@
       display: grid;
       grid-template-columns: var(--left-column) minmax(0, 1fr) var(--right-column);
       gap: 10px;
-      transition: grid-template-columns .2s ease;
     }
 
     html[data-left-collapsed="true"] .workbench-grid { --left-column: 48px; }
@@ -1160,7 +1158,6 @@
       min-width: 0;
       min-height: 0;
       max-width: none;
-      transition: width .2s ease, height .2s ease, border-radius .2s ease;
     }
 
     .preview-stage[data-view="web"] .preview-shell.phone-shell {
@@ -1556,9 +1553,13 @@
       padding: clamp(12px, 2.5vw, 36px);
       background: rgba(6, 18, 48, .78);
       backdrop-filter: blur(10px);
+      opacity: 0;
+      transition: opacity 200ms var(--gc-ease-out);
     }
 
     .usage-guide-modal[hidden] { display: none; }
+
+    .usage-guide-modal[data-state="open"] { opacity: 1; }
 
     .usage-guide-dialog {
       width: min(1560px, 96vw);
@@ -1568,6 +1569,16 @@
       border-radius: 18px;
       background: #071f55;
       box-shadow: 0 30px 90px rgba(0, 9, 35, .52);
+      opacity: 0;
+      transform: scale(.97);
+      transition:
+        opacity 220ms var(--gc-ease-out),
+        transform 220ms var(--gc-ease-out);
+    }
+
+    .usage-guide-modal[data-state="open"] .usage-guide-dialog {
+      opacity: 1;
+      transform: scale(1);
     }
 
     .usage-guide-head {
@@ -1824,6 +1835,31 @@
       .usage-guide-heading h2 { font-size: 14px; }
       .usage-guide-progress { font-size: 11px; }
     }
+
+    @media (prefers-reduced-motion: reduce) {
+      .collapse-button::before,
+      .scene-sidebar,
+      .control-sidebar.control-lane {
+        transition: none;
+      }
+
+      .usage-guide-modal {
+        transition: opacity 180ms var(--gc-ease-out);
+      }
+
+      .usage-guide-dialog {
+        transform: none;
+        transition: opacity 180ms var(--gc-ease-out);
+      }
+
+      .usage-guide-modal[data-state="open"] .usage-guide-dialog {
+        transform: none;
+      }
+
+      button:not(.drawer-backdrop):not(.usage-guide-nav):active:not(:disabled) {
+        transform: none;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1885,14 +1921,14 @@
               </span>
             </div>
             <div class="simulator-actions">
-              <div class="preview-toggle" id="previewToggle" role="tablist" aria-label="预览模式">
-                <button type="button" role="tab" data-preview-mode="web" aria-selected="true" data-i18n="previewWeb">Web 预览</button>
-                <button type="button" role="tab" data-preview-mode="mobile" aria-selected="false" data-i18n="previewMobile">移动端</button>
+              <div class="preview-toggle" id="previewToggle" role="tablist" aria-label="预览模式" aria-orientation="horizontal">
+                <button id="previewModeWebTab" type="button" role="tab" data-preview-mode="web" aria-selected="true" aria-controls="previewStage" tabindex="0" data-i18n="previewWeb">Web 预览</button>
+                <button id="previewModeMobileTab" type="button" role="tab" data-preview-mode="mobile" aria-selected="false" aria-controls="previewStage" tabindex="-1" data-i18n="previewMobile">移动端</button>
               </div>
             </div>
           </div>
 
-          <div class="preview-stage" id="previewStage" data-view="web">
+          <div class="preview-stage" id="previewStage" data-view="web" role="tabpanel" aria-labelledby="previewModeWebTab">
             <div class="preview-shell phone-shell" id="previewShell">
               <div class="preview-browser-chrome" aria-label="https://demo.dataflux.cn" data-i18n-aria-label="browserAddress">
                 <span class="preview-browser-lights" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -1958,11 +1994,11 @@
             <div class="fault-config">
               <div class="tab-field">
                 <span class="field-label" id="faultLayerLabel" data-i18n="parentLayerLabel">故障层级</span>
-                <div class="tab-list layer-tab-list" id="faultLayerTabs" role="tablist" aria-labelledby="faultLayerLabel"></div>
+                <div class="tab-list layer-tab-list" id="faultLayerTabs" role="radiogroup" aria-labelledby="faultLayerLabel"></div>
               </div>
               <div class="tab-field">
                 <span class="field-label" id="faultScenarioLabel" data-i18n="parentScenarioLabel">具体故障</span>
-                <div class="tab-list scenario-tab-list" id="faultScenarioTabs" role="tablist" aria-labelledby="faultScenarioLabel"></div>
+                <div class="tab-list scenario-tab-list" id="faultScenarioTabs" role="radiogroup" aria-labelledby="faultScenarioLabel"></div>
               </div>
               <article class="fault-detail" id="faultDetail">
                 <div class="fault-detail-head">
@@ -2046,8 +2082,7 @@
       'assets/guide-carousel/image2-slide-04.png',
       'assets/guide-carousel/image2-slide-05.png',
     ]);
-    const DEMO_THEME_STORAGE_KEY = 'mall-demo-theme';
-    const DEMO_THEMES = new Set(['colorful', 'white']);
+    const SINGLE_SELECT_KEYS = new Set(['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End']);
     const LAYOUT_STORAGE_KEYS = {
       left: 'mall-workbench-left-collapsed',
       right: 'mall-workbench-right-collapsed',
@@ -2075,10 +2110,6 @@
       return BUSINESS_SCENARIOS.some((scene) => scene.id === requested) ? requested : BUSINESS_SCENARIOS[0].id;
     }
 
-    function normalizeDemoTheme(theme) {
-      return DEMO_THEMES.has(theme) ? theme : 'colorful';
-    }
-
     function initialPreviewMode(sceneId) {
       const scene = BUSINESS_SCENARIOS.find((item) => item.id === sceneId) || BUSINESS_SCENARIOS[0];
       const requested = initialUrl.searchParams.get('view');
@@ -2095,7 +2126,6 @@
       faultMode: 'none',
       activeClientFault: null,
       language: I18N.setLanguage(I18N.detectLanguage(), { updateUrl: true }),
-      demoTheme: normalizeDemoTheme(document.documentElement.dataset.demoTheme),
       shopReady: false,
       lastTraceIds: [],
       lastRumViewContext: null,
@@ -2172,6 +2202,44 @@
 
     let usageGuideSlideIndex = 0;
     let usageGuideReturnFocus = null;
+    const USAGE_GUIDE_TRANSITION_MS = 220;
+    const FOCUSABLE_SELECTOR = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+    let usageGuideFrame = null;
+    let usageGuideExitTimer = null;
+    let usageGuideGeneration = 0;
+
+    function getFocusableElements(container) {
+      if (!container) return [];
+      return [...container.querySelectorAll(FOCUSABLE_SELECTOR)].filter((element) => (
+        !element.hidden
+        && !element.closest('[hidden], [inert], [aria-hidden="true"]')
+        && window.getComputedStyle(element).display !== 'none'
+        && window.getComputedStyle(element).visibility !== 'hidden'
+      ));
+    }
+
+    function cancelUsageGuideCallbacks() {
+      if (usageGuideFrame !== null) window.cancelAnimationFrame(usageGuideFrame);
+      if (usageGuideExitTimer !== null) window.clearTimeout(usageGuideExitTimer);
+      usageGuideFrame = null;
+      usageGuideExitTimer = null;
+    }
+
+    function restoreUsageGuideFocus() {
+      const returnTarget = usageGuideReturnFocus?.isConnected
+        && !usageGuideReturnFocus.closest?.('[hidden], [inert]')
+        ? usageGuideReturnFocus
+        : els.usageGuideBtn;
+      usageGuideReturnFocus = null;
+      returnTarget?.focus({ preventScroll: true });
+    }
 
     function renderUsageGuide() {
       if (!els.usageGuideModal || !els.usageGuideImage) return;
@@ -2211,23 +2279,69 @@
 
     function openUsageGuide() {
       if (!els.usageGuideModal) return;
-      usageGuideReturnFocus = document.activeElement;
+      const wasHidden = els.usageGuideModal.hidden;
+      if (!wasHidden && els.usageGuideModal.dataset.state === 'open') {
+        els.usageGuideCloseBtn?.focus({ preventScroll: true });
+        return;
+      }
+      const generation = ++usageGuideGeneration;
+      cancelUsageGuideCallbacks();
+      if (wasHidden) usageGuideReturnFocus = document.activeElement;
       els.usageGuideModal.hidden = false;
+      els.usageGuideModal.dataset.state = 'opening';
       renderUsageGuide();
-      window.requestAnimationFrame(() => els.usageGuideCloseBtn?.focus());
+      usageGuideFrame = window.requestAnimationFrame(() => {
+        usageGuideFrame = null;
+        if (generation !== usageGuideGeneration || els.usageGuideModal.hidden) return;
+        els.usageGuideModal.dataset.state = 'open';
+        els.usageGuideCloseBtn?.focus({ preventScroll: true });
+      });
     }
 
-    function closeUsageGuide() {
+    function closeUsageGuide(options = {}) {
       if (!els.usageGuideModal || els.usageGuideModal.hidden) return;
-      els.usageGuideModal.hidden = true;
-      if (usageGuideReturnFocus && typeof usageGuideReturnFocus.focus === 'function') {
-        usageGuideReturnFocus.focus();
+      const generation = ++usageGuideGeneration;
+      cancelUsageGuideCallbacks();
+      const finalize = () => {
+        if (generation !== usageGuideGeneration) return;
+        usageGuideExitTimer = null;
+        els.usageGuideModal.hidden = true;
+        delete els.usageGuideModal.dataset.state;
+        restoreUsageGuideFocus();
+      };
+      if (options.immediate) {
+        finalize();
+        return;
+      }
+      els.usageGuideModal.dataset.state = 'closing';
+      usageGuideExitTimer = window.setTimeout(finalize, USAGE_GUIDE_TRANSITION_MS);
+    }
+
+    function trapUsageGuideFocus(event) {
+      if (event.key !== 'Tab' || els.usageGuideModal?.dataset.state === 'closing') return;
+      const focusable = getFocusableElements(els.usageGuideDialog);
+      if (!focusable.length) {
+        event.preventDefault();
+        els.usageGuideDialog?.focus({ preventScroll: true });
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      const focusOutside = !els.usageGuideDialog.contains(document.activeElement);
+      if (event.shiftKey && (document.activeElement === first || focusOutside)) {
+        event.preventDefault();
+        last.focus({ preventScroll: true });
+      } else if (!event.shiftKey && (document.activeElement === last || focusOutside)) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
       }
     }
 
     function handleUsageGuideKeydown(event) {
       if (!els.usageGuideModal || els.usageGuideModal.hidden) return;
-      if (event.key === 'Escape') {
+      if (event.key === 'Tab') {
+        trapUsageGuideFocus(event);
+      } else if (event.key === 'Escape') {
         event.preventDefault();
         closeUsageGuide();
       } else if (event.key === 'ArrowLeft') {
@@ -2249,7 +2363,6 @@
       url.searchParams.set('lang', language);
       url.searchParams.set('scene', scene.id);
       url.searchParams.set('view', state.previewMode);
-      url.searchParams.set('theme', state.demoTheme);
       url.searchParams.set('v', SHOP_BUILD_ID);
       if (options.preserveStoreState && els.shopFrame?.contentWindow) {
         try {
@@ -2273,13 +2386,12 @@
       const nextUrl = shopUrl(state.language, options);
       if (els.openShopLink) els.openShopLink.href = nextUrl;
       const frameChanged = els.shopFrame.dataset.sceneId !== state.selectedSceneId;
-      const previewChanged = els.shopFrame.dataset.previewMode !== state.previewMode;
-      if (!els.shopFrame.getAttribute('src') || frameChanged || (options.reloadPreview && previewChanged)) {
+      if (!els.shopFrame.getAttribute('src') || frameChanged) {
         state.shopReady = false;
         els.shopFrame.src = nextUrl;
         els.shopFrame.dataset.sceneId = state.selectedSceneId;
-        els.shopFrame.dataset.previewMode = state.previewMode;
       }
+      els.shopFrame.dataset.previewMode = state.previewMode;
       els.shopFrame.title = t('frameTitle');
     }
 
@@ -2287,7 +2399,6 @@
       const url = new URL(window.location.href);
       url.searchParams.set('scene', state.selectedSceneId);
       url.searchParams.set('view', state.previewMode);
-      url.searchParams.set('theme', state.demoTheme);
       window.history.replaceState({}, '', url);
     }
 
@@ -2347,18 +2458,43 @@
       if (els.simulatorSceneName) els.simulatorSceneName.textContent = t(selectedBusinessScene().descriptionKey);
     }
 
+    function handleSingleSelectKeydown(event, { selector, activate }) {
+      if (!SINGLE_SELECT_KEYS.has(event.key)) return false;
+      const controls = [...event.currentTarget.querySelectorAll(selector)]
+        .filter((control) => !control.disabled && control.dataset.selectable !== 'false');
+      if (!controls.length) return false;
+      const current = event.target.closest(selector);
+      const currentIndex = Math.max(0, controls.indexOf(current));
+      let nextIndex;
+      if (event.key === 'Home') nextIndex = 0;
+      else if (event.key === 'End') nextIndex = controls.length - 1;
+      else {
+        const step = event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : -1;
+        nextIndex = (currentIndex + step + controls.length) % controls.length;
+      }
+      event.preventDefault();
+      const selectedControl = activate(controls[nextIndex]);
+      selectedControl?.focus({ preventScroll: true });
+      return true;
+    }
+
     function renderPreviewMode() {
       const scene = selectedBusinessScene();
       if (els.previewStage) els.previewStage.dataset.view = state.previewMode;
       if (!els.previewToggle) return;
+      let selectedTabId = '';
       els.previewToggle.querySelectorAll('[data-preview-mode]').forEach((button) => {
         const mode = button.dataset.previewMode;
         const supported = scene.supportedViews.includes(mode);
+        const active = supported && mode === state.previewMode;
         button.disabled = !supported;
-        button.classList.toggle('active', mode === state.previewMode);
-        button.setAttribute('aria-selected', mode === state.previewMode ? 'true' : 'false');
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-selected', active ? 'true' : 'false');
+        button.tabIndex = active ? 0 : -1;
         button.title = supported ? '' : t('previewWebOnly');
+        if (active) selectedTabId = button.id;
       });
+      if (els.previewStage && selectedTabId) els.previewStage.setAttribute('aria-labelledby', selectedTabId);
     }
 
     function selectBusinessScene(sceneId) {
@@ -2382,7 +2518,8 @@
       state.previewMode = mode;
       renderPreviewMode();
       updateWorkbenchUrl();
-      updateFrameUrls({ reloadPreview: true, preserveStoreState: true });
+      updateFrameUrls({ preserveStoreState: true });
+      syncPreviewContext();
     }
 
     function persistLayoutPreference(side, collapsed) {
@@ -2857,29 +2994,6 @@
       sendShopMessage('set-language', { language: state.language });
     }
 
-    function syncDemoThemeToShop() {
-      sendShopMessage('set-demo-theme', { theme: state.demoTheme });
-    }
-
-    function renderDemoTheme() {
-      document.documentElement.dataset.demoTheme = state.demoTheme;
-    }
-
-    function setDemoTheme(theme, options = {}) {
-      state.demoTheme = normalizeDemoTheme(theme);
-      renderDemoTheme();
-      if (options.persist !== false) {
-        try {
-          localStorage.setItem(DEMO_THEME_STORAGE_KEY, state.demoTheme);
-        } catch (_) {
-          // localStorage can be unavailable in private browsing contexts.
-        }
-      }
-      updateWorkbenchUrl();
-      if (options.updateFrame !== false) updateFrameUrls();
-      if (options.sync !== false) syncDemoThemeToShop();
-    }
-
     function setLanguage(language) {
       state.language = I18N.setLanguage(language, { updateUrl: true });
       document.title = t('workbenchTitle');
@@ -2896,9 +3010,7 @@
       renderFaultHistory();
       updateObservabilityTraceLink();
       updateObservabilityRumViewLink();
-      renderDemoTheme();
       syncLanguageToShop();
-      syncDemoThemeToShop();
       syncPreviewContext();
     }
 
@@ -2948,40 +3060,47 @@
       return scenario?.id || fault;
     }
 
-    function createTabButton(value, label, selected) {
+    function createFaultRadio(value, label, selected) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'tab-button';
       button.dataset.value = value;
       button.dataset.selectable = 'true';
-      button.setAttribute('role', 'tab');
-      button.setAttribute('aria-selected', selected ? 'true' : 'false');
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-checked', selected ? 'true' : 'false');
+      button.tabIndex = selected ? 0 : -1;
       button.textContent = label;
       return button;
     }
 
-    function createDisabledTab(label) {
+    function createDisabledFaultRadio(label) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'tab-button';
       button.dataset.selectable = 'false';
-      button.setAttribute('role', 'tab');
-      button.setAttribute('aria-selected', 'false');
+      button.setAttribute('role', 'radio');
+      button.setAttribute('aria-checked', 'false');
+      button.tabIndex = -1;
       button.textContent = label;
       button.disabled = true;
       return button;
     }
 
-    function renderTabs(container, items, selectedValue) {
+    function renderFaultRadios(container, items, selectedValue) {
       if (!container) return;
-      container.replaceChildren(...items.map((item) => createTabButton(item.value, item.label, item.value === selectedValue)));
+      container.replaceChildren(...items.map((item) => createFaultRadio(item.value, item.label, item.value === selectedValue)));
       updateBusyControls();
+    }
+
+    function faultRadioForValue(container, value) {
+      return [...container.querySelectorAll('button[data-value]')]
+        .find((button) => button.dataset.value === value) || null;
     }
 
     function renderFaultCatalog() {
       if (!state.faults.length) {
-        if (els.faultLayerTabs) els.faultLayerTabs.replaceChildren(createDisabledTab(t('commonLoading')));
-        if (els.faultScenarioTabs) els.faultScenarioTabs.replaceChildren(createDisabledTab(t('commonLoading')));
+        if (els.faultLayerTabs) els.faultLayerTabs.replaceChildren(createDisabledFaultRadio(t('commonLoading')));
+        if (els.faultScenarioTabs) els.faultScenarioTabs.replaceChildren(createDisabledFaultRadio(t('commonLoading')));
         updateBusyControls();
         renderFaultDetail(null);
         return;
@@ -2992,7 +3111,7 @@
         state.selectedFaultLayer = layers[0] || '';
       }
 
-      renderTabs(els.faultLayerTabs, layers.map((layer) => ({
+      renderFaultRadios(els.faultLayerTabs, layers.map((layer) => ({
         value: layer,
         label: layerGroupLabel(layer),
       })), state.selectedFaultLayer);
@@ -3002,7 +3121,7 @@
         state.selectedFaultId = scenarios[0]?.id || '';
       }
 
-      renderTabs(els.faultScenarioTabs, scenarios.map((scenario) => {
+      renderFaultRadios(els.faultScenarioTabs, scenarios.map((scenario) => {
         const item = localizedScenario(scenario);
         return {
           value: scenario.id,
@@ -3191,6 +3310,7 @@
       const scenarios = scenariosForLayer(layer);
       state.selectedFaultId = scenarios[0]?.id || '';
       renderFaultCatalog();
+      return faultRadioForValue(els.faultLayerTabs, layer);
     }
 
     function updateFaultScenario(scenarioId) {
@@ -3198,6 +3318,7 @@
       const scenario = selectedFaultScenario();
       if (scenario) state.selectedFaultLayer = layerGroupForLayer(scenario.layer)?.id || scenario.layer;
       renderFaultCatalog();
+      return faultRadioForValue(els.faultScenarioTabs, scenarioId);
     }
 
     function handleShopMessage(event) {
@@ -3213,7 +3334,6 @@
         state.shopReady = true;
         log(t('parentShopReady'), { title: t('appTitle') });
         syncLanguageToShop();
-        syncDemoThemeToShop();
         syncPreviewContext();
         if (state.activeClientFault) {
           sendShopMessage('set-client-fault', { scenario: state.activeClientFault });
@@ -3221,11 +3341,6 @@
           const activeBackendFault = scenarioForFault(state.faultMode);
           if (activeBackendFault) sendShopMessage('set-fault-hint', { scenario: activeBackendFault });
         }
-        return;
-      }
-
-      if (data.type === 'demo-theme-changed') {
-        setDemoTheme(payload.theme, { updateFrame: true, sync: false });
         return;
       }
 
@@ -3294,6 +3409,15 @@
         const button = event.target.closest('[data-preview-mode]');
         if (button && !button.disabled) setPreviewMode(button.dataset.previewMode);
       });
+      els.previewToggle.addEventListener('keydown', (event) => {
+        handleSingleSelectKeydown(event, {
+          selector: 'button[data-preview-mode]',
+          activate: (button) => {
+            setPreviewMode(button.dataset.previewMode);
+            return els.previewToggle.querySelector(`[data-preview-mode="${button.dataset.previewMode}"]`);
+          },
+        });
+      });
     }
     if (els.leftCollapseBtn) els.leftCollapseBtn.addEventListener('click', () => toggleSidebar('left'));
     if (els.rightCollapseBtn) els.rightCollapseBtn.addEventListener('click', () => toggleSidebar('right'));
@@ -3323,10 +3447,22 @@
       if (!button || button.disabled) return;
       updateFaultLayer(button.dataset.value);
     });
+    els.faultLayerTabs.addEventListener('keydown', (event) => {
+      handleSingleSelectKeydown(event, {
+        selector: 'button[data-value]',
+        activate: (button) => updateFaultLayer(button.dataset.value),
+      });
+    });
     els.faultScenarioTabs.addEventListener('click', (event) => {
       const button = event.target.closest('button[data-value]');
       if (!button || button.disabled) return;
       updateFaultScenario(button.dataset.value);
+    });
+    els.faultScenarioTabs.addEventListener('keydown', (event) => {
+      handleSingleSelectKeydown(event, {
+        selector: 'button[data-value]',
+        activate: (button) => updateFaultScenario(button.dataset.value),
+      });
     });
     if (els.observabilityTraceLink) {
       els.observabilityTraceLink.addEventListener('click', async (event) => {
