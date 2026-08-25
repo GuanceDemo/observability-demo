@@ -24,6 +24,11 @@ extraEnvs:
     value: "httpflow,httpflow-tls"
   - name: ENV_INPUT_EBPF_WORKLOAD_LABELS
     value: "project"
+  # Generate low-cardinality service metrics from accepted DDTrace spans.
+  - name: ENV_INPUT_DDTRACE_TRACING_METRIC_ENABLE
+    value: "true"
+  - name: ENV_INPUT_DDTRACE_TRACING_METRIC_TAG_WHITELIST
+    value: '["project","env","service","version","status","http_status_code","http_status_class","pod_name","pod_namespace","cluster_name_k8s"]'
 
 resources:
   requests:

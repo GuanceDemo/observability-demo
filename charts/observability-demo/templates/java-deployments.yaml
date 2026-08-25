@@ -79,6 +79,8 @@ spec:
                   fieldPath: status.hostIP
             - name: DD_TRACE_AGENT_PORT
               value: "9529"
+            - name: DD_INTEGRATION_JDBC_DATASOURCE_ENABLED
+              value: "true"
             - name: DD_JMXFETCH_ENABLED
               value: "true"
             - name: DD_JMXFETCH_STATSD_HOST
