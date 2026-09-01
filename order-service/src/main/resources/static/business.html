@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>商城 Demo 与故障注入 Demo</title>
   <link rel="icon" href="data:," />
-  <script src="assets/selfheal-i18n.js?v=20260817-bookstore-v44"></script>
+  <script src="assets/selfheal-i18n.js?v=20260901-observability-delay-v10"></script>
   <script>
     (() => {
       try {
@@ -501,8 +501,10 @@
 
     .scenario-tab-list .tab-button {
       flex: 1 1 220px;
-      justify-content: flex-start;
+      display: grid;
+      place-items: center;
       border-radius: 8px;
+      text-align: center;
       white-space: normal;
       line-height: 1.35;
     }
@@ -651,6 +653,7 @@
 
     .observability-link-actions {
       display: flex;
+      flex-wrap: wrap;
       align-items: stretch;
       justify-content: flex-end;
       gap: 8px;
@@ -658,6 +661,35 @@
 
     .observability-link-actions > [hidden] {
       display: none !important;
+    }
+
+    .observability-delay-hint {
+      display: flex;
+      flex: 0 0 100%;
+      align-items: center;
+      gap: 6px;
+      min-height: 30px;
+      margin: 0;
+      padding: 6px 9px;
+      border: 1px solid #d8e6f8;
+      border-radius: 8px;
+      color: #52657d;
+      background: #f4f8fd;
+      font-size: 11px;
+      font-weight: 650;
+      line-height: 1.45;
+    }
+
+    .observability-delay-hint::before {
+      content: '';
+      width: 12px;
+      height: 12px;
+      flex: 0 0 12px;
+      border: 1.5px solid #5f88bd;
+      border-radius: 50%;
+      background:
+        linear-gradient(#5f88bd, #5f88bd) 50% 2px / 1.5px 4px no-repeat,
+        linear-gradient(45deg, transparent 46%, #5f88bd 47% 58%, transparent 59%) 6px 5px / 4px 4px no-repeat;
     }
 
     .trace-link.rum-view-link {
@@ -785,6 +817,16 @@
 
     .service-icon svg { width: 100%; height: 100%; display: block; }
     .service-icon path { fill: currentColor; }
+    .service-icon-webgl-game {
+      overflow: hidden;
+      background: transparent;
+    }
+    .service-icon-webgl-game img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
 
     .workbench-mark {
       width: 34px;
@@ -1068,8 +1110,8 @@
 
     .sidebar-rail .scene-mark::before { width: 13px; height: 10px; border-width: 1.5px; }
 
-    #bookstoreRailBtn,
-    #bookstoreRailBtn.active {
+    .sidebar-rail .rail-button,
+    .sidebar-rail .rail-button.active {
       border-color: transparent;
       background: transparent;
       box-shadow: none;
@@ -1490,11 +1532,30 @@
       border-radius: 0;
       background: #fff;
     }
-    .control-sidebar .fault-detail-head { align-items: flex-start; }
-    .control-sidebar .fault-detail-head strong { font-size: 12px; }
+    .control-sidebar .fault-detail-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+    }
+    .control-sidebar .fault-detail-head strong {
+      min-width: 0;
+      font-size: 12px;
+      line-height: 1.4;
+      text-wrap: pretty;
+    }
+    .control-sidebar .fault-detail-head code {
+      flex: 0 0 auto;
+      word-break: normal;
+      white-space: nowrap;
+    }
     .control-sidebar .fault-detail > span,
     .control-sidebar .fault-observation,
-    .control-sidebar .active-fault-detail { font-size: 10px; line-height: 1.45; }
+    .control-sidebar .active-fault-detail {
+      overflow-wrap: anywhere;
+      font-size: 10px;
+      line-height: 1.55;
+      text-wrap: pretty;
+    }
     .control-sidebar .fault-meta { gap: 4px; }
     .control-sidebar .fault-meta code { font-size: 9px; }
     .control-sidebar .fault-observation {
@@ -1526,6 +1587,7 @@
     .control-sidebar .trace-link-card h2 { font-size: 13px; }
     .control-sidebar .trace-link-card p { font-size: 10px; }
     .control-sidebar .observability-link-actions { display: grid; grid-template-columns: 1fr; }
+    .control-sidebar .observability-delay-hint { font-size: 10px; }
     .control-sidebar .trace-link { width: 100%; min-height: 36px; padding: 8px; font-size: 11px; }
 
     .drawer-backdrop {
@@ -1892,7 +1954,7 @@
             <div class="sidebar-title">
               <span class="sidebar-heading-copy">
                 <strong data-i18n="businessScenes">业务场景</strong>
-                <span data-i18n="businessSceneCount">1 个场景</span>
+                <span id="businessSceneCount">2 个场景</span>
               </span>
             </div>
             <button class="collapse-button" id="leftCollapseBtn" type="button" aria-expanded="true" aria-label="收起业务场景" data-i18n-aria-label="collapseScenes"></button>
@@ -1900,16 +1962,7 @@
           <div class="sidebar-content">
             <div class="scene-list" id="businessSceneList"></div>
           </div>
-          <div class="sidebar-rail" aria-hidden="false">
-            <button class="rail-button active" id="bookstoreRailBtn" type="button" title="图书商城">
-              <span class="service-icon service-icon-bookstore" aria-hidden="true">
-                <svg viewBox="0 0 40 40" focusable="false">
-                  <path d="M8.5 11.5c4.2 0 7.5 1.1 10.5 3.5v13.5c-3-2.3-6.3-3.5-10.5-3.5V11.5Zm23 0c-4.2 0-7.5 1.1-10.5 3.5v13.5c3-2.3 6.3-3.5 10.5-3.5V11.5Z"></path>
-                </svg>
-              </span>
-              <span class="dot" aria-hidden="true"></span>
-            </button>
-          </div>
+          <div class="sidebar-rail" id="sceneRail" aria-hidden="false"></div>
         </aside>
 
         <section class="workspace-pane simulator-pane" aria-label="业务场景模拟器" data-i18n-aria-label="simulatorTitle">
@@ -1941,7 +1994,7 @@
                 </span>
                 <span class="preview-browser-address">
                   <span data-i18n="browserAddress">https://demo.dataflux.cn</span>
-                  <a class="preview-browser-open" id="openShopLink" href="shop.html" target="_blank" rel="noopener noreferrer" title="打开独立商城" aria-label="打开独立商城" data-i18n-title="parentOpenShop" data-i18n-aria-label="parentOpenShop">
+                  <a class="preview-browser-open" id="openShopLink" href="shop.html" target="_blank" rel="noopener noreferrer" title="打开独立场景" aria-label="打开独立场景" data-i18n-title="parentOpenScene" data-i18n-aria-label="parentOpenScene">
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5"></path><path d="m19 5-8 8"></path><path d="M17 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1h5"></path></svg>
                   </a>
                 </span>
@@ -1961,7 +2014,7 @@
                   </span>
                 </div>
                 <div class="phone-frame-wrap">
-                  <iframe id="shopFrame" class="shop-frame" title="商城 Demo" data-i18n-title="sceneBookstoreTitle"></iframe>
+                  <iframe id="shopFrame" class="shop-frame" title="商城 Demo"></iframe>
                 </div>
                 <div class="android-nav" aria-hidden="true"><span></span></div>
               </div>
@@ -2035,6 +2088,7 @@
                 <p id="traceLinkHint" data-i18n="parentTraceLinkPending">购买成功并匹配到 trace_id 后，可查看对应链路详情。</p>
               </div>
               <div class="observability-link-actions">
+                <div id="observabilityDelayHint" class="observability-delay-hint" data-i18n="parentObservabilityDelayHint" hidden>数据写入平台约有 1 分钟延迟，请稍后查看。</div>
                 <a id="observabilityRumViewLink" class="trace-link rum-view-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="parentRumViewLinkOpen" hidden>打开 RUM View</a>
                 <a id="observabilityTraceLink" class="trace-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="parentTraceLinkOpen" hidden>打开链路详情</a>
               </div>
@@ -2075,6 +2129,7 @@
     const apiPrefix = window.location.pathname.startsWith('/selfheal') ? '/selfheal' : '';
     const STATUS_REFRESH_INTERVAL_MS = 60000;
     const SHOP_BUILD_ID = '20260817-bookstore-v44';
+    const GAME_BUILD_ID = '20260901-fault-rum-link-v13';
     const USAGE_GUIDE_SLIDES = Object.freeze([
       'assets/guide-carousel/image2-slide-01.png',
       'assets/guide-carousel/image2-slide-02.png?v=20260806-pagination-v2',
@@ -2096,6 +2151,14 @@
         supportedViews: ['web', 'mobile'],
         statusKey: 'sceneRunning',
       },
+      {
+        id: 'webgl-game',
+        titleKey: 'sceneGameTitle',
+        descriptionKey: 'sceneGameDescription',
+        frameUrl: 'webgl-replay-game.html',
+        supportedViews: ['web'],
+        statusKey: 'sceneRunning',
+      },
     ];
     const compactViewport = window.matchMedia('(max-width: 1199px)');
     const initialUrl = new URL(window.location.href);
@@ -2104,6 +2167,11 @@
       { id: 'backend', layers: ['service'], labelKey: 'layerBackend' },
       { id: 'infrastructure', layers: ['dependency', 'jvm'], labelKey: 'layerInfrastructure' },
     ];
+    const FAULT_KIND_LABEL_KEYS = Object.freeze({
+      long_task: 'faultKindLongTask',
+      render_overload: 'faultKindRenderOverload',
+      resource_error: 'faultKindResourceError',
+    });
 
     function initialSceneId() {
       const requested = initialUrl.searchParams.get('scene');
@@ -2125,8 +2193,11 @@
       selectedFaultId: '',
       faultMode: 'none',
       activeClientFault: null,
+      activeClientFaultTriggeredAt: 0,
       language: I18N.setLanguage(I18N.detectLanguage(), { updateUrl: true }),
       shopReady: false,
+      sceneRumReady: false,
+      sceneRumContext: null,
       lastTraceIds: [],
       lastRumViewContext: null,
       traceLookupSeq: 0,
@@ -2150,7 +2221,8 @@
       faultHistoryList: document.getElementById('faultHistoryList'),
       faultHistoryCount: document.getElementById('faultHistoryCount'),
       businessSceneList: document.getElementById('businessSceneList'),
-      bookstoreRailBtn: document.getElementById('bookstoreRailBtn'),
+      businessSceneCount: document.getElementById('businessSceneCount'),
+      sceneRail: document.getElementById('sceneRail'),
       leftCollapseBtn: document.getElementById('leftCollapseBtn'),
       rightCollapseBtn: document.getElementById('rightCollapseBtn'),
       mobileScenesBtn: document.getElementById('mobileScenesBtn'),
@@ -2175,6 +2247,7 @@
       paymentHealth: document.getElementById('paymentHealth'),
       rumViewLinkHint: document.getElementById('rumViewLinkHint'),
       traceLinkHint: document.getElementById('traceLinkHint'),
+      observabilityDelayHint: document.getElementById('observabilityDelayHint'),
       observabilityRumViewLink: document.getElementById('observabilityRumViewLink'),
       observabilityTraceLink: document.getElementById('observabilityTraceLink'),
       faultLayerTabs: document.getElementById('faultLayerTabs'),
@@ -2357,14 +2430,15 @@
       return BUSINESS_SCENARIOS.find((scene) => scene.id === state.selectedSceneId) || BUSINESS_SCENARIOS[0];
     }
 
-    function shopUrl(language, options = {}) {
+    function sceneUrl(language, options = {}) {
       const scene = selectedBusinessScene();
       const url = new URL(scene.frameUrl, window.location.href);
       url.searchParams.set('lang', language);
       url.searchParams.set('scene', scene.id);
       url.searchParams.set('view', state.previewMode);
-      url.searchParams.set('v', SHOP_BUILD_ID);
-      if (options.preserveStoreState && els.shopFrame?.contentWindow) {
+      url.searchParams.set('v', scene.id === 'webgl-game' ? GAME_BUILD_ID : SHOP_BUILD_ID);
+      if (options.embedded && scene.id === 'webgl-game') url.searchParams.set('embedded', '1');
+      if (scene.id === 'bookstore' && options.preserveStoreState && els.shopFrame?.contentWindow) {
         try {
           const currentUrl = new URL(els.shopFrame.contentWindow.location.href);
           ['page', 'book'].forEach((key) => {
@@ -2383,16 +2457,22 @@
     }
 
     function updateFrameUrls(options = {}) {
-      const nextUrl = shopUrl(state.language, options);
-      if (els.openShopLink) els.openShopLink.href = nextUrl;
+      const standaloneUrl = sceneUrl(state.language, options);
+      const embeddedUrl = sceneUrl(state.language, { ...options, embedded: true });
+      if (els.openShopLink) {
+        els.openShopLink.href = standaloneUrl;
+        els.openShopLink.title = t('parentOpenScene');
+        els.openShopLink.setAttribute('aria-label', t('parentOpenScene'));
+      }
       const frameChanged = els.shopFrame.dataset.sceneId !== state.selectedSceneId;
       if (!els.shopFrame.getAttribute('src') || frameChanged) {
         state.shopReady = false;
-        els.shopFrame.src = nextUrl;
+        els.shopFrame.src = embeddedUrl;
         els.shopFrame.dataset.sceneId = state.selectedSceneId;
       }
       els.shopFrame.dataset.previewMode = state.previewMode;
-      els.shopFrame.title = t('frameTitle');
+      els.shopFrame.title = t(selectedBusinessScene().titleKey);
+      if (els.previewStage) els.previewStage.dataset.scene = state.selectedSceneId;
     }
 
     function updateWorkbenchUrl() {
@@ -2413,6 +2493,16 @@
       const mark = document.createElement('span');
       mark.className = `service-icon service-icon-${sceneId}`;
       mark.setAttribute('aria-hidden', 'true');
+      if (sceneId === 'webgl-game') {
+        const image = document.createElement('img');
+        image.src = 'assets/webgl-game-scene-icon.png?v=20260828-image2-v1';
+        image.alt = '';
+        image.width = 256;
+        image.height = 256;
+        image.decoding = 'async';
+        mark.append(image);
+        return mark;
+      }
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       svg.setAttribute('viewBox', '0 0 40 40');
       svg.setAttribute('focusable', 'false');
@@ -2454,7 +2544,24 @@
         return button;
       });
       els.businessSceneList.replaceChildren(...items);
-      if (els.bookstoreRailBtn) els.bookstoreRailBtn.title = t('sceneBookstoreTitle');
+      const railItems = BUSINESS_SCENARIOS.map((scene) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `rail-button${scene.id === state.selectedSceneId ? ' active' : ''}`;
+        button.dataset.sceneId = scene.id;
+        button.title = t(scene.titleKey);
+        button.setAttribute('aria-label', t(scene.titleKey));
+        button.setAttribute('aria-pressed', scene.id === state.selectedSceneId ? 'true' : 'false');
+        const dot = document.createElement('span');
+        dot.className = 'dot';
+        dot.setAttribute('aria-hidden', 'true');
+        button.append(createBusinessSceneIcon(scene.id), dot);
+        return button;
+      });
+      els.sceneRail?.replaceChildren(...railItems);
+      if (els.businessSceneCount) {
+        els.businessSceneCount.textContent = t('businessSceneCount', { count: BUSINESS_SCENARIOS.length });
+      }
       if (els.simulatorSceneName) els.simulatorSceneName.textContent = t(selectedBusinessScene().descriptionKey);
     }
 
@@ -2497,16 +2604,38 @@
       if (els.previewStage && selectedTabId) els.previewStage.setAttribute('aria-labelledby', selectedTabId);
     }
 
-    function selectBusinessScene(sceneId) {
+    async function resetFaultsForSceneChange() {
+      setBusy(true);
+      try {
+        const { response } = await requestJson('/api/demo/faults/off', { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      } catch (error) {
+        log(t('parentFaultCloseFailed', { message: error.message }), { status: 'error' });
+      } finally {
+        sendShopMessage('clear-client-fault');
+        state.activeClientFault = null;
+        state.activeClientFaultTriggeredAt = 0;
+        state.sceneRumReady = false;
+        state.sceneRumContext = null;
+        setFaultStatus('none');
+        finishActiveFaultRecord('closed');
+        resetObservabilityLinks();
+        setBusy(false);
+      }
+    }
+
+    async function selectBusinessScene(sceneId) {
       const scene = BUSINESS_SCENARIOS.find((item) => item.id === sceneId);
       if (!scene) return;
       const changed = state.selectedSceneId !== scene.id;
+      if (changed) await resetFaultsForSceneChange();
       state.selectedSceneId = scene.id;
       if (!scene.supportedViews.includes(state.previewMode)) {
         state.previewMode = scene.supportedViews[0];
       }
       renderBusinessScenes();
       renderPreviewMode();
+      renderFaultCatalog();
       updateWorkbenchUrl();
       if (changed) updateFrameUrls();
       syncPreviewContext();
@@ -2794,6 +2923,32 @@
       };
     }
 
+    function rememberSceneRumContext(context) {
+      const candidate = context?.rum || context || {};
+      const applicationId = String(candidate.applicationId || '').trim();
+      state.sceneRumContext = applicationId
+        ? {
+            applicationId,
+            viewId: String(candidate.viewId || '').trim(),
+            sessionId: String(candidate.sessionId || '').trim(),
+          }
+        : null;
+    }
+
+    function revealActiveGameRumViewLink() {
+      if (
+        state.selectedSceneId !== 'webgl-game' ||
+        !state.activeClientFault ||
+        !state.sceneRumReady ||
+        !state.sceneRumContext ||
+        !state.activeClientFaultTriggeredAt
+      ) return;
+      updateObservabilityRumViewLink({
+        ...state.sceneRumContext,
+        triggeredAt: state.activeClientFaultTriggeredAt,
+      });
+    }
+
     function buildObservabilityRumViewUrl(context) {
       const correlation = normalizeRumViewContext(context);
       if (!correlation || !state.demoConfig.observabilityConsoleUrl || !state.demoConfig.workspaceId) return '';
@@ -2816,6 +2971,13 @@
       return url.toString();
     }
 
+    function updateObservabilityDelayHint() {
+      if (!els.observabilityDelayHint) return;
+      const hasReadyLink = [els.observabilityRumViewLink, els.observabilityTraceLink]
+        .some((link) => link && !link.hidden && link.getAttribute('aria-disabled') !== 'true');
+      els.observabilityDelayHint.hidden = !hasReadyLink;
+    }
+
     function updateObservabilityRumViewLink(context) {
       if (arguments.length > 0) state.lastRumViewContext = normalizeRumViewContext(context);
       const correlation = state.lastRumViewContext;
@@ -2835,6 +2997,7 @@
             : t('parentRumViewLinkFallback');
         }
       }
+      updateObservabilityDelayHint();
     }
 
     function buildObservabilityTraceUrl(traceIds) {
@@ -2881,6 +3044,7 @@
           els.traceLinkHint.textContent = t('parentTraceLinkReadyBatch', { count: ids.length });
         }
       }
+      updateObservabilityDelayHint();
     }
 
     function resetObservabilityLinks() {
@@ -2983,11 +3147,24 @@
 
     function sendShopMessage(type, payload = {}) {
       if (!els.shopFrame.contentWindow) return;
-      els.shopFrame.contentWindow.postMessage({
-        source: 'mall-demo-parent',
-        type,
-        payload,
-      }, window.location.origin);
+      const message = state.selectedSceneId === 'bookstore'
+        ? { source: 'mall-demo-parent', type, payload }
+        : {
+            source: 'observability-demo-parent',
+            version: 1,
+            sceneId: state.selectedSceneId,
+            type,
+            payload,
+          };
+      els.shopFrame.contentWindow.postMessage(message, window.location.origin);
+    }
+
+    function focusActiveSceneControls() {
+      if (state.selectedSceneId !== 'webgl-game' || !els.shopFrame.contentWindow) return;
+      window.requestAnimationFrame(() => {
+        els.shopFrame.focus({ preventScroll: true });
+        sendShopMessage('focus-scene-controls');
+      });
     }
 
     function syncLanguageToShop() {
@@ -3022,7 +3199,13 @@
         localizedDescription: I18N.faultText(scenario, 'description', state.language),
         localizedObservation: I18N.faultText(scenario, 'observation', state.language),
         localizedLayer: layerGroupLabel(scenario.layer),
+        localizedKind: faultKindLabel(scenario.kind),
       };
+    }
+
+    function faultKindLabel(kind) {
+      const labelKey = FAULT_KIND_LABEL_KEYS[kind];
+      return labelKey ? t(labelKey) : (kind || '-');
     }
 
     function layerGroupForLayer(layer) {
@@ -3036,18 +3219,28 @@
 
     function orderedFaultLayers() {
       return FAULT_LAYER_GROUPS
-        .filter((group) => state.faults.some((scenario) => group.layers.includes(scenario.layer)))
+        .filter((group) => faultsForSelectedScene().some((scenario) => group.layers.includes(scenario.layer)))
         .map((group) => group.id);
+    }
+
+    function faultsForSelectedScene() {
+      return state.faults.filter((scenario) => {
+        if (!Array.isArray(scenario.scenes) || !scenario.scenes.length) {
+          return state.selectedSceneId === 'bookstore';
+        }
+        return scenario.scenes.includes(state.selectedSceneId);
+      });
     }
 
     function scenariosForLayer(layer) {
       const group = layerGroupForLayer(layer);
-      if (!group) return state.faults.filter((scenario) => scenario.layer === layer);
-      return state.faults.filter((scenario) => group.layers.includes(scenario.layer));
+      const sceneFaults = faultsForSelectedScene();
+      if (!group) return sceneFaults.filter((scenario) => scenario.layer === layer);
+      return sceneFaults.filter((scenario) => group.layers.includes(scenario.layer));
     }
 
     function selectedFaultScenario() {
-      return state.faults.find((scenario) => scenario.id === state.selectedFaultId) || null;
+      return faultsForSelectedScene().find((scenario) => scenario.id === state.selectedFaultId) || null;
     }
 
     function scenarioForFault(fault) {
@@ -3145,7 +3338,7 @@
       }
 
       els.faultDetailTitle.textContent = item.localizedTitle;
-      els.faultDetailKind.textContent = `${item.localizedLayer} · ${item.kind || '-'}`;
+      els.faultDetailKind.textContent = `${item.localizedLayer} · ${item.localizedKind}`;
       els.faultDetailDesc.textContent = item.localizedDescription;
       els.faultDetailService.textContent = `service=${item.service || '-'}`;
       els.faultDetailTarget.textContent = `target=${item.target || '-'}`;
@@ -3162,9 +3355,9 @@
       els.activeFaultCode.textContent = active ? normalized : 'none';
       els.activeFaultName.textContent = active ? (scenario?.localizedTitle || normalized) : t('parentNoFault');
       els.activeFaultDetail.textContent = active
-        ? t('parentFaultActiveDetail', {
+        ? t(scenario?.scenes?.includes('webgl-game') ? 'parentGameFaultActiveDetail' : 'parentFaultActiveDetail', {
             layer: scenario?.localizedLayer || '-',
-            kind: scenario?.kind || '-',
+            kind: scenario?.localizedKind || '-',
           })
         : t('parentNoFaultDetail');
     }
@@ -3231,14 +3424,19 @@
     function clientFaultHint(scenario) {
       if (scenario.id === 'frontend_sourcemap_error') return t('parentClientFaultHintSourceMap');
       if (scenario.id === 'frontend_slow_resource') return t('parentClientFaultHintSlow');
+      if (scenario.id === 'game_render_overload') return t('parentClientFaultHintGame');
+      if (scenario.id === 'game_asset_load_failure') return t('parentClientFaultHintGameAsset');
       return t('parentClientFaultHintClick');
     }
 
     function injectClientFault(scenario) {
       const item = localizedScenario(scenario);
       state.activeClientFault = scenario;
+      state.activeClientFaultTriggeredAt = Date.now();
       setFaultStatus(scenario.id);
+      revealActiveGameRumViewLink();
       sendShopMessage('set-client-fault', { scenario });
+      focusActiveSceneControls();
       log(t('parentClientFaultInjected', { title: item.localizedTitle }), { title: t('parentFaultPanel'), status: 'warn' });
       log(clientFaultHint(scenario), { title: t('parentLogPanel'), status: 'warn' });
     }
@@ -3250,6 +3448,7 @@
       setBusy(true);
       try {
         state.activeClientFault = null;
+        state.activeClientFaultTriggeredAt = 0;
         resetObservabilityLinks();
         sendShopMessage('clear-client-fault');
         setFaultStatus('none');
@@ -3292,9 +3491,11 @@
         const { response, body } = await requestJson('/api/demo/faults/off', { method: 'POST' });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.activeClientFault = null;
+        state.activeClientFaultTriggeredAt = 0;
         resetObservabilityLinks();
         sendShopMessage('clear-client-fault');
         setFaultStatus('none');
+        focusActiveSceneControls();
         finishActiveFaultRecord('closed');
         log(`${t('parentFaultClosed')} HTTP ${response.status}: ${shortJson(body)}`, { title: t('parentFaultPanel') });
       } catch (error) {
@@ -3322,17 +3523,33 @@
     }
 
     function handleShopMessage(event) {
-      if (event.origin !== window.location.origin) {
-        log(t('parentShopMessageBlocked'), { status: 'warn' });
+      if (event.origin !== window.location.origin || event.source !== els.shopFrame.contentWindow) {
+        log(t('parentSceneMessageBlocked'), { status: 'warn' });
         return;
       }
-      const data = event.data || {};
-      if (data.source !== 'mall-shop-demo') return;
+      let data = event.data || {};
+      if (data.source === 'observability-demo-scene') {
+        if (data.version !== 1 || data.sceneId !== state.selectedSceneId) return;
+        const genericTypes = {
+          'scene-ready': 'shop-ready',
+          'scene-log': 'shop-log',
+          'fault-started': 'frontend-fault-started',
+          'fault-triggered': 'frontend-fault-triggered',
+        };
+        data = { ...data, type: genericTypes[data.type] || data.type };
+      } else if (data.source !== 'mall-shop-demo' || state.selectedSceneId !== 'bookstore') {
+        return;
+      }
       const payload = data.payload || {};
 
       if (data.type === 'shop-ready') {
         state.shopReady = true;
-        log(t('parentShopReady'), { title: t('appTitle') });
+        if (state.selectedSceneId === 'webgl-game') {
+          state.sceneRumReady = state.sceneRumReady || payload.rumReady === true;
+          rememberSceneRumContext(payload);
+          revealActiveGameRumViewLink();
+        }
+        log(t('parentSceneReady', { scene: t(selectedBusinessScene().titleKey) }), { title: t(selectedBusinessScene().titleKey) });
         syncLanguageToShop();
         syncPreviewContext();
         if (state.activeClientFault) {
@@ -3351,15 +3568,17 @@
 
       if (data.type === 'rum-status') {
         const status = payload.status || 'pending';
-        const label = status === 'ready'
+        state.sceneRumReady = status === 'ready' || status === 'sampled-out';
+        revealActiveGameRumViewLink();
+        const label = status === 'ready' || status === 'sampled-out'
           ? t('parentRumReady')
-          : status === 'missing'
+          : status === 'missing' || status === 'disabled'
             ? t('parentRumMissing')
             : status === 'failed'
               ? t('parentRumFailed')
               : t('parentRumPending');
         setText(els.rumStatus, label);
-        if (els.rumDot) els.rumDot.className = status === 'ready' ? 'dot' : status === 'failed' ? 'dot bad' : 'dot warn';
+        if (els.rumDot) els.rumDot.className = status === 'ready' || status === 'sampled-out' ? 'dot' : status === 'failed' ? 'dot bad' : 'dot warn';
         return;
       }
 
@@ -3381,6 +3600,12 @@
         return;
       }
 
+      if (data.type === 'frontend-fault-started') {
+        rememberSceneRumContext(payload);
+        updateObservabilityRumViewLink(payload);
+        return;
+      }
+
       if (data.type === 'frontend-fault-triggered') {
         incrementActiveFaultRecordTrigger(payload.triggerId || '');
         updateObservabilityRumViewLink(payload);
@@ -3390,7 +3615,20 @@
             ? t('parentTraceLinkSlowPending')
             : t('parentTraceLinkFrontendFault');
         }
-        log(t('parentFrontendFaultTriggered', { action: payload.action || '-' }), { title: t('parentFaultPanel'), status: 'error' });
+        const triggerMessageKey = payload.scenario?.id === 'game_render_overload'
+          ? 'parentGameFaultTriggered'
+          : payload.scenario?.id === 'game_asset_load_failure'
+            ? 'parentGameAssetFaultTriggered'
+            : 'parentFrontendFaultTriggered';
+        log(t(triggerMessageKey, {
+          action: payload.action || '-',
+          elapsedMs: payload.elapsedMs || '-',
+          actualFps: payload.actualFps ?? '-',
+          droppedFrames: payload.droppedFrames ?? '-',
+          cpuBursts: payload.cpuBursts ?? '-',
+          attempts: payload.attempts ?? '-',
+          httpStatus: payload.httpStatus ?? '-',
+        }), { title: t('parentFaultPanel'), status: 'error' });
       }
     }
 
@@ -3400,6 +3638,12 @@
     });
     if (els.businessSceneList) {
       els.businessSceneList.addEventListener('click', (event) => {
+        const button = event.target.closest('[data-scene-id]');
+        if (button) selectBusinessScene(button.dataset.sceneId);
+      });
+    }
+    if (els.sceneRail) {
+      els.sceneRail.addEventListener('click', (event) => {
         const button = event.target.closest('[data-scene-id]');
         if (button) selectBusinessScene(button.dataset.sceneId);
       });
@@ -3439,7 +3683,6 @@
       });
     }
     document.addEventListener('keydown', handleUsageGuideKeydown);
-    if (els.bookstoreRailBtn) els.bookstoreRailBtn.addEventListener('click', () => selectBusinessScene('bookstore'));
     if (els.drawerBackdrop) els.drawerBackdrop.addEventListener('click', closeDrawers);
     compactViewport.addEventListener('change', closeDrawers);
     els.faultLayerTabs.addEventListener('click', (event) => {

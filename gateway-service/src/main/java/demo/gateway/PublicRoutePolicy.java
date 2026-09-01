@@ -59,6 +59,12 @@ final class PublicRoutePolicy {
               "storefront_page"),
           RouteRule.exact(
               READ_METHODS,
+              "/webgl-replay-game.html",
+              Action.FORWARD,
+              "storefront.webgl-game",
+              "storefront_page"),
+          RouteRule.exact(
+              READ_METHODS,
               "/assets/checkout-sourcemap-fault.min.js",
               Action.FORWARD,
               "asset.checkout-fault",
@@ -110,6 +116,24 @@ final class PublicRoutePolicy {
               "/assets/storefront.css",
               Action.FORWARD,
               "asset.storefront-css",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/webgl-replay-game.css",
+              Action.FORWARD,
+              "asset.webgl-game-css",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/webgl-replay-game.js",
+              Action.FORWARD,
+              "asset.webgl-game-js",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/webgl-game-scene-icon.png",
+              Action.FORWARD,
+              "asset.webgl-game-icon",
               "static_asset"),
           RouteRule.regex(
               READ_METHODS,
@@ -208,6 +232,12 @@ final class PublicRoutePolicy {
               "/api/demo/slow-resource",
               Action.FORWARD,
               "demo.slow-resource",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("GET"),
+              "/api/demo/game-assets/orbital-shield-texture.webp",
+              Action.FORWARD,
+              "demo.game-assets.missing-texture",
               "demo_api"),
           RouteRule.exact(
               Set.of("GET"),

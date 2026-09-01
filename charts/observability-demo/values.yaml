@@ -49,6 +49,7 @@ rum:
   enabled: false
   applicationId: ""
   service: mall-h5
+  gameService: mall-game-h5
   mobile:
     enabled: false
     androidApplicationId: ""

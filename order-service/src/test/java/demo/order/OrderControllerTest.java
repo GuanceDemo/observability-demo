@@ -2,6 +2,9 @@ package demo.order;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.everyItem;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -271,6 +274,7 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.project").value("mall-demo"))
         .andExpect(jsonPath("$.datakitProvider").value("guance"))
         .andExpect(jsonPath("$.applicationId").value("order_web_docker_demo"))
+        .andExpect(jsonPath("$.gameService").value("mall-game-h5"))
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.clientToken").doesNotExist())
         .andExpect(jsonPath("$.site").doesNotExist())
@@ -644,7 +648,9 @@ class OrderControllerTest {
 
     assertThat(businessSource)
         .contains("const SHOP_BUILD_ID = '20260817-bookstore-v44'")
-        .contains("assets/selfheal-i18n.js?v=20260817-bookstore-v44")
+        .contains("const GAME_BUILD_ID = '20260901-fault-rum-link-v13'")
+        .contains("scene.id === 'webgl-game' ? GAME_BUILD_ID : SHOP_BUILD_ID")
+        .contains("assets/selfheal-i18n.js?v=20260901-observability-delay-v10")
         .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
         .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
         .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")
@@ -699,6 +705,12 @@ class OrderControllerTest {
         .contains("data-i18n=\"parentRumViewLinkOpen\" hidden")
         .contains("id=\"observabilityTraceLink\"")
         .contains("data-i18n=\"parentTraceLinkOpen\" hidden")
+        .contains("id=\"observabilityDelayHint\"")
+        .contains("data-i18n=\"parentObservabilityDelayHint\" hidden")
+        .contains("function updateObservabilityDelayHint()")
+        .contains("els.observabilityDelayHint.hidden = !hasReadyLink")
+        .contains("updateObservabilityDelayHint();")
+        .contains(".observability-delay-hint")
         .contains("new URL('/rum/viewer', state.demoConfig.observabilityConsoleUrl)")
         .contains("time: '1h'")
         .contains("viewType: 'view'")
@@ -713,7 +725,7 @@ class OrderControllerTest {
         .doesNotContain("RUM_VIEW_TIME_PADDING_MS")
         .contains("target=\"_blank\"")
         .contains("rel=\"noopener noreferrer\"")
-        .contains("if (els.openShopLink) els.openShopLink.href = nextUrl")
+        .contains("els.openShopLink.href = standaloneUrl")
         .contains("state.previewMode = mode;")
         .contains("updateFrameUrls({ preserveStoreState: true });")
         .contains("els.shopFrame.dataset.previewMode = state.previewMode")
@@ -749,6 +761,194 @@ class OrderControllerTest {
         .doesNotContain("transition: width .2s ease, height .2s ease, border-radius .2s ease;")
         .contains("border-radius: 0 0 24px 24px;")
         .contains("background: #ffffff;");
+  }
+
+  @Test
+  void webglGameSceneUsesRuntimeRumConfigAndVersionedSceneProtocol() throws Exception {
+    String gameHtml;
+    try (var source = getClass().getResourceAsStream("/static/webgl-replay-game.html")) {
+      assertThat(source).isNotNull();
+      gameHtml = new String(source.readAllBytes(), StandardCharsets.UTF_8);
+    }
+    String gameScript;
+    try (var source =
+        getClass().getResourceAsStream("/static/assets/webgl-replay-game.js")) {
+      assertThat(source).isNotNull();
+      gameScript = new String(source.readAllBytes(), StandardCharsets.UTF_8);
+    }
+    String gameStyles;
+    try (var source =
+        getClass().getResourceAsStream("/static/assets/webgl-replay-game.css")) {
+      assertThat(source).isNotNull();
+      gameStyles = new String(source.readAllBytes(), StandardCharsets.UTF_8);
+    }
+    String businessSource;
+    try (var source = getClass().getResourceAsStream("/static/business.html")) {
+      assertThat(source).isNotNull();
+      businessSource = new String(source.readAllBytes(), StandardCharsets.UTF_8);
+    }
+    String i18nSource;
+    try (var source = getClass().getResourceAsStream("/static/assets/selfheal-i18n.js")) {
+      assertThat(source).isNotNull();
+      i18nSource = new String(source.readAllBytes(), StandardCharsets.UTF_8);
+    }
+    byte[] gameIcon;
+    try (var source =
+        getClass().getResourceAsStream("/static/assets/webgl-game-scene-icon.png")) {
+      assertThat(source).isNotNull();
+      gameIcon = source.readAllBytes();
+    }
+
+    assertThat(gameHtml)
+        .contains("id=\"game-canvas\"")
+        .contains("tabindex=\"0\"")
+        .contains("data-pointer-control=\"released\"")
+        .contains("id=\"game-fps\"")
+        .contains("assets/webgl-replay-game.css")
+        .contains("assets/webgl-replay-game.js")
+        .contains("<option value=\"4\" selected data-game-copy=\"samplingHigh\">")
+        .contains("GuanceCloud/datakit-js commit f4369924d75375aa8322e95975b4938f10e16461")
+        .doesNotContain("clientToken")
+        .doesNotContain("cn3-rum");
+    assertThat(gameScript)
+        .contains("fetch(SCENE_API_PREFIX + '/api/demo/rum-config'")
+        .contains("guance: 'https://static.guance.com'")
+        .contains("truewatch: 'https://static.truewatch.com'")
+        .contains("config.gameService || 'mall-game-h5'")
+        .contains("var sampling = query.get('sampling') || '4'")
+        .contains("sampling = '4'")
+        .contains("replayCanvasMimeType: 'image/webp'")
+        .contains("targetFps: 20")
+        .contains("interval: 50")
+        .contains("cooldown: 10")
+        .contains("quality: 0.72")
+        .contains("maxCanvasSize: 1280")
+        .contains("maxEncodedBytes: 160000")
+        .contains("replayCanvasMaxEncodedBytes: captureProfile.maxEncodedBytes")
+        .contains("trackViewsManually: true")
+        .contains("trackLongTasks: true")
+        .contains("name: GAME_VIEW_NAME")
+        .contains("setRumContext('business_scene', SCENE_ID)")
+        .contains("source: 'observability-demo-scene'")
+        .contains("postSceneMessage('fault-started'")
+        .contains("function postFaultStarted(scenario, action, triggerId, triggeredAt)")
+        .contains("rumReady: bootstrapState.rumReady")
+        .contains("'game_asset_load_failed'")
+        .contains("'game_render_overload_started'")
+        .contains("data.source !== 'observability-demo-parent'")
+        .contains("event.source !== window.parent")
+        .contains("RENDER_OVERLOAD_DURATION_MS = 10000")
+        .contains("RENDER_OVERLOAD_TARGET_FPS = 12")
+        .contains("RENDER_OVERLOAD_CPU_BURST_MS = 65")
+        .contains("RENDER_OVERLOAD_CPU_INTERVAL_MS = 250")
+        .contains("addRumAction('game_render_overload_started'")
+        .contains("addRumAction('game_render_overload_recovered'")
+        .contains("ASSET_LOAD_FAILURE_DURATION_MS = 10000")
+        .contains("ASSET_LOAD_FAILURE_RETRY_MS = 5000")
+        .contains("MISSING_SHIELD_TEXTURE_PATH")
+        .contains("addRumAction('game_asset_load_failed'")
+        .contains("addRumAction('game_asset_load_retry'")
+        .contains("addRumAction('game_asset_fallback_recovered'")
+        .contains("window.DATAFLUX_RUM.addError(error, context)")
+        .contains("attempt === 1")
+        .contains("requestMissingShieldTexture(generation, 2)")
+        .contains("finishAssetLoadFailure('cleared', false)")
+        .contains("dropped_frames: renderOverloadDroppedFrames")
+        .contains("particle_peak: renderOverloadPeakParticles")
+        .contains("cpu_bursts: renderOverloadCpuBursts")
+        .contains("renderOverloadNextFrameAt")
+        .contains("finishRenderOverload('cleared', false)")
+        .contains("var pointerInsideCanvas = false")
+        .contains("else if (pointerInsideCanvas)")
+        .contains("event.clientX >= rect.left")
+        .contains("event.clientY <= rect.bottom")
+        .contains("function setPointerControlState(active)")
+        .contains("canvas.dataset.pointerControl = active ? 'inside' : 'released'")
+        .contains("function releasePointerControl(event)")
+        .contains("player.targetX = player.x")
+        .contains("canvas.addEventListener('pointerleave', releasePointerControl)")
+        .contains("canvas.addEventListener('pointercancel', releasePointerControl)")
+        .contains("canvas.hasPointerCapture(event.pointerId)")
+        .contains("function focusGameCanvas()")
+        .contains("data.type === 'focus-scene-controls'")
+        .contains("canvas.focus({ preventScroll: true })")
+        .doesNotContain("game_frame_stall")
+        .doesNotContain("STALL_DURATION_MS")
+        .doesNotContain("clientToken")
+        .doesNotContain("test_dcl")
+        .doesNotContain("cn3-rum");
+    assertThat(gameScript.indexOf("await initializeRum()"))
+        .isLessThan(gameScript.indexOf("startGame()"));
+    assertThat(gameScript.indexOf("window.DATAFLUX_RUM.init({"))
+        .isLessThan(gameScript.indexOf("canvas.getContext(requestedContext"));
+    assertThat(gameStyles)
+        .contains("html[data-embedded=\"true\"]")
+        .contains("#game-canvas:focus-visible")
+        .contains("align-items: stretch;")
+        .contains("max-height: 100%;")
+        .contains("display: block;")
+        .contains("overflow-y: auto;")
+        .contains("overscroll-behavior-y: contain;")
+        .contains("scrollbar-gutter: stable;")
+        .contains("html[data-embedded=\"true\"] .button-grid button")
+        .contains("min-height: 34px;")
+        .contains("font-size: 11px;")
+        .contains("white-space: nowrap;")
+        .contains("html[data-embedded=\"true\"] select")
+        .contains("height: 36px;")
+        .contains("html[data-embedded=\"true\"] .control-note")
+        .contains(".game-message.is-overload")
+        .contains(".game-message.is-asset-failure")
+        .contains("z-index: 3;")
+        .contains("top: 72px;")
+        .contains("#game-fps.is-overloaded")
+        .contains("@media (prefers-reduced-motion: reduce)");
+    assertThat(businessSource)
+        .contains("id: 'webgl-game'")
+        .contains("supportedViews: ['web']")
+        .contains("url.searchParams.set('embedded', '1')")
+        .contains("source: 'observability-demo-parent'")
+        .contains("'fault-started': 'frontend-fault-started'")
+        .contains("if (data.type === 'frontend-fault-started')")
+        .contains("function rememberSceneRumContext(context)")
+        .contains("function revealActiveGameRumViewLink()")
+        .contains("state.activeClientFaultTriggeredAt = Date.now()")
+        .contains("state.sceneRumReady = state.sceneRumReady || payload.rumReady === true")
+        .contains("state.sceneRumReady = status === 'ready' || status === 'sampled-out'")
+        .contains("rememberSceneRumContext(payload);")
+        .contains("updateObservabilityRumViewLink(payload);")
+        .contains("function focusActiveSceneControls()")
+        .contains("state.selectedSceneId !== 'webgl-game'")
+        .contains("els.shopFrame.focus({ preventScroll: true })")
+        .contains("sendShopMessage('focus-scene-controls')")
+        .contains("event.source !== els.shopFrame.contentWindow")
+        .contains("scenario.scenes.includes(state.selectedSceneId)")
+        .contains("long_task: 'faultKindLongTask'")
+        .contains("render_overload: 'faultKindRenderOverload'")
+        .contains("resource_error: 'faultKindResourceError'")
+        .contains("localizedKind: faultKindLabel(scenario.kind)")
+        .contains("image.src = 'assets/webgl-game-scene-icon.png?v=20260828-image2-v1'")
+        .contains("mark.append(image)")
+        .doesNotContain("planet-orbit")
+        .contains(".scenario-tab-list .tab-button")
+        .contains("place-items: center;")
+        .contains("text-align: center;")
+        .contains("if (changed) await resetFaultsForSceneChange()")
+        .contains("if (!els.shopFrame.getAttribute('src') || frameChanged)");
+    assertThat(gameIcon.length).isGreaterThan(10_000);
+    assertThat(gameIcon[0]).isEqualTo((byte) 0x89);
+    assertThat(gameIcon[1]).isEqualTo((byte) 'P');
+    assertThat(gameIcon[2]).isEqualTo((byte) 'N');
+    assertThat(gameIcon[3]).isEqualTo((byte) 'G');
+    assertThat(i18nSource)
+        .contains("faultKindLongTask: '长任务'")
+        .contains("faultKindLongTask: 'Long task'")
+        .contains("faultKindRenderOverload: '渲染过载'")
+        .contains("faultKindRenderOverload: 'Render overload'")
+        .contains("faultKindResourceError: '资源错误'")
+        .contains("faultKindResourceError: 'Resource error'")
+        .contains("game_asset_load_failure")
+        .contains("parentClientFaultHintGameAsset");
   }
 
   @Test
@@ -800,11 +1000,13 @@ class OrderControllerTest {
     demoMvc
         .perform(get("/api/demo/faults"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items.length()").value(14))
+        .andExpect(jsonPath("$.items.length()").value(16))
+        .andExpect(jsonPath("$.items[*].scenes").value(everyItem(not(empty()))))
         .andExpect(jsonPath("$.items[0].id").value("frontend_click_error"))
         .andExpect(jsonPath("$.items[0].service").value("mall-h5"))
         .andExpect(jsonPath("$.items[0].execution").value("client"))
         .andExpect(jsonPath("$.items[0].platforms[0]").value("web"))
+        .andExpect(jsonPath("$.items[0].scenes[0]").value("bookstore"))
         .andExpect(jsonPath("$.items[2].id").value("frontend_sourcemap_error"))
         .andExpect(jsonPath("$.items[3].id").value("mobile_white_screen"))
         .andExpect(jsonPath("$.items[3].platforms[0]").value("android"))
@@ -813,7 +1015,33 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.items[10].id").value("inventory_redis_timeout"))
         .andExpect(jsonPath("$.items[10].execution").value("server"))
         .andExpect(jsonPath("$.items[10].platforms[2]").value("ios"))
-        .andExpect(jsonPath("$.items[10].expectedObservation").isNotEmpty());
+        .andExpect(jsonPath("$.items[10].expectedObservation").isNotEmpty())
+        .andExpect(jsonPath("$.items[14].id").value("game_render_overload"))
+        .andExpect(jsonPath("$.items[14].title").value("游戏渲染过载"))
+        .andExpect(jsonPath("$.items[14].kind").value("render_overload"))
+        .andExpect(jsonPath("$.items[14].service").value("mall-game-h5"))
+        .andExpect(jsonPath("$.items[14].execution").value("client"))
+        .andExpect(jsonPath("$.items[14].scenes[0]").value("webgl-game"))
+        .andExpect(jsonPath("$.items[15].id").value("game_asset_load_failure"))
+        .andExpect(jsonPath("$.items[15].title").value("资源加载失败"))
+        .andExpect(jsonPath("$.items[15].kind").value("resource_error"))
+        .andExpect(jsonPath("$.items[15].target").value("/api/demo/game-assets/orbital-shield-texture.webp"))
+        .andExpect(jsonPath("$.items[15].clientSide").value(true))
+        .andExpect(jsonPath("$.items[15].scenes[0]").value("webgl-game"));
+  }
+
+  @Test
+  void missingGameShieldTextureReturnsDeterministicNoStore404() throws Exception {
+    MockMvc demoMvc = MockMvcBuilders.standaloneSetup(newDemoController()).build();
+
+    demoMvc
+        .perform(
+            get("/api/demo/game-assets/orbital-shield-texture.webp")
+                .queryParam("triggerId", "asset-test")
+                .queryParam("attempt", "1"))
+        .andExpect(status().isNotFound())
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"))
+        .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("X-Demo-Fault", "game_asset_load_failure"));
   }
 
   @Test
@@ -1053,6 +1281,7 @@ class OrderControllerTest {
         rumEnv,
         rumVersion,
         rumService,
+        "mall-game-h5",
         true,
         androidApplicationId,
         iosApplicationId,

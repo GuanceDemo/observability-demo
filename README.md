@@ -1,6 +1,6 @@
 # Observability Demo
 
-> A clean, deliberately faultable Java microservice demo for Kubernetes and DataKit. It demonstrates correlated infrastructure metrics, APM, logs, JVM metrics, profiling, RUM, Browser Logs, Session Replay and SourceMap restoration.
+> A clean, deliberately faultable Java microservice demo for Kubernetes and DataKit. It demonstrates correlated infrastructure metrics, APM, logs, JVM metrics, profiling, RUM, Browser Logs, DOM/WebGL Session Replay and SourceMap restoration.
 
 这是一个可公开发布、可逐步教学的全栈可观测 Demo。商城请求经过 `gateway → order → MySQL → inventory → Redis → payment`，并提供前端、服务、依赖和 JVM 故障场景。指标、链路、日志、JVM、Profile 与 RUM 默认统一使用 `project=mall-demo`；故障操作无需演示凭证，Ingress 与 RUM 默认关闭，MySQL/Redis 数据为临时 Demo 数据。
 
@@ -207,7 +207,7 @@ scripts/inject-fault.sh off
 scripts/package-rum-sourcemap.sh --version 2.3.6
 ```
 
-人工验收应覆盖按 `project=mall-demo` 过滤的 Node/Pod/容器指标、完整 Trace、日志关联、JVM、Profile，以及 RUM/Browser Logs/Replay/SourceMap。详见 [故障场景目录](docs/fault-scenarios.md)。
+人工验收应覆盖按 `project=mall-demo` 过滤的 Node/Pod/容器指标、完整 Trace、日志关联、JVM、Profile，以及 RUM/Browser Logs/Replay/SourceMap。工作台还应能在商城和 `business.html?scene=webgl-game&view=web` 游戏场景间往返；注入“游戏渲染过载”后，同一 RUM View 应出现约 10 秒可见粒子风暴和持续掉帧、开始/恢复 Action、多段 Long Task、FPS/掉帧统计与连续 WebGL Replay。Guance 与 TrueWatch provider 各验证一次。详见 [故障场景目录](docs/fault-scenarios.md)和 [RUM、Replay 与 SourceMap](docs/rum-sourcemap.md)。
 
 故障注入、恢复和预热无需控制口令，因此公网入口只应用于隔离、短期的 Workshop 集群。
 
@@ -246,6 +246,7 @@ scripts/install-obs-agent-eks-node-demo.sh --cleanup
 
 - DataWay URL：敏感，只通过 DataKit 安装环境传入。
 - RUM application ID：非敏感，但必须先在可观测平台创建；默认 `RUM_ENABLED=false`。
+- Web 场景共用该 RUM application ID；商城默认 `service=mall-h5`，WebGL 游戏默认 `service=mall-game-h5`（`RUM_GAME_SERVICE` / `rum.gameService`）。
 - project：非敏感，默认 `mall-demo`，用于跨指标、链路、日志和 RUM 关联。
 - DataKit provider：非敏感，可选 `guance` 或 `truewatch`，用于页面平台标识和默认控制台域名。
 - workspace ID：用于对应平台的 Trace 深链。

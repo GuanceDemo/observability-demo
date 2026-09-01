@@ -22,6 +22,11 @@ class PublicRoutePolicyTest {
             new RouteExpectation("GET", "/shop.html", "storefront.shop", "storefront_page"),
             new RouteExpectation(
                 "GET",
+                "/webgl-replay-game.html",
+                "storefront.webgl-game",
+                "storefront_page"),
+            new RouteExpectation(
+                "GET",
                 "/assets/checkout-sourcemap-fault.min.js",
                 "asset.checkout-fault",
                 "static_asset"),
@@ -58,7 +63,27 @@ class PublicRoutePolicyTest {
             new RouteExpectation(
                 "GET", "/assets/selfheal-i18n.js", "asset.i18n", "static_asset"),
             new RouteExpectation(
+                "GET",
+                "/api/demo/game-assets/orbital-shield-texture.webp",
+                "demo.game-assets.missing-texture",
+                "demo_api"),
+            new RouteExpectation(
                 "GET", "/assets/storefront.css", "asset.storefront-css", "static_asset"),
+            new RouteExpectation(
+                "GET",
+                "/assets/webgl-replay-game.css",
+                "asset.webgl-game-css",
+                "static_asset"),
+            new RouteExpectation(
+                "HEAD",
+                "/assets/webgl-replay-game.js",
+                "asset.webgl-game-js",
+                "static_asset"),
+            new RouteExpectation(
+                "GET",
+                "/assets/webgl-game-scene-icon.png",
+                "asset.webgl-game-icon",
+                "static_asset"),
             new RouteExpectation(
                 "GET",
                 "/assets/guide-carousel/image2-slide-01.png",
@@ -153,6 +178,12 @@ class PublicRoutePolicyTest {
             new RouteRequest("POST", "/admin/fault/off"),
             new RouteRequest("POST", "/business.html"),
             new RouteRequest("GET", "/assets/new-file.js"),
+            new RouteRequest("GET", "/assets/webgl-replay-game.js.map"),
+            new RouteRequest("GET", "/assets/webgl-replay-game-worker.js"),
+            new RouteRequest("GET", "/assets/webgl-game-scene-icon@2x.png"),
+            new RouteRequest("POST", "/api/demo/game-assets/orbital-shield-texture.webp"),
+            new RouteRequest("GET", "/api/demo/game-assets/orbital-shield-texture@2x.webp"),
+            new RouteRequest("GET", "/api/demo/game-assets/orbital-shield-texture.webp.map"),
             new RouteRequest("GET", "/assets/avatars/demo-reader-d.png"),
             new RouteRequest("GET", "/assets/guide-carousel/image2-slide-06.png"),
             new RouteRequest("GET", "/api/demo/new-endpoint"),

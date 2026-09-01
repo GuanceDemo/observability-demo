@@ -138,6 +138,8 @@ spec:
               value: {{ if $.Values.rum.enabled }}{{ required "rum.applicationId is required when rum.enabled=true" $.Values.rum.applicationId | quote }}{{ else }}""{{ end }}
             - name: RUM_SERVICE
               value: {{ $.Values.rum.service | quote }}
+            - name: RUM_GAME_SERVICE
+              value: {{ $.Values.rum.gameService | quote }}
             - name: MOBILE_RUM_ENABLED
               value: {{ $.Values.rum.mobile.enabled | quote }}
             - name: MOBILE_RUM_ANDROID_APPLICATION_ID

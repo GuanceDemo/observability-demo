@@ -43,7 +43,8 @@ class DemoController {
               "RUM Error 与点击 Action 在同一 View 中出现，并可关联 Browser Log。",
               0,
               true,
-              List.of("web")),
+              List.of("web"),
+              List.of("bookstore")),
           new FaultScenario(
               "frontend_slow_resource",
               "前端资源加载慢",
@@ -56,7 +57,8 @@ class DemoController {
               "RUM Resource 出现高 duration，并与触发它的 Action 关联。",
               0,
               true,
-              List.of("web")),
+              List.of("web"),
+              List.of("bookstore")),
           new FaultScenario(
               "frontend_sourcemap_error",
               "SourceMap 源码定位错误",
@@ -69,7 +71,8 @@ class DemoController {
               "RUM Error 还原到原始源码文件、函数和行号。",
               0,
               true,
-              List.of("web")),
+              List.of("web"),
+              List.of("bookstore")),
           new FaultScenario(
               "mobile_white_screen",
               "移动端白屏",
@@ -82,7 +85,8 @@ class DemoController {
               "RUM View/Action 与自定义 Error 记录白屏开始和自动恢复。",
               0,
               true,
-              List.of("android", "ios")),
+              List.of("android", "ios"),
+              List.of("mobile-storefront")),
           new FaultScenario(
               "mobile_js_error",
               "React Native JS 异常",
@@ -95,7 +99,8 @@ class DemoController {
               "RUM Error 可关联当前 View、Action、Log 和 SourceMap。",
               0,
               true,
-              List.of("android", "ios")),
+              List.of("android", "ios"),
+              List.of("mobile-storefront")),
           new FaultScenario(
               "mobile_native_crash",
               "移动端 Native Crash",
@@ -108,7 +113,8 @@ class DemoController {
               "重启后上传 Native Crash，符号化堆栈指向 DemoFaultModule。",
               0,
               true,
-              List.of("android", "ios")),
+              List.of("android", "ios"),
+              List.of("mobile-storefront")),
           new FaultScenario(
               "mobile_android_anr",
               "Android ANR",
@@ -121,7 +127,8 @@ class DemoController {
               "RUM Long Task/ANR 记录包含主线程阻塞现场。",
               0,
               true,
-              List.of("android")),
+              List.of("android"),
+              List.of("mobile-storefront")),
           new FaultScenario(
               "mobile_ios_freeze",
               "iOS Freeze",
@@ -134,7 +141,8 @@ class DemoController {
               "RUM Freeze 记录包含主线程阻塞现场。",
               0,
               true,
-              List.of("ios")),
+              List.of("ios"),
+              List.of("mobile-storefront")),
           new FaultScenario(
               "mobile_slow_network",
               "移动端慢网络",
@@ -147,7 +155,8 @@ class DemoController {
               "RUM Resource 出现高 duration，并关联 DDTrace 与业务请求头。",
               0,
               true,
-              List.of("android", "ios")),
+              List.of("android", "ios"),
+              List.of("mobile-storefront")),
           new FaultScenario(
               "order_slow",
               "订单入口慢响应",
@@ -160,7 +169,8 @@ class DemoController {
               "App Resource 与 gateway/order-service 慢 Span 通过 Trace 关联。",
               300,
               false,
-              List.of("web", "android", "ios")),
+              List.of("web", "android", "ios"),
+              List.of("bookstore", "mobile-storefront")),
           new FaultScenario(
               "inventory_redis_timeout",
               "库存 Redis 超时",
@@ -173,7 +183,8 @@ class DemoController {
               "库存错误 Span、Redis 依赖耗时与订单失败日志出现在同一 Trace。",
               300,
               false,
-              List.of("web", "android", "ios")),
+              List.of("web", "android", "ios"),
+              List.of("bookstore", "mobile-storefront")),
           new FaultScenario(
               "payment_slow",
               "支付慢方法",
@@ -186,7 +197,8 @@ class DemoController {
               "支付慢 Span、接口耗时与 Profile 热点可相互跳转。",
               300,
               false,
-              List.of("web", "android", "ios")),
+              List.of("web", "android", "ios"),
+              List.of("bookstore", "mobile-storefront")),
           new FaultScenario(
               "payment_error",
               "支付 5xx 错误",
@@ -199,7 +211,8 @@ class DemoController {
               "App Error/Resource、网关 5xx、支付错误 Span 与日志通过业务 ID 关联。",
               300,
               false,
-              List.of("web", "android", "ios")),
+              List.of("web", "android", "ios"),
+              List.of("bookstore", "mobile-storefront")),
           new FaultScenario(
               "payment_cpu_burn",
               "支付 CPU 繁忙",
@@ -212,7 +225,36 @@ class DemoController {
               "支付服务 CPU、JVM、Profile 与受影响 Trace 在同一时间窗出现。",
               180,
               false,
-              List.of("web", "android", "ios")));
+              List.of("web", "android", "ios"),
+              List.of("bookstore", "mobile-storefront")),
+          new FaultScenario(
+              "game_render_overload",
+              "游戏渲染过载",
+              "frontend",
+              "render_overload",
+              "mall-game-h5",
+              "webgl-main-thread",
+              "client",
+              "粒子风暴与密集场景负载持续约十秒，并通过间歇性主线程压力制造稳定可见的持续掉帧。",
+              "同一 RUM View 中出现开始/恢复 Action、多段 Long Task、FPS 与掉帧统计，以及持续卡顿的 WebGL Replay。",
+              0,
+              true,
+              List.of("web"),
+              List.of("webgl-game")),
+          new FaultScenario(
+              "game_asset_load_failure",
+              "资源加载失败",
+              "frontend",
+              "resource_error",
+              "mall-game-h5",
+              "/api/demo/game-assets/orbital-shield-texture.webp",
+              "client",
+              "飞船护盾纹理请求返回 404，游戏持续显示降级材质并在约十秒后切换到内置备用材质。",
+              "同一 RUM View 中出现 404 Resource、handled Error、失败/重试/恢复 Action，以及 Replay 中持续可见的降级材质。",
+              0,
+              true,
+              List.of("web"),
+              List.of("webgl-game")));
 
   private final RestTemplate restTemplate;
   private final String orderUrl;
@@ -225,6 +267,7 @@ class DemoController {
   private final String rumEnv;
   private final String rumVersion;
   private final String rumService;
+  private final String rumGameService;
   private final boolean mobileRumEnabled;
   private final String mobileRumAndroidApplicationId;
   private final String mobileRumIosApplicationId;
@@ -248,6 +291,7 @@ class DemoController {
       @Value("${rum.env:${DD_ENV:demo}}") String rumEnv,
       @Value("${rum.version:${DD_VERSION:1.0.0}}") String rumVersion,
       @Value("${rum.service:mall-h5}") String rumService,
+      @Value("${rum.game-service:mall-game-h5}") String rumGameService,
       @Value("${rum.mobile.enabled:false}") boolean mobileRumEnabled,
       @Value("${rum.mobile.android-application-id:}") String mobileRumAndroidApplicationId,
       @Value("${rum.mobile.ios-application-id:}") String mobileRumIosApplicationId,
@@ -272,6 +316,7 @@ class DemoController {
     this.rumEnv = defaultIfBlank(rumEnv, "demo");
     this.rumVersion = defaultIfBlank(rumVersion, "1.0.0");
     this.rumService = defaultIfBlank(rumService, "mall-h5");
+    this.rumGameService = defaultIfBlank(rumGameService, "mall-game-h5");
     this.mobileRumAndroidApplicationId =
         mobileRumAndroidApplicationId == null ? "" : mobileRumAndroidApplicationId.trim();
     this.mobileRumIosApplicationId =
@@ -329,6 +374,7 @@ class DemoController {
     response.put("applicationId", rumApplicationId);
     response.put("datakitOrigin", rumDatakitOrigin);
     response.put("service", rumService);
+    response.put("gameService", rumGameService);
     response.put("env", rumEnv);
     response.put("version", rumVersion);
     response.put("project", project);
@@ -429,6 +475,14 @@ class DemoController {
     response.put("delayMs", safeDelayMs);
     response.put("timestamp", Instant.now().toString());
     return response;
+  }
+
+  @GetMapping("/game-assets/orbital-shield-texture.webp")
+  ResponseEntity<Void> missingGameShieldTexture() {
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .header(HttpHeaders.CACHE_CONTROL, "no-store")
+        .header("X-Demo-Fault", "game_asset_load_failure")
+        .build();
   }
 
   @GetMapping("/logs")
@@ -616,7 +670,8 @@ record FaultScenario(
     String expectedObservation,
     long ttlSeconds,
     boolean clientSide,
-    List<String> platforms) {
+    List<String> platforms,
+    List<String> scenes) {
   Map<String, Object> toMap() {
     Map<String, Object> response = new LinkedHashMap<>();
     response.put("id", id);
@@ -632,6 +687,7 @@ record FaultScenario(
     response.put("clientSide", clientSide);
     response.put("execution", clientSide ? "client" : "server");
     response.put("platforms", platforms);
+    response.put("scenes", scenes);
     return response;
   }
 }
