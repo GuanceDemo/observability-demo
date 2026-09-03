@@ -628,7 +628,6 @@
         if (pendingCheckout === 'single') await handleCheckout();
         if (pendingCheckout === 'traffic') await handleTrafficCheckout();
       } catch (error) {
-        if (error?.orderResult) throw error;
         addRumAction('auth_login_failure', { reason: error.message, visitor_id: state.visitorId });
         log(s('authLogFailure', { message: error.message }), {
           status: 'error',
@@ -1294,6 +1293,34 @@
         } catch (error) {
           console.warn('[RUM] action skipped', error);
         }
+      }
+    }
+
+    function reportHandledCheckoutError(error, result, context = {}) {
+      const httpStatus = Number(result?.httpStatus || 0);
+      if (httpStatus > 0 && httpStatus < 500) return;
+      if (!state.rumReady || typeof window.DATAFLUX_RUM?.addError !== 'function') return;
+      try {
+        window.DATAFLUX_RUM.addError(error, {
+          operation: 'submit_book_order',
+          error_category: httpStatus >= 500 ? 'backend_service' : 'network',
+          http_status: httpStatus,
+          http_method: 'POST',
+          resource_url: '/api/orders',
+          biz_chain: 'selfheal_checkout',
+          key_request: context.keyRequest || '',
+          biz_request_id: result?.body?.businessRequestId || result?.bizRequestId || '',
+          trace_id: result?.traceId || '',
+          product: result?.product || '',
+          sku: result?.sku || '',
+          book_ids: result?.bookIds || [],
+          book_titles: result?.bookTitles || [],
+          book_quantities: result?.quantities || [],
+          cart_total_copies: result?.quantity || 0,
+          cart_amount_cent: result?.amountCent || 0,
+        });
+      } catch (rumError) {
+        console.warn('[RUM] checkout error skipped', rumError);
       }
     }
 
@@ -2191,12 +2218,10 @@
           const failureMessage = body.message || body.error || 'request failed';
           const orderRequestError = new Error(`POST /api/orders failed with HTTP ${response.status}: ${failureMessage}`);
           orderRequestError.name = 'OrderRequestError';
-          orderRequestError.orderResult = result;
-          throw orderRequestError;
+          reportHandledCheckoutError(orderRequestError, result, { keyRequest });
         }
         return result;
       } catch (error) {
-        if (error?.orderResult) throw error;
         if (updateStatus) {
           hidePurchaseLoading();
           setPhoneResult('failed', t('shopStatusFailed'), error.message);
@@ -2234,6 +2259,7 @@
             cart_amount_cent: cart.amountCent,
           },
         });
+        reportHandledCheckoutError(error, result, { keyRequest });
         return result;
       } finally {
         if (updateStatus) hidePurchaseLoading();

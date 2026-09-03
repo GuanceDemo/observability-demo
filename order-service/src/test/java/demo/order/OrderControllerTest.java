@@ -570,10 +570,15 @@ class OrderControllerTest {
         .contains("sessionId: rumCorrelation.sessionId")
         .contains("const orderRequestError = new Error(`POST /api/orders failed with HTTP ${response.status}: ${failureMessage}`)")
         .contains("orderRequestError.name = 'OrderRequestError'")
-        .contains("orderRequestError.orderResult = result")
-        .contains("if (error?.orderResult) throw error")
+        .contains("function reportHandledCheckoutError(error, result, context = {})")
+        .contains("if (httpStatus > 0 && httpStatus < 500) return")
+        .contains("error_category: httpStatus >= 500 ? 'backend_service' : 'network'")
+        .contains("reportHandledCheckoutError(orderRequestError, result, { keyRequest })")
+        .contains("reportHandledCheckoutError(error, result, { keyRequest })")
+        .doesNotContain("orderRequestError.orderResult = result")
+        .doesNotContain("if (error?.orderResult) throw error")
         .contains("els.submitBtn.addEventListener('click', async (event) => {")
-        .doesNotContain("window.DATAFLUX_RUM.addError")
+        .contains("window.DATAFLUX_RUM.addError(error, {")
         .contains("window.DATAFLUX_RUM.startSessionReplayRecording();")
         .contains("console.info('[RUM] initialized'")
         .contains("trackInteractions: true")
@@ -605,6 +610,9 @@ class OrderControllerTest {
         .doesNotContain("<script src=\"https://static.truewatch.com/browser-sdk/v3/dataflux-rum.js");
     assertThat(shopSource.split("sessionPersistence: BROWSER_SESSION_PERSISTENCE", -1))
         .hasSize(3);
+    assertThat(shopSource.split(
+            java.util.regex.Pattern.quote("window.DATAFLUX_RUM.addError(error, {"), -1))
+        .hasSize(2);
     assertThat(shopSource.indexOf("window.DATAFLUX_RUM.startSessionReplayRecording();"))
         .isLessThan(shopSource.indexOf("const rumSessionId = getRumSessionId();"));
 
