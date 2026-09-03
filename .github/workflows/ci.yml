@@ -169,6 +169,7 @@ jobs:
             --values charts/observability-demo/values-eks.yaml \
             --set-string rum.enabled=true \
             --set-string rum.applicationId=test-rum \
+            --set-string rum.gameApplicationId=test-game-rum \
             --set-string observability.clusterName=test-cluster \
             --set-string observabilityConsole.url=https://console.guance.com/ \
             --set-string observabilityConsole.workspaceId=test-workspace
@@ -185,6 +186,7 @@ jobs:
             --values charts/observability-demo/values-eks.yaml \
             --set-string rum.enabled=true \
             --set-string rum.applicationId=test-rum \
+            --set-string rum.gameApplicationId=test-game-rum \
             --set-string observability.clusterName=test-cluster \
             --set-string observabilityConsole.url=https://console.guance.com/ \
             --set-string observabilityConsole.workspaceId=test-workspace \
@@ -221,7 +223,7 @@ jobs:
           grep -q 'readonly DEMO_VERSION="2.3.6"' scripts/workshop.sh
           grep -q 'readonly DATAKIT_CHART_VERSION="2.5.0"' scripts/workshop.sh
           grep -q 'readonly HELM_VERSION="v3.17.3"' scripts/workshop.sh
-          for variable in EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID; do
+          for variable in EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID; do
             grep -q "$variable" scripts/workshop.sh
           done
           grep -q 'readonly PROVIDER="guance"' scripts/workshop.sh

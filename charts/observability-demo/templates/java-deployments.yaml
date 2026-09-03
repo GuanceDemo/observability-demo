@@ -1,6 +1,9 @@
 {{- if and .Values.rum.mobile.enabled (empty .Values.rum.mobile.androidApplicationId) (empty .Values.rum.mobile.iosApplicationId) -}}
 {{- fail "at least one of rum.mobile.androidApplicationId or rum.mobile.iosApplicationId is required when rum.mobile.enabled=true" -}}
 {{- end -}}
+{{- if and .Values.rum.enabled (not (empty .Values.rum.applicationId)) (eq .Values.rum.applicationId .Values.rum.gameApplicationId) -}}
+{{- fail "rum.gameApplicationId must differ from rum.applicationId when rum.enabled=true" -}}
+{{- end -}}
 {{- $services := list
   (dict "name" "gateway-service" "port" 8080)
   (dict "name" "order-service" "port" 8080)
@@ -136,6 +139,8 @@ spec:
               value: {{ $.Values.rum.enabled | quote }}
             - name: RUM_APPLICATION_ID
               value: {{ if $.Values.rum.enabled }}{{ required "rum.applicationId is required when rum.enabled=true" $.Values.rum.applicationId | quote }}{{ else }}""{{ end }}
+            - name: RUM_GAME_APPLICATION_ID
+              value: {{ if $.Values.rum.enabled }}{{ required "rum.gameApplicationId is required when rum.enabled=true" $.Values.rum.gameApplicationId | quote }}{{ else }}""{{ end }}
             - name: RUM_SERVICE
               value: {{ $.Values.rum.service | quote }}
             - name: RUM_GAME_SERVICE

@@ -315,6 +315,11 @@
       background: #f7faff;
     }
 
+    .shop-frame-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
     .android-nav {
       position: absolute;
       left: 0;
@@ -1343,7 +1348,18 @@
     .preview-stage[data-view="web"] .phone-camera,
     .preview-stage[data-view="web"] .phone-statusbar,
     .preview-stage[data-view="web"] .android-nav { display: none; }
-    .preview-stage[data-view="web"] .phone-frame-wrap { height: 100%; overflow: hidden; background: #fff; }
+    .preview-stage[data-view="web"] .phone-frame-wrap { height: 100%; overflow: hidden; background: #f7f5f2; }
+
+    .preview-stage[data-view="web"][data-scene="bookstore"] .shop-frame-canvas {
+      position: absolute;
+      left: 50%;
+      top: 0;
+      width: 1512px;
+      height: var(--web-bookstore-preview-height, 827px);
+      margin: 0 0 0 -756px;
+      transform: scale(var(--web-bookstore-preview-scale, .5));
+      transform-origin: top center;
+    }
 
     .preview-stage[data-view="mobile"] {
       grid-template-columns: minmax(280px, 390px) minmax(280px, 1fr);
@@ -2013,8 +2029,10 @@
                     <span class="battery"></span>
                   </span>
                 </div>
-                <div class="phone-frame-wrap">
-                  <iframe id="shopFrame" class="shop-frame" title="商城 Demo"></iframe>
+                <div class="phone-frame-wrap" id="shopFrameWrap">
+                  <div class="shop-frame-canvas" id="shopFrameCanvas">
+                    <iframe id="shopFrame" class="shop-frame" title="商城 Demo"></iframe>
+                  </div>
                 </div>
                 <div class="android-nav" aria-hidden="true"><span></span></div>
               </div>
@@ -2185,6 +2203,7 @@
     }
 
     const initialSelectedSceneId = initialSceneId();
+    const WEB_BOOKSTORE_VIEWPORT = Object.freeze({ width: 1512, height: 827 });
 
     const state = {
       busy: false,
@@ -2215,6 +2234,8 @@
 
     const els = {
       shopFrame: document.getElementById('shopFrame'),
+      shopFrameWrap: document.getElementById('shopFrameWrap'),
+      shopFrameCanvas: document.getElementById('shopFrameCanvas'),
       previewStage: document.getElementById('previewStage'),
       previewToggle: document.getElementById('previewToggle'),
       simulatorSceneName: document.getElementById('simulatorSceneName'),
@@ -2473,6 +2494,7 @@
       els.shopFrame.dataset.previewMode = state.previewMode;
       els.shopFrame.title = t(selectedBusinessScene().titleKey);
       if (els.previewStage) els.previewStage.dataset.scene = state.selectedSceneId;
+      updateWebBookstorePreviewScale();
     }
 
     function updateWorkbenchUrl() {
@@ -2585,9 +2607,34 @@
       return true;
     }
 
+    function updateWebBookstorePreviewScale() {
+      if (!els.shopFrameWrap || !els.shopFrameCanvas) return;
+      const fixedDesktopPreview = state.previewMode === 'web'
+        && state.selectedSceneId === 'bookstore';
+      if (!fixedDesktopPreview) {
+        els.shopFrameCanvas.style.removeProperty('--web-bookstore-preview-scale');
+        els.shopFrameCanvas.style.removeProperty('--web-bookstore-preview-height');
+        return;
+      }
+      const availableWidth = els.shopFrameWrap.clientWidth;
+      const availableHeight = els.shopFrameWrap.clientHeight;
+      if (availableWidth <= 0 || availableHeight <= 0) return;
+      const scale = Math.max(.1, availableWidth / WEB_BOOKSTORE_VIEWPORT.width);
+      const viewportHeight = availableHeight / scale;
+      els.shopFrameCanvas.style.setProperty(
+        '--web-bookstore-preview-scale',
+        String(scale),
+      );
+      els.shopFrameCanvas.style.setProperty(
+        '--web-bookstore-preview-height',
+        `${viewportHeight}px`,
+      );
+    }
+
     function renderPreviewMode() {
       const scene = selectedBusinessScene();
       if (els.previewStage) els.previewStage.dataset.view = state.previewMode;
+      updateWebBookstorePreviewScale();
       if (!els.previewToggle) return;
       let selectedTabId = '';
       els.previewToggle.querySelectorAll('[data-preview-mode]').forEach((button) => {
@@ -3633,6 +3680,11 @@
     }
 
     window.addEventListener('message', handleShopMessage);
+    const previewScaleObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(updateWebBookstorePreviewScale)
+      : null;
+    previewScaleObserver?.observe(els.shopFrameWrap);
+    window.addEventListener('resize', updateWebBookstorePreviewScale);
     document.querySelectorAll('[data-lang]').forEach((button) => {
       button.addEventListener('click', () => setLanguage(button.dataset.lang));
     });

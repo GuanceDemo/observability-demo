@@ -263,6 +263,7 @@ class DemoController {
   private final String project;
   private final boolean rumEnabled;
   private final String rumApplicationId;
+  private final String rumGameApplicationId;
   private final String rumDatakitOrigin;
   private final String rumEnv;
   private final String rumVersion;
@@ -287,6 +288,7 @@ class DemoController {
       @Value("${demo.project:mall-demo}") String project,
       @Value("${rum.enabled:false}") boolean rumEnabled,
       @Value("${rum.application-id:}") String rumApplicationId,
+      @Value("${rum.game-application-id:}") String rumGameApplicationId,
       @Value("${rum.datakit-origin:/rum-proxy}") String rumDatakitOrigin,
       @Value("${rum.env:${DD_ENV:demo}}") String rumEnv,
       @Value("${rum.version:${DD_VERSION:1.0.0}}") String rumVersion,
@@ -311,6 +313,7 @@ class DemoController {
     this.paymentUrl = paymentUrl;
     this.project = defaultIfBlank(project, "mall-demo");
     this.rumApplicationId = rumApplicationId == null ? "" : rumApplicationId.trim();
+    this.rumGameApplicationId = defaultIfBlank(rumGameApplicationId, this.rumApplicationId);
     this.rumEnabled = rumEnabled && !this.rumApplicationId.isBlank();
     this.rumDatakitOrigin = defaultIfBlank(rumDatakitOrigin, "/rum-proxy");
     this.rumEnv = defaultIfBlank(rumEnv, "demo");
@@ -372,6 +375,7 @@ class DemoController {
     Map<String, Object> response = new LinkedHashMap<>();
     response.put("enabled", rumEnabled);
     response.put("applicationId", rumApplicationId);
+    response.put("gameApplicationId", rumGameApplicationId);
     response.put("datakitOrigin", rumDatakitOrigin);
     response.put("service", rumService);
     response.put("gameService", rumGameService);

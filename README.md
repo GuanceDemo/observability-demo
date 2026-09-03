@@ -76,7 +76,7 @@ cd observability-demo
 
 ### 0. 准备信息并声明参数
 
-开始前先准备 DataWay URL，并在观测云创建 Web 类型的 RUM 应用、取得 Application ID 和 Workspace ID。然后集中声明本次安装使用的参数；后续命令无需再修改：
+开始前先准备 DataWay URL，并在观测云分别为商城和 WebGL 游戏创建 Web 类型的 RUM 应用、取得两个 Application ID 和 Workspace ID。然后集中声明本次安装使用的参数；后续命令无需再修改：
 
 ```bash
 export EKS_CLUSTER_NAME="observability-demo"
@@ -84,8 +84,9 @@ export EKS_CLUSTER_NAME="observability-demo"
 # DataWay URL 包含敏感 token，使用隐藏输入，避免写入 Shell 历史。
 read -rsp 'DataWay URL: ' DATAWAY_URL && export DATAWAY_URL && echo
 
-# RUM Application ID 非敏感，不需要填写 Public DataWay client token。
-read -rp 'RUM Application ID: ' RUM_APPLICATION_ID && export RUM_APPLICATION_ID
+# 两个 RUM Application ID 必须不同，均非敏感，不需要填写 Public DataWay client token。
+read -rp '商城 RUM Application ID: ' RUM_APPLICATION_ID && export RUM_APPLICATION_ID
+read -rp '游戏 RUM Application ID: ' RUM_GAME_APPLICATION_ID && export RUM_GAME_APPLICATION_ID
 read -rp '观测云 Workspace ID: ' GUANCE_WORKSPACE_ID && export GUANCE_WORKSPACE_ID
 ```
 
@@ -102,7 +103,7 @@ scripts/workshop.sh install
 安装成功后清理当前 Shell 中的参数：
 
 ```bash
-unset DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID
+unset DATAWAY_URL RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID
 ```
 
 常用维护命令：
@@ -171,11 +172,12 @@ helm upgrade --install demo charts/observability-demo \
   -f charts/observability-demo/values-eks.yaml \
   --set-string rum.enabled=true \
   --set-string rum.applicationId="$RUM_APPLICATION_ID" \
+  --set-string rum.gameApplicationId="$RUM_GAME_APPLICATION_ID" \
   --set-string observability.clusterName="$EKS_CLUSTER_NAME" \
   --set-string observabilityConsole.url="https://console.guance.com/" \
   --set-string observabilityConsole.workspaceId="$GUANCE_WORKSPACE_ID"
 
-unset RUM_APPLICATION_ID GUANCE_WORKSPACE_ID
+unset RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID
 
 for deployment in $(kubectl -n observability-demo get deployments -o name); do
   kubectl -n observability-demo rollout status "$deployment" --timeout=8m
@@ -245,8 +247,8 @@ scripts/install-obs-agent-eks-node-demo.sh --cleanup
 ## RUM 与配置边界
 
 - DataWay URL：敏感，只通过 DataKit 安装环境传入。
-- RUM application ID：非敏感，但必须先在可观测平台创建；默认 `RUM_ENABLED=false`。
-- Web 场景共用该 RUM application ID；商城默认 `service=mall-h5`，WebGL 游戏默认 `service=mall-game-h5`（`RUM_GAME_SERVICE` / `rum.gameService`）。
+- RUM application ID：非敏感，但必须先在可观测平台为商城和游戏分别创建；默认 `RUM_ENABLED=false`。
+- 商城使用 `RUM_APPLICATION_ID` / `rum.applicationId`，WebGL 游戏独立使用 `RUM_GAME_APPLICATION_ID` / `rum.gameApplicationId`；游戏默认 `service=mall-game-h5`（`RUM_GAME_SERVICE` / `rum.gameService`）。
 - project：非敏感，默认 `mall-demo`，用于跨指标、链路、日志和 RUM 关联。
 - DataKit provider：非敏感，可选 `guance` 或 `truewatch`，用于页面平台标识和默认控制台域名。
 - workspace ID：用于对应平台的 Trace 深链。

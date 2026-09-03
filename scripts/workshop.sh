@@ -33,7 +33,7 @@ Usage:
   scripts/workshop.sh cleanup [--with-datakit] [--yes]
 
 Required install environment variables:
-  EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID
+  EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID
 EOF
 }
 
@@ -54,13 +54,16 @@ validate_install_inputs() {
   local variable_name
   local -a missing=()
   for variable_name in \
-    EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID; do
+    EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID; do
     if [[ -z "${!variable_name:-}" ]]; then
       missing+=("$variable_name")
     fi
   done
   if (( ${#missing[@]} > 0 )); then
     die "Missing required environment variables: ${missing[*]}"
+  fi
+  if [[ "$RUM_APPLICATION_ID" == "$RUM_GAME_APPLICATION_ID" ]]; then
+    die "RUM_GAME_APPLICATION_ID must differ from RUM_APPLICATION_ID"
   fi
 }
 
@@ -281,10 +284,11 @@ install_workshop() {
     --set-string datakit.provider="$PROVIDER" \
     --set-string rum.enabled=true \
     --set-string rum.applicationId="$RUM_APPLICATION_ID" \
+    --set-string rum.gameApplicationId="$RUM_GAME_APPLICATION_ID" \
     --set-string observabilityConsole.url="https://console.guance.com/" \
     --set-string observabilityConsole.workspaceId="$GUANCE_WORKSPACE_ID" \
     --wait --timeout="$APP_TIMEOUT"
-  unset RUM_APPLICATION_ID GUANCE_WORKSPACE_ID
+  unset RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID
   kubectl -n "$DEMO_NAMESPACE" wait --for=condition=Available deployment --all \
     --timeout="$APP_TIMEOUT"
 

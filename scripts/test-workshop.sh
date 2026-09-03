@@ -165,6 +165,7 @@ run_install() {
     EKS_CLUSTER_NAME="${EKS_CLUSTER_NAME-}" \
     DATAWAY_URL="${DATAWAY_URL-}" \
     RUM_APPLICATION_ID="${RUM_APPLICATION_ID-}" \
+    RUM_GAME_APPLICATION_ID="${RUM_GAME_APPLICATION_ID-}" \
     GUANCE_WORKSPACE_ID="${GUANCE_WORKSPACE_ID-}" \
     bash "$WORKSHOP_SCRIPT" install "$@" > "$RUN_OUTPUT" 2>&1 <<< "$input"
   RUN_EXIT=$?
@@ -176,6 +177,7 @@ set_valid_inputs() {
   EKS_CLUSTER_NAME="eks-workshop"
   DATAWAY_URL="https://example.invalid/workshop-test-dataway"
   RUM_APPLICATION_ID="rum-app-id"
+  RUM_GAME_APPLICATION_ID="game-rum-app-id"
   GUANCE_WORKSPACE_ID="workspace-id"
   WORKSHOP_TEST_EXISTING_DATAKIT=false
   WORKSHOP_TEST_LB_MODE=hostname
@@ -183,14 +185,23 @@ set_valid_inputs() {
 }
 
 test_missing_inputs() {
-  unset EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID || true
+  unset EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID || true
   WORKSHOP_TEST_EXISTING_DATAKIT=false
   WORKSHOP_TEST_LB_MODE=hostname
   WORKSHOP_LOAD_BALANCER_TIMEOUT_SECONDS=600
   run_install missing "" --yes
   assert_failure
-  assert_output_contains "Missing required environment variables: EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID GUANCE_WORKSPACE_ID"
+  assert_output_contains "Missing required environment variables: EKS_CLUSTER_NAME DATAWAY_URL RUM_APPLICATION_ID RUM_GAME_APPLICATION_ID GUANCE_WORKSPACE_ID"
   [[ ! -s "$WORKSHOP_TEST_LOG" ]] || fail "missing-input validation called external commands"
+}
+
+test_shared_rum_application_is_rejected() {
+  set_valid_inputs
+  RUM_GAME_APPLICATION_ID="$RUM_APPLICATION_ID"
+  run_install shared-rum "" --yes
+  assert_failure
+  assert_output_contains "RUM_GAME_APPLICATION_ID must differ from RUM_APPLICATION_ID"
+  [[ ! -s "$WORKSHOP_TEST_LOG" ]] || fail "shared RUM validation called external commands"
 }
 
 test_confirmation() {
@@ -220,6 +231,8 @@ test_hostname_install() {
   assert_log_contains "helm upgrade --install demo"
   assert_log_contains "--set-string image.tag=2.3.6"
   assert_log_contains "--set-string datakit.provider=guance"
+  assert_log_contains "--set-string rum.applicationId=rum-app-id"
+  assert_log_contains "--set-string rum.gameApplicationId=game-rum-app-id"
   assert_log_contains "--set-string observability.clusterName=eks-workshop"
   assert_log_contains "--set-string observabilityConsole.url=https://console.guance.com/"
   assert_log_excludes "$DATAWAY_URL"
@@ -318,6 +331,7 @@ EOF
     EKS_CLUSTER_NAME="$EKS_CLUSTER_NAME" \
     DATAWAY_URL="$DATAWAY_URL" \
     RUM_APPLICATION_ID="$RUM_APPLICATION_ID" \
+    RUM_GAME_APPLICATION_ID="$RUM_GAME_APPLICATION_ID" \
     GUANCE_WORKSPACE_ID="$GUANCE_WORKSPACE_ID" \
     bash "$WORKSHOP_SCRIPT" install --yes > "$RUN_OUTPUT" 2>&1
   RUN_EXIT=$?
@@ -332,6 +346,7 @@ EOF
 }
 
 test_missing_inputs
+test_shared_rum_application_is_rejected
 test_confirmation
 test_hostname_install
 test_existing_datakit_protection

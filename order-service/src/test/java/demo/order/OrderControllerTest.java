@@ -274,6 +274,7 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.project").value("mall-demo"))
         .andExpect(jsonPath("$.datakitProvider").value("guance"))
         .andExpect(jsonPath("$.applicationId").value("order_web_docker_demo"))
+        .andExpect(jsonPath("$.gameApplicationId").value("game_web_docker_demo"))
         .andExpect(jsonPath("$.gameService").value("mall-game-h5"))
         .andExpect(jsonPath("$.enabled").value(true))
         .andExpect(jsonPath("$.clientToken").doesNotExist())
@@ -300,6 +301,18 @@ class OrderControllerTest {
         .perform(get("/api/demo/rum-config"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.datakitProvider").value("truewatch"));
+  }
+
+  @Test
+  void rumConfigFallsBackToStorefrontApplicationIdWhenGameIdIsBlank() throws Exception {
+    MockMvc fallbackMvc =
+        MockMvcBuilders.standaloneSetup(newDemoControllerWithGameApplicationId("  ")).build();
+
+    fallbackMvc
+        .perform(get("/api/demo/rum-config"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.applicationId").value("order_web_docker_demo"))
+        .andExpect(jsonPath("$.gameApplicationId").value("order_web_docker_demo"));
   }
 
   @Test
@@ -555,6 +568,12 @@ class OrderControllerTest {
         .contains("applicationId: rumCorrelation.applicationId")
         .contains("viewId: rumCorrelation.viewId")
         .contains("sessionId: rumCorrelation.sessionId")
+        .contains("const orderRequestError = new Error(`POST /api/orders failed with HTTP ${response.status}: ${failureMessage}`)")
+        .contains("orderRequestError.name = 'OrderRequestError'")
+        .contains("orderRequestError.orderResult = result")
+        .contains("if (error?.orderResult) throw error")
+        .contains("els.submitBtn.addEventListener('click', async (event) => {")
+        .doesNotContain("window.DATAFLUX_RUM.addError")
         .contains("window.DATAFLUX_RUM.startSessionReplayRecording();")
         .contains("console.info('[RUM] initialized'")
         .contains("trackInteractions: true")
@@ -654,6 +673,21 @@ class OrderControllerTest {
         .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
         .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
         .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")
+        .contains("id=\"shopFrameWrap\"")
+        .contains("id=\"shopFrameCanvas\"")
+        .contains("const WEB_BOOKSTORE_VIEWPORT = Object.freeze({ width: 1512, height: 827 })")
+        .contains(".preview-stage[data-view=\"web\"][data-scene=\"bookstore\"] .shop-frame-canvas")
+        .contains("left: 50%;\n      top: 0;")
+        .contains("margin: 0 0 0 -756px;")
+        .contains("height: var(--web-bookstore-preview-height, 827px);")
+        .contains("transform: scale(var(--web-bookstore-preview-scale, .5));")
+        .contains("transform-origin: top center;")
+        .contains("const scale = Math.max(.1, availableWidth / WEB_BOOKSTORE_VIEWPORT.width);")
+        .contains("const viewportHeight = availableHeight / scale;")
+        .contains("'--web-bookstore-preview-height',\n        `${viewportHeight}px`")
+        .contains("removeProperty('--web-bookstore-preview-height')")
+        .doesNotContain("availableHeight / WEB_BOOKSTORE_VIEWPORT.height")
+        .contains("new ResizeObserver(updateWebBookstorePreviewScale)")
         .doesNotContain("demo.local/bookstore")
         .doesNotContain(">↻</span>")
         .doesNotContain("id=\"datakitProviderBadge\"")
@@ -814,6 +848,7 @@ class OrderControllerTest {
         .contains("fetch(SCENE_API_PREFIX + '/api/demo/rum-config'")
         .contains("guance: 'https://static.guance.com'")
         .contains("truewatch: 'https://static.truewatch.com'")
+        .contains("config.gameApplicationId || config.applicationId || ''")
         .contains("config.gameService || 'mall-game-h5'")
         .contains("var sampling = query.get('sampling') || '4'")
         .contains("sampling = '4'")
@@ -827,6 +862,7 @@ class OrderControllerTest {
         .contains("replayCanvasMaxEncodedBytes: captureProfile.maxEncodedBytes")
         .contains("trackViewsManually: true")
         .contains("trackLongTasks: true")
+        .contains("applicationId: gameApplicationId")
         .contains("name: GAME_VIEW_NAME")
         .contains("setRumContext('business_scene', SCENE_ID)")
         .contains("source: 'observability-demo-scene'")
@@ -1259,6 +1295,20 @@ class OrderControllerTest {
         iosApplicationId);
   }
 
+  private DemoController newDemoControllerWithGameApplicationId(String gameApplicationId) {
+    return newDemoController(
+        new RestTemplate(),
+        "test",
+        "1.0.0",
+        "mall-h5",
+        "guance",
+        "",
+        "",
+        gameApplicationId,
+        "android_rum_demo",
+        "ios_rum_demo");
+  }
+
   private DemoController newDemoController(
       RestTemplate restTemplate,
       String rumEnv,
@@ -1269,6 +1319,30 @@ class OrderControllerTest {
       String workspaceId,
       String androidApplicationId,
       String iosApplicationId) {
+    return newDemoController(
+        restTemplate,
+        rumEnv,
+        rumVersion,
+        rumService,
+        datakitProvider,
+        consoleUrl,
+        workspaceId,
+        "game_web_docker_demo",
+        androidApplicationId,
+        iosApplicationId);
+  }
+
+  private DemoController newDemoController(
+      RestTemplate restTemplate,
+      String rumEnv,
+      String rumVersion,
+      String rumService,
+      String datakitProvider,
+      String consoleUrl,
+      String workspaceId,
+      String gameApplicationId,
+      String androidApplicationId,
+      String iosApplicationId) {
     return new DemoController(
         restTemplate,
         "http://order-service.test",
@@ -1277,6 +1351,7 @@ class OrderControllerTest {
         "mall-demo",
         true,
         "order_web_docker_demo",
+        gameApplicationId,
         "/rum-proxy",
         rumEnv,
         rumVersion,

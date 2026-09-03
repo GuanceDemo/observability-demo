@@ -193,8 +193,9 @@
     var response = await fetch(SCENE_API_PREFIX + '/api/demo/rum-config', { cache: 'no-store' })
     if (!response.ok) throw new Error('RUM config HTTP ' + response.status)
     var config = await response.json()
-    bootstrapState.applicationId = config.applicationId || ''
-    if (!config.enabled || !config.applicationId) {
+    var gameApplicationId = config.gameApplicationId || config.applicationId || ''
+    bootstrapState.applicationId = gameApplicationId
+    if (!config.enabled || !gameApplicationId) {
       bootstrapState.statusKey = 'rumDisabled'
       postSceneMessage('rum-status', { status: 'disabled' })
       return
@@ -216,7 +217,7 @@
     var service = config.gameService || 'mall-game-h5'
     var autoInterval = captureProfile.interval
     window.DATAFLUX_RUM.init({
-      applicationId: config.applicationId,
+      applicationId: gameApplicationId,
       datakitOrigin: config.datakitOrigin || undefined,
       service: service,
       env: config.env || 'demo',

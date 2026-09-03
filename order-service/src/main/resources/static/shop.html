@@ -628,6 +628,7 @@
         if (pendingCheckout === 'single') await handleCheckout();
         if (pendingCheckout === 'traffic') await handleTrafficCheckout();
       } catch (error) {
+        if (error?.orderResult) throw error;
         addRumAction('auth_login_failure', { reason: error.message, visitor_id: state.visitorId });
         log(s('authLogFailure', { message: error.message }), {
           status: 'error',
@@ -2186,8 +2187,16 @@
             cart_amount_cent: cart.amountCent,
           },
         });
+        if (!response.ok) {
+          const failureMessage = body.message || body.error || 'request failed';
+          const orderRequestError = new Error(`POST /api/orders failed with HTTP ${response.status}: ${failureMessage}`);
+          orderRequestError.name = 'OrderRequestError';
+          orderRequestError.orderResult = result;
+          throw orderRequestError;
+        }
         return result;
       } catch (error) {
+        if (error?.orderResult) throw error;
         if (updateStatus) {
           hidePurchaseLoading();
           setPhoneResult('failed', t('shopStatusFailed'), error.message);

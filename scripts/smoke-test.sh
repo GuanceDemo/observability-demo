@@ -63,6 +63,10 @@ fi
 expect_status 200 "${base_url}/api/demo/rum-config"
 grep -Fq "\"project\":\"${expected_project}\"" "${response_file}"
 grep -Fq "\"gameService\":\"${expected_game_service}\"" "${response_file}"
+grep -Fq '"gameApplicationId":' "${response_file}"
+if [[ -n "${RUM_GAME_APPLICATION_ID:-}" ]]; then
+  grep -Fq "\"gameApplicationId\":\"${RUM_GAME_APPLICATION_ID}\"" "${response_file}"
+fi
 expect_status 200 "${base_url}/api/demo/auth/session" \
   -H "X-Demo-Visitor-Id: ${visitor_id}"
 grep -Fq '"authenticated":false' "${response_file}"

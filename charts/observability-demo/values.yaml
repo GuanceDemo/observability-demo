@@ -48,6 +48,7 @@ redis:
 rum:
   enabled: false
   applicationId: ""
+  gameApplicationId: ""
   service: mall-h5
   gameService: mall-game-h5
   mobile:
