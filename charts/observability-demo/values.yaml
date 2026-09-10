@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   registry: pubrepo.jiagouyun.com
   owner: demo
-  tag: "2.3.6"
+  tag: "2.3.12"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []

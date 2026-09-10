@@ -117,8 +117,8 @@ android {
         applicationId "com.malldemomobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 8
-        versionName "2.3.15"
+        versionCode 9
+        versionName "2.3.16"
         manifestPlaceholders["profileableByShell"] = diagnosticProfileable.toString()
         buildConfigField "boolean", "DIAGNOSTIC_DISABLE_REPLAY", diagnosticDisableReplay.toString()
         buildConfigField "String", "GATEWAY_URL", buildConfigString(configuredGatewayUrl)
