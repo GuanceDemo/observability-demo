@@ -1,0 +1,219 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -13,3 +13,5 @@
+ import argparse
+ import asyncio
++import uuid
++from collections import deque
+ import sys
+@@ -52,5 +52,15 @@ GFXINFO_CACHE = None
+ GFXINFO_CACHE_AT = 0.0
+ GFXINFO_CACHE_TTL_SECONDS = 5
++INTERACTION_ACK = None
++INTERACTION_ACK_SEQUENCE = 0
++INTERACTION_ACK_EPOCH = uuid.uuid4().hex
++INTERACTION_ACK_HISTORY = deque(maxlen=64)
++INTERACTION_ACK_EVENT = None
++INTERACTION_ACK_TASK = None
++INTERACTION_LOGCAT_PROCESS = None
++INTERACTION_LAST_NATIVE_KEY = None
++INTERACTION_LOG_PREFIX = "MALL_DEMO_INTERACTION_ACK "
++INTERACTION_ACTION_PATTERN = re.compile(r"^[a-z0-9_.:-]{1,80}$")
+ 
+ 
+ def parse_discovery_file(path):
+@@ -109,6 +117,181 @@ async def handle_gfxinfo(request):
+     return web.json_response(metrics)
+ 
+ 
++def parse_interaction_ack_line(line):
++    marker_at = line.find(INTERACTION_LOG_PREFIX)
++    if marker_at < 0:
++        return None
++    try:
++        payload = json.loads(line[marker_at + len(INTERACTION_LOG_PREFIX):])
++    except (TypeError, ValueError, json.JSONDecodeError):
++        return None
++    if not isinstance(payload, dict):
++        return None
++    version = payload.get("version")
++    native_sequence = payload.get("sequence")
++    action = payload.get("action")
++    elapsed_realtime_ms = payload.get("androidElapsedRealtimeMs")
++    if (
++        version != 1
++        or type(native_sequence) is not int
++        or native_sequence < 1
++        or not isinstance(action, str)
++        or not INTERACTION_ACTION_PATTERN.fullmatch(action)
++        or type(elapsed_realtime_ms) is not int
++        or elapsed_realtime_ms < 0
++    ):
++        return None
++    return {
++        "version": 1,
++        "appSequence": native_sequence,
++        "action": action,
++        "androidElapsedRealtimeMs": elapsed_realtime_ms,
++    }
++
++
++async def monitor_interaction_acks():
++    global INTERACTION_ACK, INTERACTION_ACK_SEQUENCE
++    global INTERACTION_LAST_NATIVE_KEY, INTERACTION_LOGCAT_PROCESS
++    adb = os.environ.get(
++        "ANDROID_ADB", "/home/cherry/android-sdk/platform-tools/adb"
++    )
++    serial = os.environ.get("ANDROID_SERIAL", "emulator-5554")
++    if not os.path.isfile(adb) or not os.access(adb, os.X_OK):
++        logging.error("Interaction acknowledgement monitor cannot access adb.")
++        return
++
++    while True:
++        try:
++            process = await asyncio.create_subprocess_exec(
++                adb,
++                "-s",
++                serial,
++                "logcat",
++                "-T",
++                "1",
++                "-v",
++                "raw",
++                "MallDemoInteraction:I",
++                "*:S",
++                stdout=asyncio.subprocess.PIPE,
++                stderr=asyncio.subprocess.DEVNULL,
++            )
++            INTERACTION_LOGCAT_PROCESS = process
++            while True:
++                line = await process.stdout.readline()
++                if not line:
++                    break
++                ack = parse_interaction_ack_line(
++                    line.decode("utf-8", errors="replace").strip()
++                )
++                if not ack:
++                    continue
++                native_key = (
++                    ack["appSequence"],
++                    ack["androidElapsedRealtimeMs"],
++                )
++                if native_key == INTERACTION_LAST_NATIVE_KEY:
++                    continue
++                INTERACTION_LAST_NATIVE_KEY = native_key
++                INTERACTION_ACK_SEQUENCE += 1
++                INTERACTION_ACK = {
++                    **ack,
++                    "sequence": INTERACTION_ACK_SEQUENCE,
++                    "epoch": INTERACTION_ACK_EPOCH,
++                    "acknowledgedAt": int(time.time() * 1000),
++                }
++                INTERACTION_ACK_HISTORY.append(INTERACTION_ACK)
++                if INTERACTION_ACK_EVENT:
++                    INTERACTION_ACK_EVENT.set()
++            await process.wait()
++        except asyncio.CancelledError:
++            raise
++        except Exception as error:
++            logging.warning(
++                "Interaction acknowledgement monitor restarted: %s", error
++            )
++        finally:
++            if INTERACTION_LOGCAT_PROCESS and INTERACTION_LOGCAT_PROCESS.returncode is None:
++                INTERACTION_LOGCAT_PROCESS.terminate()
++                await INTERACTION_LOGCAT_PROCESS.wait()
++            INTERACTION_LOGCAT_PROCESS = None
++        await asyncio.sleep(1)
++
++
++async def start_interaction_ack_monitor(app):
++    global INTERACTION_ACK_EVENT, INTERACTION_ACK_TASK
++    INTERACTION_ACK_EVENT = asyncio.Event()
++    INTERACTION_ACK_TASK = asyncio.create_task(monitor_interaction_acks())
++
++
++async def stop_interaction_ack_monitor(app):
++    global INTERACTION_ACK_TASK
++    if not INTERACTION_ACK_TASK:
++        return
++    INTERACTION_ACK_TASK.cancel()
++    try:
++        await INTERACTION_ACK_TASK
++    except asyncio.CancelledError:
++        pass
++    INTERACTION_ACK_TASK = None
++
++
++async def handle_interaction_ack(request):
++    """
++    GET /api/v1/emulator/interaction-ack?after=<sequence>&waitMs=<0..5000>
++    Returns the first structured APK onPress acknowledgement newer than
++    `after`. Raw logcat contents are never returned.
++    """
++    allowed = {"after", "waitMs", "cursor", "epoch"}
++    if set(request.query) - allowed or request.query.get("cursor", "0") not in ("0", "1"):
++        return web.json_response({"error": "invalid interaction cursor"}, status=400)
++    if request.query.get("cursor") == "1":
++        return web.json_response({
++            "version": 2,
++            "sequence": INTERACTION_ACK_SEQUENCE,
++            "epoch": INTERACTION_ACK_EPOCH,
++        })
++    try:
++        after = int(request.query.get("after", "0"))
++        wait_ms = int(request.query.get("waitMs", "0"))
++    except ValueError:
++        return web.json_response({"error": "invalid interaction cursor"}, status=400)
++    if after < 0 or wait_ms < 0 or wait_ms > 5000:
++        return web.json_response({"error": "invalid interaction cursor"}, status=400)
++    epoch = request.query.get("epoch")
++    def cursor_expired():
++        return epoch and (
++            epoch != INTERACTION_ACK_EPOCH or after > INTERACTION_ACK_SEQUENCE
++            or (INTERACTION_ACK_HISTORY and after < INTERACTION_ACK_HISTORY[0]["sequence"] - 1)
++        )
++
++    if cursor_expired():
++        return web.json_response({"error": "interaction cursor expired"}, status=409)
++
++    def next_ack():
++        if not epoch:
++            return INTERACTION_ACK if INTERACTION_ACK and INTERACTION_ACK["sequence"] > after else None
++        return next((ack for ack in INTERACTION_ACK_HISTORY if ack["sequence"] > after), None)
++
++    current = next_ack()
++    if current:
++        return web.json_response(current)
++    if wait_ms and INTERACTION_ACK_EVENT:
++        INTERACTION_ACK_EVENT.clear()
++        current = next_ack()
++        if not current:
++            try:
++                await asyncio.wait_for(INTERACTION_ACK_EVENT.wait(), timeout=wait_ms / 1000)
++            except asyncio.TimeoutError:
++                pass
++    if cursor_expired():
++        return web.json_response({"error": "interaction cursor expired"}, status=409)
++    current = next_ack()
++    if not current:
++        return web.Response(status=204)
++    return web.json_response(current)
++
++
+ async def handle_gps(request):
+     """
+     POST /api/v1/emulator/gps
+@@ -411,8 +566,11 @@ def init_app(videobridge_token):
+     # Register routes
+     app.router.add_get("/api/v1/emulator/status", handle_status)
+     app.router.add_get("/api/v1/emulator/gfxinfo", handle_gfxinfo)
++    app.router.add_get("/api/v1/emulator/interaction-ack", handle_interaction_ack)
+     app.router.add_post("/api/v1/emulator/gps", handle_gps)
+     app.router.add_get("/api/v1/emulator/logcat", handle_logcat)
+     app.router.add_get("/api/v1/emulator/ws-jsep", handle_websocket_jsep)
++    app.on_startup.append(start_interaction_ack_monitor)
++    app.on_cleanup.append(stop_interaction_ack_monitor)
+ 
+     return app

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+ADB=/home/cherry/android-sdk/platform-tools/adb
+SERIAL=emulator-5554
+APK_PATH=/opt/mall-demo-webrtc/app-safe-release.apk
+
+"$ADB" -s "$SERIAL" wait-for-device
+for _ in $(seq 1 180); do
+  if [[ "$("$ADB" -s "$SERIAL" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" == "1" ]]; then
+    BOOTED=true
+    break
+  fi
+  sleep 1
+done
+if [[ "${BOOTED:-false}" != "true" ]]; then
+  echo "Android Emulator did not finish booting" >&2
+  exit 1
+fi
+
+# 720/293 preserves the previous ~393 dp viewport while cutting the software
+# renderer and VP8 encoder pixel count by 56% compared with 1080/440.
+"$ADB" -s "$SERIAL" shell wm size 720x1600
+"$ADB" -s "$SERIAL" shell wm density 293
+"$ADB" -s "$SERIAL" uninstall com.malldemomobile >/dev/null 2>&1 || true
+"$ADB" -s "$SERIAL" uninstall com.malldemomobile.demofaults >/dev/null 2>&1 || true
+"$ADB" -s "$SERIAL" install -r "$APK_PATH"
+"$ADB" -s "$SERIAL" shell monkey -p com.malldemomobile.safe -c android.intent.category.LAUNCHER 1

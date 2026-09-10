@@ -15,3 +15,9 @@ charts/*.tgz
 .codex
 .trellis
 AGENTS.md
+
+# Python caches and local Android/WebRTC deployment artifacts
+__pycache__/
+*.pyc
+scripts/android-webrtc/*.apk
+scripts/android-webrtc/player-dist/

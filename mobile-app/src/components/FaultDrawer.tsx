@@ -13,14 +13,15 @@ import {
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
-  FAULT_EDGE_TAG_WIDTH,
-  FAULT_EDGE_TAG_MIN_HEIGHT,
+  FAULT_TOOLBAR_BUTTON_SIZE,
   faultDrawerSafeSpacing,
 } from '../layout';
 import type {DesignTokens} from '../designTokens';
-import type {FaultHistoryItem, FaultScenario} from '../types';
+import type {FaultHistoryItem, FaultScenario, StoreLanguage} from '../types';
 import {openTraceUrl} from '../traceLink';
+import {businessFaultCopy, faultPhaseLabel, isBusinessFault, type BusinessFaultRun} from '../businessFaults';
 import {AppButton} from './AppButton';
+import {StoreIcon} from './StoreIcon';
 
 const DRAWER_SPRING = {
   damping: 24,
@@ -35,25 +36,27 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 interface EdgeTagProps {
   tokens: DesignTokens;
+  language?: StoreLanguage;
   activeFault: FaultScenario | null;
   onPress: () => void;
 }
 
-export function FaultEdgeTag({
+export function FaultToolbarButton({
   tokens,
+  language = 'zh',
   activeFault,
   onPress,
 }: EdgeTagProps) {
-  const shortened = activeFault
-    ? activeFault.title.replace('移动端', '').slice(0, 2)
-    : '故障';
   return (
     <Pressable
       testID="fault-edge-tag"
       accessibilityRole="button"
       accessibilityLabel={
-        activeFault ? `故障控制台，当前 ${activeFault.title}` : '打开故障控制台'
+        activeFault
+          ? faultCopy(language, 'edgeActive', {title: activeFault.title})
+          : faultCopy(language, 'edgeOpen')
       }
+      hitSlop={6}
       onPress={onPress}
       style={({pressed}) => [
         styles.edgeTag,
@@ -63,6 +66,7 @@ export function FaultEdgeTag({
             ? tokens.colors.danger
             : tokens.colors.line,
           opacity: pressed ? 0.76 : 1,
+          transform: [{scale: pressed ? 0.96 : 1}],
         },
       ]}>
       {activeFault && (
@@ -71,11 +75,11 @@ export function FaultEdgeTag({
           style={[styles.activeDot, {backgroundColor: tokens.colors.danger}]}
         />
       )}
-      <Text
-        numberOfLines={2}
-        style={[styles.edgeTagText, {color: tokens.colors.text}]}>
-        !{'\n'}{shortened}
-      </Text>
+      <StoreIcon
+        name="fault"
+        color={activeFault ? tokens.colors.danger : tokens.colors.accent}
+        size={20}
+      />
     </Pressable>
   );
 }
@@ -83,6 +87,7 @@ export function FaultEdgeTag({
 interface DrawerProps {
   visible: boolean;
   tokens: DesignTokens;
+  language?: StoreLanguage;
   scenarios: FaultScenario[];
   selectedScenarioId: string | null;
   activeFault: FaultScenario | null;
@@ -90,6 +95,9 @@ interface DrawerProps {
   busy: boolean;
   traceUrl: string;
   traceHint: string;
+  run?: BusinessFaultRun | null;
+  rumUrl?: string;
+  replayUrl?: string;
   onClose: () => void;
   onSelect: (scenarioId: string) => void;
   onInject: (scenario: FaultScenario) => void;
@@ -99,6 +107,7 @@ interface DrawerProps {
 export function FaultDrawer({
   visible,
   tokens,
+  language = 'zh',
   scenarios,
   selectedScenarioId,
   activeFault,
@@ -106,6 +115,9 @@ export function FaultDrawer({
   busy,
   traceUrl,
   traceHint,
+  run = null,
+  rumUrl = '',
+  replayUrl = '',
   onClose,
   onSelect,
   onInject,
@@ -279,6 +291,9 @@ export function FaultDrawer({
   const swipe = useMemo(
     () =>
       PanResponder.create({
+        // The header is a dedicated drag surface. Claim its initial touch so a
+        // short/coalesced drag retains the first movement in its release dx.
+        onStartShouldSetPanResponder: () => visible,
         onMoveShouldSetPanResponder: (_, gesture) =>
           visible &&
           Math.abs(gesture.dx) > 10 &&
@@ -319,7 +334,7 @@ export function FaultDrawer({
       <View style={styles.modal}>
         <AnimatedPressable
           testID="fault-drawer-backdrop"
-          accessibilityLabel="关闭故障抽屉"
+          accessibilityLabel={faultCopy(language, 'close')}
           onPress={onClose}
           style={[
             StyleSheet.absoluteFill,
@@ -331,7 +346,6 @@ export function FaultDrawer({
         />
         <Animated.View
           testID="fault-drawer"
-          {...swipe.panHandlers}
           style={[
             styles.drawer,
             {
@@ -343,6 +357,7 @@ export function FaultDrawer({
           ]}>
           <View
             testID="fault-drawer-header"
+            {...swipe.panHandlers}
             style={[
               styles.drawerHeader,
               {
@@ -355,14 +370,14 @@ export function FaultDrawer({
             ]}>
             <View style={styles.headerCopy}>
               <Text style={[styles.drawerTitle, {color: tokens.colors.text}]}>
-                故障注入控制台
+                {faultCopy(language, 'title')}
               </Text>
               <Text style={[styles.drawerSubtitle, {color: tokens.colors.muted}]}>
-                移动端与服务端真实故障
+                {faultCopy(language, 'subtitle')}
               </Text>
             </View>
             <AppButton
-              label="收起 ›"
+              label={faultCopy(language, 'collapse')}
               tokens={tokens}
               variant="ghost"
               compact
@@ -378,10 +393,12 @@ export function FaultDrawer({
                 paddingBottom: safeSpacing.contentPaddingBottom,
               },
             ]}
+            overScrollMode="never"
             showsVerticalScrollIndicator={false}>
-            <SectionTitle title="故障层级" tokens={tokens} />
+            <SectionTitle title={faultCopy(language, 'layers')} tokens={tokens} />
             <ScrollView
               horizontal
+              overScrollMode="never"
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.tabs}>
               {layers.map(layer => {
@@ -412,14 +429,14 @@ export function FaultDrawer({
                             : tokens.colors.muted,
                         },
                       ]}>
-                      {layer}
+                      {layerLabel(language, layer)}
                     </Text>
                   </Pressable>
                 );
               })}
             </ScrollView>
 
-            <SectionTitle title="具体场景" tokens={tokens} />
+            <SectionTitle title={faultCopy(language, 'scenarios')} tokens={tokens} />
             <View style={styles.scenarioGrid}>
               {scenarios
                 .filter(item => item.layer === selectedLayer)
@@ -454,7 +471,7 @@ export function FaultDrawer({
                           styles.scenarioMeta,
                           {color: tokens.colors.muted},
                         ]}>
-                        {item.execution} · {item.kind}
+                        {businessFaultCopy(item.id, language)?.trigger ?? `${item.execution} · ${item.kind}`}
                       </Text>
                     </Pressable>
                   );
@@ -473,18 +490,20 @@ export function FaultDrawer({
                 <Text style={[styles.detailTitle, {color: tokens.colors.text}]}>
                   {selected.title}
                 </Text>
-                <View style={styles.pills}>
+                {!isBusinessFault(selected.id) && <View style={styles.pills}>
                   <Pill text={selected.kind} tokens={tokens} />
                   <Pill text={selected.execution} tokens={tokens} />
-                </View>
+                </View>}
                 <Text style={[styles.detailBody, {color: tokens.colors.muted}]}>
                   {selected.description}
                 </Text>
-                <Meta label="service" value={selected.service} tokens={tokens} />
-                <Meta label="target" value={selected.target} tokens={tokens} />
+                {!isBusinessFault(selected.id) && <>
+                  <Meta label="service" value={selected.service} tokens={tokens} />
+                  <Meta label="target" value={selected.target} tokens={tokens} />
+                </>}
                 <Text
                   style={[styles.observationLabel, {color: tokens.colors.text}]}>
-                  预期观测
+                  {faultCopy(language, 'observation')}
                 </Text>
                 <Text
                   style={[styles.detailBody, {color: tokens.colors.muted}]}>
@@ -493,7 +512,7 @@ export function FaultDrawer({
               </View>
             )}
 
-            <SectionTitle title="当前活动故障" tokens={tokens} />
+            <SectionTitle title={faultCopy(language, 'active')} tokens={tokens} />
             <View
               style={[
                 styles.activeCard,
@@ -507,17 +526,22 @@ export function FaultDrawer({
                 },
               ]}>
               <Text style={[styles.activeTitle, {color: tokens.colors.text}]}>
-                {activeFault?.title ?? '未注入异常'}
+                {activeFault?.title ?? (run ? businessFaultCopy(run.scenarioId, language)?.title : faultCopy(language, 'none'))}
               </Text>
               <Text style={[styles.activeDetail, {color: tokens.colors.muted}]}>
-                {activeFault
-                  ? `${activeFault.layer} / ${activeFault.kind}，收起抽屉不会恢复。`
-                  : '选择上方场景后注入；同一时间保留一个活动故障。'}
+                {run && (!activeFault || isBusinessFault(activeFault.id))
+                  ? faultPhaseLabel(run.phase, language)
+                  : activeFault
+                  ? faultCopy(language, 'activeDetail', {
+                      layer: layerLabel(language, activeFault.layer),
+                      kind: activeFault.kind,
+                    })
+                  : faultCopy(language, 'noneDetail')}
               </Text>
             </View>
             <View style={styles.actionRow}>
               <AppButton
-                label="注入选中故障"
+                label={selected && isBusinessFault(selected.id) ? (language === 'en' ? 'Enable scenario' : '启用场景') : faultCopy(language, 'inject')}
                 tokens={tokens}
                 busy={busy}
                 disabled={!selected}
@@ -525,7 +549,7 @@ export function FaultDrawer({
                 style={styles.actionButton}
               />
               <AppButton
-                label="恢复"
+                label={activeFault && isBusinessFault(activeFault.id) ? (language === 'en' ? 'Restore baseline' : '恢复基线') : faultCopy(language, 'recover')}
                 tokens={tokens}
                 variant="danger"
                 busy={busy}
@@ -535,7 +559,17 @@ export function FaultDrawer({
               />
             </View>
 
-            <SectionTitle title="链路入口" tokens={tokens} />
+            {run && <View style={[styles.traceCard, styles.rumCard, {backgroundColor: tokens.colors.surface, borderColor: tokens.colors.line}]}>
+              <Text style={[styles.activeTitle, {color: tokens.colors.text}]}>{language === 'en' ? 'RUM & Session Replay' : 'RUM 与会话回放'}</Text>
+              <Text selectable style={[styles.activeDetail, {color: tokens.colors.muted}]}>{run.id}</Text>
+              <Text style={[styles.activeDetail, {color: tokens.colors.muted}]}>
+                {language === 'en' ? 'Open the filtered views, then select a recorded view to play the session. Data may take a moment to arrive.' : '打开本次场景的视图列表，选择带回放的视图即可播放。数据上传后稍等片刻再查看。'}
+              </Text>
+              <AppButton label={language === 'en' ? 'Open RUM views' : '查看 RUM 视图'} tokens={tokens} variant="secondary" disabled={!rumUrl} onPress={() => { openTraceUrl(rumUrl).catch(() => undefined); }} style={styles.traceButton} />
+              <AppButton label={language === 'en' ? 'Find session replay' : '查找会话回放'} tokens={tokens} variant="secondary" disabled={!replayUrl} onPress={() => { openTraceUrl(replayUrl).catch(() => undefined); }} style={styles.traceButton} />
+            </View>}
+
+            <SectionTitle title={faultCopy(language, 'trace')} tokens={tokens} />
             <View
               style={[
                 styles.traceCard,
@@ -548,7 +582,11 @@ export function FaultDrawer({
                 {traceHint}
               </Text>
               <AppButton
-                label={traceUrl ? '打开链路详情' : '等待链路'}
+                label={
+                  traceUrl
+                    ? faultCopy(language, 'openTrace')
+                    : faultCopy(language, 'waitTrace')
+                }
                 tokens={tokens}
                 variant="secondary"
                 compact
@@ -560,11 +598,11 @@ export function FaultDrawer({
               />
             </View>
 
-            <SectionTitle title="最近注入记录" tokens={tokens} />
+            <SectionTitle title={faultCopy(language, 'history')} tokens={tokens} />
             <View style={styles.history}>
               {history.length === 0 ? (
                 <Text style={[styles.emptyHistory, {color: tokens.colors.muted}]}>
-                  注入故障后，操作记录会显示在这里。
+                  {faultCopy(language, 'historyEmpty')}
                 </Text>
               ) : (
                 history.map(item => (
@@ -593,7 +631,7 @@ export function FaultDrawer({
                                 : tokens.colors.accent,
                           },
                         ]}>
-                        {item.status}
+                        {faultStatus(language, item.status)}
                       </Text>
                     </View>
                     <Text
@@ -611,6 +649,112 @@ export function FaultDrawer({
       </View>
     </Modal>
   );
+}
+
+type FaultCopyKey =
+  | 'edgeActive'
+  | 'edgeOpen'
+  | 'close'
+  | 'title'
+  | 'subtitle'
+  | 'collapse'
+  | 'layers'
+  | 'scenarios'
+  | 'observation'
+  | 'active'
+  | 'none'
+  | 'activeDetail'
+  | 'noneDetail'
+  | 'inject'
+  | 'recover'
+  | 'trace'
+  | 'openTrace'
+  | 'waitTrace'
+  | 'history'
+  | 'historyEmpty';
+
+const FAULT_COPY: Record<StoreLanguage, Record<FaultCopyKey, string>> = {
+  zh: {
+    edgeActive: '故障控制台，当前 {title}',
+    edgeOpen: '打开故障控制台',
+    close: '关闭故障抽屉',
+    title: '故障注入控制台',
+    subtitle: '移动端与服务端真实故障',
+    collapse: '收起 ›',
+    layers: '故障层级',
+    scenarios: '具体场景',
+    observation: '预期观测',
+    active: '当前活动故障',
+    none: '未注入异常',
+    activeDetail: '{layer} / {kind}，收起抽屉不会恢复。',
+    noneDetail: '选择上方场景后注入；同一时间保留一个活动故障。',
+    inject: '注入选中故障',
+    recover: '恢复',
+    trace: '链路入口',
+    openTrace: '打开链路详情',
+    waitTrace: '等待链路',
+    history: '最近注入记录',
+    historyEmpty: '注入故障后，操作记录会显示在这里。',
+  },
+  en: {
+    edgeActive: 'Fault console, active: {title}',
+    edgeOpen: 'Open fault console',
+    close: 'Close fault drawer',
+    title: 'Fault Injection Console',
+    subtitle: 'Real native and server faults',
+    collapse: 'Close ›',
+    layers: 'Fault layer',
+    scenarios: 'Scenario',
+    observation: 'Expected observation',
+    active: 'Active fault',
+    none: 'No injected fault',
+    activeDetail: '{layer} / {kind}. Closing the drawer does not recover it.',
+    noneDetail: 'Choose a scenario to inject. Only one fault remains active.',
+    inject: 'Inject selected fault',
+    recover: 'Recover',
+    trace: 'Trace entry',
+    openTrace: 'Open trace details',
+    waitTrace: 'Waiting for trace',
+    history: 'Recent injections',
+    historyEmpty: 'Fault operations will appear here after injection.',
+  },
+};
+
+function faultCopy(
+  language: StoreLanguage,
+  key: FaultCopyKey,
+  params: Record<string, string> = {},
+): string {
+  return FAULT_COPY[language][key].replace(
+    /\{([a-zA-Z0-9_]+)\}/g,
+    (_, name: string) => params[name] ?? '',
+  );
+}
+
+function faultStatus(
+  language: StoreLanguage,
+  status: FaultHistoryItem['status'],
+): string {
+  const copy = {
+    zh: {active: '活动中', recovered: '已恢复', failed: '失败'},
+    en: {active: 'active', recovered: 'recovered', failed: 'failed'},
+  } as const;
+  return copy[language][status];
+}
+
+function layerLabel(language: StoreLanguage, layer: string): string {
+  const labels: Record<string, [string, string]> = {
+    frontend: ['前端体验', 'Frontend'],
+    runtime: ['运行时', 'Runtime'],
+    network: ['网络请求', 'Network'],
+    service: ['后端服务', 'Backend'],
+    backend: ['后端', 'Backend'],
+    dependency: ['依赖', 'Dependency'],
+    infrastructure: ['基础设施', 'Infrastructure'],
+    jvm: ['JVM', 'JVM'],
+  };
+  const value = labels[layer];
+  return value ? value[language === 'en' ? 1 : 0] : layer;
 }
 
 function SectionTitle({
@@ -820,6 +964,7 @@ const styles = StyleSheet.create({
   recoverButton: {
     minWidth: 82,
   },
+  rumCard: {marginTop: 12},
   traceCard: {
     padding: 12,
     borderWidth: 1,
@@ -860,33 +1005,19 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   edgeTag: {
-    position: 'absolute',
-    right: -1,
-    top: '43%',
-    zIndex: 50,
-    width: FAULT_EDGE_TAG_WIDTH,
-    minHeight: FAULT_EDGE_TAG_MIN_HEIGHT,
-    paddingHorizontal: 3,
-    paddingVertical: 7,
+    width: FAULT_TOOLBAR_BUTTON_SIZE,
+    height: FAULT_TOOLBAR_BUTTON_SIZE,
     borderWidth: 1,
-    borderTopLeftRadius: 12,
-    borderBottomLeftRadius: 12,
+    borderRadius: FAULT_TOOLBAR_BUTTON_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  edgeTagText: {
-    width: '100%',
-    fontSize: 9,
-    lineHeight: 13,
-    fontWeight: '900',
-    textAlign: 'center',
-  },
   activeDot: {
     position: 'absolute',
-    left: 5,
-    top: 6,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    right: 5,
+    top: 5,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
 });

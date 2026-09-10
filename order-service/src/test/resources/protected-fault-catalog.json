@@ -1,0 +1,278 @@
+[
+  {
+    "id": "frontend_click_error",
+    "title": "前端点击无响应",
+    "layer": "frontend",
+    "kind": "javascript_error",
+    "service": "mall-h5",
+    "target": "browser",
+    "mode": "client",
+    "description": "按钮点击触发未捕获 JS 异常，展示 RUM Error、Browser Log 和用户行为。",
+    "expectedObservation": "RUM Error 与点击 Action 在同一 View 中出现，并可关联 Browser Log。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "web"
+    ],
+    "scenes": [
+      "bookstore"
+    ]
+  },
+  {
+    "id": "frontend_slow_resource",
+    "title": "前端资源加载慢",
+    "layer": "frontend",
+    "kind": "slow_resource",
+    "service": "mall-h5",
+    "target": "browser",
+    "mode": "client",
+    "description": "浏览器发起慢资源请求，展示 RUM Resource 慢加载。",
+    "expectedObservation": "RUM Resource 出现高 duration，并与触发它的 Action 关联。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "web"
+    ],
+    "scenes": [
+      "bookstore"
+    ]
+  },
+  {
+    "id": "frontend_sourcemap_error",
+    "title": "SourceMap 源码定位错误",
+    "layer": "frontend",
+    "kind": "sourcemap_error",
+    "service": "mall-h5",
+    "target": "assets/checkout-sourcemap-fault.min.js",
+    "mode": "client",
+    "description": "按钮点击触发压缩 JS 中的空指针错误，上传 SourceMap 后展示源码文件与原始行号。",
+    "expectedObservation": "RUM Error 还原到原始源码文件、函数和行号。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "web"
+    ],
+    "scenes": [
+      "bookstore"
+    ]
+  },
+  {
+    "id": "mobile_native_crash",
+    "title": "移动端 Native Crash",
+    "layer": "runtime",
+    "kind": "native_crash",
+    "service": "mall-mobile",
+    "target": "native-main-thread",
+    "mode": "client",
+    "description": "通过平台原生桥触发真实未捕获异常，App 将退出。",
+    "expectedObservation": "重启后上传 Native Crash，符号化堆栈指向 DemoFaultModule。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "android",
+      "ios"
+    ],
+    "scenes": [
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "mobile_android_anr",
+    "title": "Android ANR",
+    "layer": "runtime",
+    "kind": "anr",
+    "service": "mall-mobile",
+    "target": "android-main-thread",
+    "mode": "client",
+    "description": "Android 原生主线程短时阻塞，触发卡顿或 ANR 观测。",
+    "expectedObservation": "RUM Long Task/ANR 记录包含主线程阻塞现场。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "android"
+    ],
+    "scenes": [
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "mobile_ios_freeze",
+    "title": "iOS Freeze",
+    "layer": "runtime",
+    "kind": "freeze",
+    "service": "mall-mobile",
+    "target": "ios-main-thread",
+    "mode": "client",
+    "description": "iOS 原生主线程短时阻塞，产生 Freeze 观测。",
+    "expectedObservation": "RUM Freeze 记录包含主线程阻塞现场。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "ios"
+    ],
+    "scenes": [
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "order_slow",
+    "title": "订单入口慢响应",
+    "layer": "service",
+    "kind": "latency",
+    "service": "order-service",
+    "target": "order-service",
+    "mode": "order_slow",
+    "description": "订单入口 sleep，展示入口服务慢 Span 与接口响应慢。",
+    "expectedObservation": "App Resource 与 gateway/order-service 慢 Span 通过 Trace 关联。",
+    "ttlSeconds": 300,
+    "clientSide": false,
+    "execution": "server",
+    "platforms": [
+      "web",
+      "android",
+      "ios"
+    ],
+    "scenes": [
+      "bookstore",
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "inventory_redis_timeout",
+    "title": "库存 Redis 超时",
+    "layer": "dependency",
+    "kind": "timeout",
+    "service": "inventory-service",
+    "target": "redis",
+    "mode": "redis_timeout",
+    "description": "库存服务阻塞等待 Redis，展示依赖层故障和错误 Span。",
+    "expectedObservation": "库存错误 Span、Redis 依赖耗时与订单失败日志出现在同一 Trace。",
+    "ttlSeconds": 300,
+    "clientSide": false,
+    "execution": "server",
+    "platforms": [
+      "web",
+      "android",
+      "ios"
+    ],
+    "scenes": [
+      "bookstore",
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "payment_slow",
+    "title": "支付慢方法",
+    "layer": "service",
+    "kind": "latency",
+    "service": "payment-service",
+    "target": "payment-service",
+    "mode": "payment_slow",
+    "description": "支付服务 sleep，展示慢 Span、慢接口和 Profile。",
+    "expectedObservation": "支付慢 Span、接口耗时与 Profile 热点可相互跳转。",
+    "ttlSeconds": 300,
+    "clientSide": false,
+    "execution": "server",
+    "platforms": [
+      "web",
+      "android",
+      "ios"
+    ],
+    "scenes": [
+      "bookstore",
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "payment_error",
+    "title": "支付 5xx 错误",
+    "layer": "service",
+    "kind": "http_5xx",
+    "service": "payment-service",
+    "target": "payment-service",
+    "mode": "payment_error",
+    "description": "支付服务返回 5xx，展示错误率、日志和失败 Span。",
+    "expectedObservation": "App Error/Resource、网关 5xx、支付错误 Span 与日志通过业务 ID 关联。",
+    "ttlSeconds": 300,
+    "clientSide": false,
+    "execution": "server",
+    "platforms": [
+      "web",
+      "android",
+      "ios"
+    ],
+    "scenes": [
+      "bookstore",
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "payment_cpu_burn",
+    "title": "支付 CPU 繁忙",
+    "layer": "jvm",
+    "kind": "cpu",
+    "service": "payment-service",
+    "target": "payment-service",
+    "mode": "payment_cpu_burn",
+    "description": "支付服务短时 CPU burn，展示 JVM/进程层资源异常。",
+    "expectedObservation": "支付服务 CPU、JVM、Profile 与受影响 Trace 在同一时间窗出现。",
+    "ttlSeconds": 180,
+    "clientSide": false,
+    "execution": "server",
+    "platforms": [
+      "web",
+      "android",
+      "ios"
+    ],
+    "scenes": [
+      "bookstore",
+      "mobile-storefront"
+    ]
+  },
+  {
+    "id": "game_render_overload",
+    "title": "游戏渲染过载",
+    "layer": "frontend",
+    "kind": "render_overload",
+    "service": "mall-game-h5",
+    "target": "webgl-main-thread",
+    "mode": "client",
+    "description": "粒子风暴与密集场景负载持续约十秒，并通过间歇性主线程压力制造稳定可见的持续掉帧。",
+    "expectedObservation": "同一 RUM View 中出现开始/恢复 Action、多段 Long Task、FPS 与掉帧统计，以及持续卡顿的 WebGL Replay。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "web"
+    ],
+    "scenes": [
+      "webgl-game"
+    ]
+  },
+  {
+    "id": "game_asset_load_failure",
+    "title": "资源加载失败",
+    "layer": "frontend",
+    "kind": "resource_error",
+    "service": "mall-game-h5",
+    "target": "/api/demo/game-assets/orbital-shield-texture.webp",
+    "mode": "client",
+    "description": "飞船护盾纹理请求返回 404，游戏持续显示降级材质并在约十秒后切换到内置备用材质。",
+    "expectedObservation": "同一 RUM View 中出现 404 Resource、handled Error、失败/重试/恢复 Action，以及 Replay 中持续可见的降级材质。",
+    "ttlSeconds": 0,
+    "clientSide": true,
+    "execution": "client",
+    "platforms": [
+      "web"
+    ],
+    "scenes": [
+      "webgl-game"
+    ]
+  }
+]

@@ -1,5 +1,6 @@
 package demo.order;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -74,6 +75,48 @@ class DemoController {
               List.of("web"),
               List.of("bookstore")),
           new FaultScenario(
+              "mobile_detail_render_error",
+              "商品详情渲染失败",
+              "frontend",
+              "render_error",
+              "mall-mobile",
+              "book-detail",
+              "client",
+              "启用后打开任意图书，详情渲染读取缺失字段并显示可重试错误区域。",
+              "Replay 还原详情打开过程，RUM Error 与真实 JS 堆栈定位渲染失败。",
+              0,
+              true,
+              List.of("android"),
+              List.of("mobile-storefront")),
+          new FaultScenario(
+              "mobile_add_cart_no_feedback",
+              "加购无反馈",
+              "frontend",
+              "state_update_missing",
+              "mall-mobile",
+              "shopping-cart",
+              "client",
+              "启用后给尚未加入购物车的图书点击加购，购物车状态与反馈没有更新。",
+              "Replay 展示点击与缺失反馈，Action 和业务结果校验记录预期与实际数量。",
+              0,
+              true,
+              List.of("android"),
+              List.of("mobile-storefront")),
+          new FaultScenario(
+              "mobile_cart_total_stale",
+              "购物车金额未更新",
+              "frontend",
+              "stale_derived_state",
+              "mall-mobile",
+              "cart-summary",
+              "client",
+              "启用后在购物车修改数量或删除商品，合计仍保留修改前的金额。",
+              "Replay 展示数量与合计不一致，业务校验记录预期与实际金额；恢复后重算。",
+              0,
+              true,
+              List.of("android"),
+              List.of("mobile-storefront")),
+          new FaultScenario(
               "mobile_white_screen",
               "移动端白屏",
               "frontend",
@@ -85,7 +128,7 @@ class DemoController {
               "RUM View/Action 与自定义 Error 记录白屏开始和自动恢复。",
               0,
               true,
-              List.of("android", "ios"),
+              List.of("ios"),
               List.of("mobile-storefront")),
           new FaultScenario(
               "mobile_js_error",
@@ -99,7 +142,21 @@ class DemoController {
               "RUM Error 可关联当前 View、Action、Log 和 SourceMap。",
               0,
               true,
-              List.of("android", "ios"),
+              List.of("ios"),
+              List.of("mobile-storefront")),
+          new FaultScenario(
+              "mobile_checkout_ui_block",
+              "结算预览卡顿",
+              "runtime",
+              "ui_block",
+              "mall-mobile",
+              "android-main-thread",
+              "client",
+              "启用后打开购物车的结算明细，原生主线程阻塞约 1.8 秒并自动恢复。",
+              "原生 Long Task 时长和线程堆栈关联结算预览 Action 与 Replay。",
+              0,
+              true,
+              List.of("android"),
               List.of("mobile-storefront")),
           new FaultScenario(
               "mobile_native_crash",
@@ -144,6 +201,34 @@ class DemoController {
               List.of("ios"),
               List.of("mobile-storefront")),
           new FaultScenario(
+              "mobile_content_slow",
+              "图书内容加载慢",
+              "network",
+              "slow_response",
+              "mall-mobile",
+              "/api/demo/mobile/book-content",
+              "client",
+              "启用后打开任意图书，真实内容请求等待约 3.5 秒后显示内容。",
+              "Replay 的加载过程对应真实 Resource 耗时；服务端等待如实进入 Trace。",
+              0,
+              true,
+              List.of("android"),
+              List.of("mobile-storefront")),
+          new FaultScenario(
+              "mobile_content_timeout",
+              "请求超时与重试",
+              "network",
+              "request_deadline",
+              "mall-mobile",
+              "/api/demo/mobile/book-content",
+              "client",
+              "启用后打开任意图书，内容请求达到 2 秒截止时间后失败；恢复并重试。",
+              "Resource 保留真实取消分类，业务日志记录截止时间和尝试；Replay 展示失败与恢复。",
+              0,
+              true,
+              List.of("android"),
+              List.of("mobile-storefront")),
+          new FaultScenario(
               "mobile_slow_network",
               "移动端慢网络",
               "network",
@@ -155,7 +240,7 @@ class DemoController {
               "RUM Resource 出现高 duration，并关联 DDTrace 与业务请求头。",
               0,
               true,
-              List.of("android", "ios"),
+              List.of("ios"),
               List.of("mobile-storefront")),
           new FaultScenario(
               "order_slow",
@@ -277,6 +362,10 @@ class DemoController {
   private final String datakitProvider;
   private final String observabilityConsoleUrl;
   private final String observabilityWorkspaceId;
+  private final String mobileDevicePlayerUrl;
+  private final String mobileDevicePlayerVersion;
+  private final String mobileDeviceApkVersion;
+  private final String mobileDeviceApkMinAndroidVersion;
   private final boolean kubernetesLogReaderEnabled;
   private final BackendLogReader backendLogReader;
 
@@ -303,6 +392,10 @@ class DemoController {
       @Value("${demo.datakit-provider:guance}") String datakitProvider,
       @Value("${demo.observability-console-url:}") String observabilityConsoleUrl,
       @Value("${demo.observability-workspace-id:}") String observabilityWorkspaceId,
+      @Value("${demo.mobile-device.player-url:}") String mobileDevicePlayerUrl,
+      @Value("${demo.mobile-device.player-version:}") String mobileDevicePlayerVersion,
+      @Value("${demo.mobile-device.apk-version:}") String mobileDeviceApkVersion,
+      @Value("${demo.mobile-device.apk-min-android-version:7.0}") String mobileDeviceApkMinAndroidVersion,
       @Value("${demo.log-directory:/var/log/observability-demo}") String logDirectory,
       @Value("${demo.kubernetes-log-reader.enabled:true}") boolean kubernetesLogReaderEnabled,
       @Value("${demo.kubernetes-log-reader.tail-lines:240}") int kubernetesLogTailLines,
@@ -336,6 +429,13 @@ class DemoController {
             defaultIfBlank(observabilityConsoleUrl, defaultConsoleUrl(this.datakitProvider)));
     this.observabilityWorkspaceId =
         observabilityWorkspaceId == null ? "" : observabilityWorkspaceId.trim();
+    this.mobileDevicePlayerUrl = normalizeMobileDevicePlayerUrl(mobileDevicePlayerUrl);
+    this.mobileDevicePlayerVersion = normalizeMobileDeviceVersion(mobileDevicePlayerVersion);
+    this.mobileDeviceApkVersion = normalizeMobileDeviceVersion(mobileDeviceApkVersion);
+    this.mobileDeviceApkMinAndroidVersion = defaultIfBlank(mobileDeviceApkMinAndroidVersion, "7.0");
+    if (!this.mobileDeviceApkMinAndroidVersion.matches("[0-9]+(\\.[0-9]+){0,2}")) {
+      throw new IllegalArgumentException("Invalid mobile device minimum Android version");
+    }
     this.kubernetesLogReaderEnabled = kubernetesLogReaderEnabled;
     this.backendLogReader =
         new CompositeBackendLogReader(
@@ -357,7 +457,45 @@ class DemoController {
     if (!observabilityWorkspaceId.isBlank()) {
       response.put("workspaceId", observabilityWorkspaceId);
     }
+    response.put("mobileDeviceEnabled", !mobileDevicePlayerUrl.isBlank());
+    if (!mobileDevicePlayerUrl.isBlank()) {
+      response.put("mobileDevicePlayerUrl", mobileDevicePlayerUrl);
+      if (!mobileDevicePlayerVersion.isBlank()) response.put("mobileDevicePlayerVersion", mobileDevicePlayerVersion);
+      if (!mobileDeviceApkVersion.isBlank()) response.put("mobileDeviceApkVersion", mobileDeviceApkVersion);
+      response.put("mobileDeviceApkMinAndroidVersion", mobileDeviceApkMinAndroidVersion);
+    }
     return response;
+  }
+
+  private String normalizeMobileDeviceVersion(String value) {
+    String version = value == null ? "" : value.trim();
+    if (!version.isEmpty() && !version.matches("[A-Za-z0-9][A-Za-z0-9._+\\-]{0,127}")) {
+      throw new IllegalArgumentException("Invalid mobile device version");
+    }
+    return version;
+  }
+
+  private String normalizeMobileDevicePlayerUrl(String value) {
+    if (value == null || value.isBlank()) return "";
+    try {
+      URI uri = URI.create(value.trim());
+      if (!"https".equalsIgnoreCase(uri.getScheme())
+          || uri.getHost() == null
+          || uri.getHost().isBlank()
+          || uri.getRawUserInfo() != null
+          || uri.getFragment() != null) {
+        return "";
+      }
+      URI normalizedUri = uri.normalize();
+      String normalized = normalizedUri.toString();
+      String rawPath = normalizedUri.getRawPath();
+      if (rawPath != null && rawPath.endsWith("/")) return normalized;
+      int queryIndex = normalized.indexOf('?');
+      if (queryIndex < 0) return normalized + "/";
+      return normalized.substring(0, queryIndex) + "/" + normalized.substring(queryIndex);
+    } catch (IllegalArgumentException ignored) {
+      return "";
+    }
   }
 
   @GetMapping("/status")

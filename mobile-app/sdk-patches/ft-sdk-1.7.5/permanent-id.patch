@@ -1,0 +1,104 @@
+--- a/com/ft/sdk/FTViewPermanentIdResolver.java
++++ b/com/ft/sdk/FTViewPermanentIdResolver.java
+@@ -9,10 +9,14 @@
+ 
+ import com.ft.sdk.garble.utils.Utils;
+ 
++import java.util.IdentityHashMap;
++import java.util.HashMap;
++import java.util.Map;
++import java.util.ArrayList;
+ import java.security.MessageDigest;
+ import java.security.NoSuchAlgorithmException;
+ 
+-final class FTViewPermanentIdResolver {
++public final class FTViewPermanentIdResolver {
+     private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+ 
+     private FTViewPermanentIdResolver() {
+@@ -47,6 +51,68 @@
+         return path.toString();
+     }
+ 
++    /** One synchronous UI snapshot only. Never retain across traversals. */
++    public static final class Snapshot {
++        private final IdentityHashMap<View, String> paths = new IdentityHashMap<>();
++        private final IdentityHashMap<View, Integer> indices = new IdentityHashMap<>();
++        private final IdentityHashMap<ViewGroup, Boolean> indexedParents = new IdentityHashMap<>();
++
++        public String resolve(View view) {
++            String path = resolvePath(view);
++            return Utils.isNullOrEmpty(path) ? null : md5(path);
++        }
++
++        String resolvePath(View view) {
++            if (view == null) return null;
++            // Package/context and screen fallback are specific to the target view.
++            return resolvePackageName(view) + "/" + escape(resolveScreenNamespace(view))
++                    + hierarchyPath(view);
++        }
++
++        private String hierarchyPath(View view) {
++            String known = paths.get(view);
++            if (known != null) return known;
++            ArrayList<View> pending = new ArrayList<>();
++            View current = view;
++            while (current != null && !paths.containsKey(current)) {
++                pending.add(current);
++                ViewParent parent = current.getParent();
++                current = parent instanceof View ? (View) parent : null;
++            }
++            String path = current == null ? "" : paths.get(current);
++            for (int i = pending.size() - 1; i >= 0; i--) {
++                View node = pending.get(i);
++                String resourceName = resolveResourceName(node);
++                String segment = !Utils.isNullOrEmpty(resourceName)
++                        ? escape(resourceName) : "cls:" + escape(node.getClass().getName());
++                path = path + "/" + segment + "#" + siblingIndex(node);
++                paths.put(node, path);
++            }
++            return path;
++        }
++
++        private int siblingIndex(View view) {
++            ViewParent parent = view.getParent();
++            if (!(parent instanceof ViewGroup)) return 0;
++            ViewGroup group = (ViewGroup) parent;
++            if (!indexedParents.containsKey(group)) {
++                Map<Class<?>, Integer> counts = new HashMap<>();
++                for (int i = 0; i < group.getChildCount(); i++) {
++                    View child = group.getChildAt(i);
++                    if (child == null) continue;
++                    Class<?> type = child.getClass();
++                    Integer count = counts.get(type);
++                    int index = count == null ? 0 : count;
++                    indices.put(child, index);
++                    counts.put(type, index + 1);
++                }
++                indexedParents.put(group, Boolean.TRUE);
++            }
++            Integer index = indices.get(view);
++            return index == null ? 0 : index;
++        }
++    }
++
+     private static String resolvePackageName(View view) {
+         Context context = view.getContext();
+         if (context != null && !Utils.isNullOrEmpty(context.getPackageName())) {
+@@ -96,13 +162,14 @@
+     }
+ 
+     private static String resolveResourceName(View view) {
+-        if (view.getId() == View.NO_ID) {
++        int viewId = view.getId();
++        if (viewId == View.NO_ID || (viewId & 0xFF000000) == 0) {
+             return null;
+         }
+ 
+         try {
+             Resources resources = view.getResources();
+-            return resources == null ? null : resources.getResourceName(view.getId());
++            return resources == null ? null : resources.getResourceName(viewId);
+         } catch (Resources.NotFoundException ignored) {
+             return null;
+         }

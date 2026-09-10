@@ -316,6 +316,70 @@ class OrderControllerTest {
   }
 
   @Test
+  void demoConfigPublishesOnlyAValidatedHttpsMobileDevicePlayerUrl() throws Exception {
+    MockMvc securePlayerMvc =
+        MockMvcBuilders.standaloneSetup(
+                newDemoControllerWithMobileDevicePlayerUrl(
+                    "https://device.example.test/session/demo"))
+            .build();
+
+    securePlayerMvc
+        .perform(get("/api/demo/config"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.mobileDeviceEnabled").value(true))
+        .andExpect(
+            jsonPath("$.mobileDevicePlayerUrl")
+                .value("https://device.example.test/session/demo/"));
+
+    MockMvc playerWithQueryMvc =
+        MockMvcBuilders.standaloneSetup(
+                newDemoControllerWithMobileDevicePlayerUrl(
+                    "https://device.example.test/player?url=https%3A%2F%2Fgateway.example.test%2Fsession&embedded=1"))
+            .build();
+    playerWithQueryMvc
+        .perform(get("/api/demo/config"))
+        .andExpect(status().isOk())
+        .andExpect(
+            jsonPath("$.mobileDevicePlayerUrl")
+                .value(
+                    "https://device.example.test/player/?url=https%3A%2F%2Fgateway.example.test%2Fsession&embedded=1"));
+
+    for (String unsafeUrl :
+        List.of(
+            "http://device.example.test/player",
+            "https://user:password@device.example.test/player",
+            "https://device.example.test/player#token",
+            "not-a-url")) {
+      MockMvc unsafePlayerMvc =
+          MockMvcBuilders.standaloneSetup(newDemoControllerWithMobileDevicePlayerUrl(unsafeUrl))
+              .build();
+      unsafePlayerMvc
+          .perform(get("/api/demo/config"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.mobileDeviceEnabled").value(false))
+          .andExpect(jsonPath("$.mobileDevicePlayerUrl").doesNotExist());
+    }
+  }
+
+  @Test
+  void androidVersionsAreIndependentOfJavaRumVersion() {
+    DemoController configured = newDemoControllerWithMobileDevicePlayerUrl(
+        "https://device.example.test/android-emulator-webrtc/", " player-20260910 ", "2.3.15", "7.0");
+    assertThat(configured.config()).containsEntry("version", "1.0.0")
+        .containsEntry("mobileDevicePlayerVersion", "player-20260910")
+        .containsEntry("mobileDeviceApkVersion", "2.3.15")
+        .containsEntry("mobileDeviceApkMinAndroidVersion", "7.0");
+    assertThat(newDemoControllerWithMobileDevicePlayerUrl("https://device.example.test/").config())
+        .doesNotContainKeys("mobileDevicePlayerVersion", "mobileDeviceApkVersion");
+    assertThat(newDemoControllerWithMobileDevicePlayerUrl("", "player-1", "2.3.15").config())
+        .doesNotContainKeys("mobileDevicePlayerVersion", "mobileDeviceApkVersion", "mobileDeviceApkMinAndroidVersion");
+    org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+        () -> newDemoControllerWithMobileDevicePlayerUrl("https://device.example.test/", "bad?version"));
+    org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+        () -> newDemoControllerWithMobileDevicePlayerUrl("https://device.example.test/", "", "", "invalid"));
+  }
+
+  @Test
   void mobileConfigUsesPlatformApplicationIdsAndContainsNoClientToken() throws Exception {
     MockMvc mobileMvc =
         MockMvcBuilders.standaloneSetup(
@@ -677,7 +741,7 @@ class OrderControllerTest {
         .contains("const SHOP_BUILD_ID = '20260817-bookstore-v44'")
         .contains("const GAME_BUILD_ID = '20260901-fault-rum-link-v13'")
         .contains("scene.id === 'webgl-game' ? GAME_BUILD_ID : SHOP_BUILD_ID")
-        .contains("assets/selfheal-i18n.js?v=20260901-observability-delay-v10")
+        .contains("assets/selfheal-i18n.js?v=20260910-android-runtime-versions")
         .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
         .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
         .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")
@@ -706,6 +770,8 @@ class OrderControllerTest {
         .contains("id=\"previewModeMobileTab\"")
         .contains("aria-controls=\"previewStage\" tabindex=\"0\"")
         .contains("id=\"previewStage\" data-view=\"web\" role=\"tabpanel\" aria-labelledby=\"previewModeWebTab\"")
+        .contains("allow=\"autoplay; fullscreen\"")
+        .contains("referrerpolicy=\"no-referrer\"")
         .contains("id=\"faultLayerTabs\" role=\"radiogroup\"")
         .contains("id=\"faultScenarioTabs\" role=\"radiogroup\"")
         .doesNotContain("id=\"faultLayerTabs\" role=\"tablist\"")
@@ -767,10 +833,87 @@ class OrderControllerTest {
         .doesNotContain("RUM_VIEW_TIME_PADDING_MS")
         .contains("target=\"_blank\"")
         .contains("rel=\"noopener noreferrer\"")
-        .contains("els.openShopLink.href = standaloneUrl")
+        .contains("function mobileDevicePlayerUrl()")
+        .contains("function mobileDeviceAssetUrl(filename)")
+        .contains("new URL(`/downloads/${filename}`, playerUrl)")
+        .contains("id=\"apkDownloadToggle\"")
+        .contains("id=\"apkDownloadPopover\"")
+        .contains("id=\"apkDownloadQr\"")
+        .contains("id=\"apkDownloadLink\"")
+        .contains("mobileDeviceAssetUrl('mall-demo-safe.apk')")
+        .contains("mobileDeviceAssetUrl('mall-demo-safe.svg')")
+        .contains("function toggleApkDownload()")
+        .contains("event.key === 'Escape' && !els.apkDownloadPopover?.hidden")
+        .contains("function isAndroidDeviceScene()")
+        .contains("function usesAndroidDeviceFrame()")
+        .contains("id=\"androidDebugPanel\"")
+        .contains("id=\"androidRtt\"")
+        .contains("id=\"androidDataChannelRtt\"")
+        .contains("id=\"androidPacketLoss\"")
+        .contains("id=\"androidDecodedFps\"")
+        .contains("id=\"androidInputToFrame\"")
+        .contains("id=\"androidInputToVisualChange\"")
+        .contains("id=\"androidInputToAppAck\"")
+        .contains("id=\"androidVideoLatency\"")
+        .contains("id=\"androidSnapshotLatency\"")
+        .contains("normalizeAndroidLatencyWindow")
+        .contains("id=\"androidMediaReadiness\"")
+        .contains("id=\"androidFrameRecovery\"")
+        .contains("id=\"androidInputQueueDelay\"")
+        .contains("id=\"androidJitterBufferAverage\"")
+        .contains("id=\"androidDecodeAverage\"")
+        .contains("id=\"androidFreezes\"")
+        .contains("id=\"androidGfxP50\"")
+        .contains("id=\"androidGfxP90\"")
+        .contains("id=\"androidGfxP95\"")
+        .contains("id=\"androidCandidatePath\"")
+        .contains("dataChannelRttMs: finiteDebugNumber(payload?.dataChannelRttMs)")
+        .contains("jitterBufferAverageMs: finiteDebugNumber(payload?.jitterBufferAverageMs)")
+        .contains("averageDecodeTimeMs: finiteDebugNumber(payload?.averageDecodeTimeMs)")
+        .contains("freezeDurationMs: finiteDebugNumber(payload?.freezeDurationMs)")
+        .contains("inputToNextFrameMs: finiteDebugNumber(payload?.inputToNextFrameMs)")
+        .contains("inputNextFrameStatus: ['idle', 'waiting', 'received', 'timeout', 'unavailable', 'input-not-ready']")
+        .contains("inputDispatchDelayMs: finiteDebugNumber(payload?.inputDispatchDelayMs)")
+        .contains("inputToVisualChangeMs: finiteDebugNumber(payload?.inputToVisualChangeMs)")
+        .contains("inputToAppAckMs: finiteDebugNumber(payload?.inputToAppAckMs)")
+        .contains("inputAppAckAction: String(payload?.inputAppAckAction || '').slice(0, 80)")
+        .contains("mediaReadiness: ['connecting', 'waiting-first-frame', 'recovering-frame', 'reconnecting', 'snapshot-fallback', 'waiting-input', 'unavailable', 'ready']")
+        .contains("'snapshot-fallback': 'androidConnectionSnapshotFallback'")
+        .contains("frameRefreshCount: finiteDebugNumber(payload?.frameRefreshCount)")
+        .contains("function androidConnectionVisualState(debug)")
+        .contains("formatInteractionLatency(\n        debug.inputToNextFrameMs,\n        debug.inputNextFrameStatus")
+        .contains("p95Ms: finiteDebugNumber(payload.device.gfxinfo.p95Ms)")
+        .contains("function handleAndroidPlayerMessage(event)")
+        .contains("data.source !== ANDROID_PLAYER_MESSAGE_SOURCE")
+        .contains("event.origin !== androidPlayerOrigin()")
+        .contains("event.source !== els.shopFrame.contentWindow")
+        .contains("data.type === 'webrtc-stats'")
+        .contains("els.faultControlPanel.hidden = androidMode")
+        .contains("els.androidDebugPanel.hidden = !androidMode")
+        .contains("renderAndroidDebugHistory();")
+        .contains("function activeFrameSource(options = {})")
+        .contains("kind: 'android-device'")
+        .contains("id: 'android-storefront'")
+        .contains("frameSource: 'android-device'")
+        .contains("faultSceneId: 'mobile-storefront'")
+        .contains("supportedViews: ['mobile']")
+        .contains("return isAndroidDeviceScene() && Boolean(mobileDevicePlayerUrl())")
+        .doesNotContain("state.selectedSceneId === 'bookstore'\n        && state.previewMode === 'mobile'")
+        .contains("els.previewStage.dataset.sourceKind = source.kind")
+        .contains(".preview-stage[data-source-kind=\"android-device\"] .phone-statusbar")
+        .contains("aspect-ratio: 9 / 20")
+        .contains("border-radius: 20px")
+        .contains("border: 3px solid #111827")
+        .contains("kind: 'web-scene'")
+        .contains("els.openShopLink.href = source.standaloneUrl")
         .contains("state.previewMode = mode;")
         .contains("updateFrameUrls({ preserveStoreState: true });")
+        .contains("els.shopFrame.dataset.sourceKind !== source.kind")
+        .contains("els.shopFrame.src = source.embeddedUrl")
+        .contains("els.shopFrame.dataset.sourceKind = source.kind")
         .contains("els.shopFrame.dataset.previewMode = state.previewMode")
+        .contains("els.shopFrame.dataset.sourceKind !== 'web-scene'")
+        .contains("if (isAndroidDeviceScene()) return;")
         .contains("sendShopMessage('set-preview-context', {")
         .doesNotContain("reloadPreview: true")
         .doesNotContain("const previewChanged = els.shopFrame.dataset.previewMode !== state.previewMode")
@@ -782,6 +925,7 @@ class OrderControllerTest {
         .doesNotContain("demo-theme-changed")
         .doesNotContain("url.searchParams.set('theme'")
         .contains("scenario.platforms.includes('web')")
+        .contains("scenario.platforms.includes('android')")
         .contains("--gc-ease-out: cubic-bezier(0.23, 1, 0.32, 1)")
         .contains("transition: transform 140ms var(--gc-ease-out);")
         .contains("button:not(.drawer-backdrop):not(.usage-guide-nav):active:not(:disabled) {\n      transform: scale(.97);")
@@ -839,6 +983,12 @@ class OrderControllerTest {
         getClass().getResourceAsStream("/static/assets/webgl-game-scene-icon.png")) {
       assertThat(source).isNotNull();
       gameIcon = source.readAllBytes();
+    }
+    byte[] androidIcon;
+    try (var source =
+        getClass().getResourceAsStream("/static/assets/android-storefront-scene-icon.png")) {
+      assertThat(source).isNotNull();
+      androidIcon = source.readAllBytes();
     }
 
     assertThat(gameHtml)
@@ -949,6 +1099,7 @@ class OrderControllerTest {
         .contains("@media (prefers-reduced-motion: reduce)");
     assertThat(businessSource)
         .contains("id: 'webgl-game'")
+        .contains("id: 'android-storefront'")
         .contains("supportedViews: ['web']")
         .contains("url.searchParams.set('embedded', '1')")
         .contains("source: 'observability-demo-parent'")
@@ -966,12 +1117,14 @@ class OrderControllerTest {
         .contains("els.shopFrame.focus({ preventScroll: true })")
         .contains("sendShopMessage('focus-scene-controls')")
         .contains("event.source !== els.shopFrame.contentWindow")
-        .contains("scenario.scenes.includes(state.selectedSceneId)")
+        .contains("scenario.scenes.includes(sceneId)")
         .contains("long_task: 'faultKindLongTask'")
         .contains("render_overload: 'faultKindRenderOverload'")
         .contains("resource_error: 'faultKindResourceError'")
         .contains("localizedKind: faultKindLabel(scenario.kind)")
-        .contains("image.src = 'assets/webgl-game-scene-icon.png?v=20260828-image2-v1'")
+        .contains("'android-storefront': 'assets/android-storefront-scene-icon.png?v=20260902-image2-v1'")
+        .contains("'webgl-game': 'assets/webgl-game-scene-icon.png?v=20260828-image2-v1'")
+        .contains("image.src = imageSources[sceneId]")
         .contains("mark.append(image)")
         .doesNotContain("planet-orbit")
         .contains(".scenario-tab-list .tab-button")
@@ -984,7 +1137,38 @@ class OrderControllerTest {
     assertThat(gameIcon[1]).isEqualTo((byte) 'P');
     assertThat(gameIcon[2]).isEqualTo((byte) 'N');
     assertThat(gameIcon[3]).isEqualTo((byte) 'G');
+    assertThat(androidIcon.length).isGreaterThan(10_000);
+    assertThat(androidIcon[0]).isEqualTo((byte) 0x89);
+    assertThat(androidIcon[1]).isEqualTo((byte) 'P');
+    assertThat(androidIcon[2]).isEqualTo((byte) 'N');
+    assertThat(androidIcon[3]).isEqualTo((byte) 'G');
     assertThat(i18nSource)
+        .contains("sceneAndroidTitle: '商城App Demo'")
+        .contains("sceneAndroidTitle: 'Store App Demo'")
+        .contains("sceneAndroidDescription: '运行于真实 Android 环境 · APK 可交互'")
+        .contains("sceneAndroidDescription: 'Interactive APK running in a real Android system'")
+        .contains("previewMobileOnly: '仅支持移动端'")
+        .contains("previewMobileOnly: 'Mobile only'")
+        .contains("androidDebugConsoleTitle: '真实 APK 调试台'")
+        .contains("androidDebugConsoleTitle: 'Real APK Diagnostics'")
+        .contains("androidApkDownloadTrigger: '获取 APK'")
+        .contains("androidApkDownloadTrigger: 'Get APK'")
+        .contains("androidApkDownloadMeta: 'v{version} · Android {minVersion}+'").contains("androidApkDownloadAction: '下载 APK'")
+        .contains("androidRouteTurn: 'TURN 中继'")
+        .contains("androidRouteTurn: 'TURN relay'")
+        .contains("androidMetricDataChannelRtt: '输入 RTT (SCTP)'")
+        .contains("androidMetricDataChannelRtt: 'Input RTT (SCTP)'")
+        .contains("androidMetricInputToFrame: '点击→下一视频帧'")
+        .contains("androidMetricInputToFrame: 'Click → next video frame'")
+        .contains("androidMetricInputToVisualChange: '点击→首个画面变化帧'")
+        .contains("androidMetricInputToVisualChange: 'Click → first visual change'")
+        .contains("androidMetricInputToAppAck: '点击→APK 操作确认'")
+        .contains("androidMetricInputToAppAck: 'Click → APK acknowledgement'")
+        .contains("androidJitterBufferAverage: '区间抖动缓冲'")
+        .contains("androidJitterBufferAverage: 'Interval jitter buffer'")
+        .contains("androidFreezes: '冻结次数 / 总时长'")
+        .contains("androidFreezes: 'Freezes / total duration'")
+        .contains("androidFaultEntryHint: '请在 APK 顶部警告入口中选择并触发故障；Web 侧只展示连接、设备与观测调试信息。'")
         .contains("faultKindLongTask: '长任务'")
         .contains("faultKindLongTask: 'Long task'")
         .contains("faultKindRenderOverload: '渲染过载'")
@@ -1044,7 +1228,7 @@ class OrderControllerTest {
     demoMvc
         .perform(get("/api/demo/faults"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items.length()").value(16))
+        .andExpect(jsonPath("$.items.length()").value(22))
         .andExpect(jsonPath("$.items[*].scenes").value(everyItem(not(empty()))))
         .andExpect(jsonPath("$.items[0].id").value("frontend_click_error"))
         .andExpect(jsonPath("$.items[0].service").value("mall-h5"))
@@ -1052,26 +1236,57 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.items[0].platforms[0]").value("web"))
         .andExpect(jsonPath("$.items[0].scenes[0]").value("bookstore"))
         .andExpect(jsonPath("$.items[2].id").value("frontend_sourcemap_error"))
-        .andExpect(jsonPath("$.items[3].id").value("mobile_white_screen"))
+        .andExpect(jsonPath("$.items[3].id").value("mobile_detail_render_error"))
         .andExpect(jsonPath("$.items[3].platforms[0]").value("android"))
         .andExpect(jsonPath("$.items[3].clientSide").value(true))
-        .andExpect(jsonPath("$.items[9].id").value("order_slow"))
-        .andExpect(jsonPath("$.items[10].id").value("inventory_redis_timeout"))
-        .andExpect(jsonPath("$.items[10].execution").value("server"))
-        .andExpect(jsonPath("$.items[10].platforms[2]").value("ios"))
-        .andExpect(jsonPath("$.items[10].expectedObservation").isNotEmpty())
-        .andExpect(jsonPath("$.items[14].id").value("game_render_overload"))
-        .andExpect(jsonPath("$.items[14].title").value("游戏渲染过载"))
-        .andExpect(jsonPath("$.items[14].kind").value("render_overload"))
-        .andExpect(jsonPath("$.items[14].service").value("mall-game-h5"))
-        .andExpect(jsonPath("$.items[14].execution").value("client"))
-        .andExpect(jsonPath("$.items[14].scenes[0]").value("webgl-game"))
-        .andExpect(jsonPath("$.items[15].id").value("game_asset_load_failure"))
-        .andExpect(jsonPath("$.items[15].title").value("资源加载失败"))
-        .andExpect(jsonPath("$.items[15].kind").value("resource_error"))
-        .andExpect(jsonPath("$.items[15].target").value("/api/demo/game-assets/orbital-shield-texture.webp"))
-        .andExpect(jsonPath("$.items[15].clientSide").value(true))
-        .andExpect(jsonPath("$.items[15].scenes[0]").value("webgl-game"));
+        .andExpect(jsonPath("$.items[15].id").value("order_slow"))
+        .andExpect(jsonPath("$.items[16].id").value("inventory_redis_timeout"))
+        .andExpect(jsonPath("$.items[16].execution").value("server"))
+        .andExpect(jsonPath("$.items[16].platforms[2]").value("ios"))
+        .andExpect(jsonPath("$.items[16].expectedObservation").isNotEmpty())
+        .andExpect(jsonPath("$.items[20].id").value("game_render_overload"))
+        .andExpect(jsonPath("$.items[20].title").value("游戏渲染过载"))
+        .andExpect(jsonPath("$.items[20].kind").value("render_overload"))
+        .andExpect(jsonPath("$.items[20].service").value("mall-game-h5"))
+        .andExpect(jsonPath("$.items[20].execution").value("client"))
+        .andExpect(jsonPath("$.items[20].scenes[0]").value("webgl-game"))
+        .andExpect(jsonPath("$.items[21].id").value("game_asset_load_failure"))
+        .andExpect(jsonPath("$.items[21].title").value("资源加载失败"))
+        .andExpect(jsonPath("$.items[21].kind").value("resource_error"))
+        .andExpect(jsonPath("$.items[21].target").value("/api/demo/game-assets/orbital-shield-texture.webp"))
+        .andExpect(jsonPath("$.items[21].clientSide").value(true))
+        .andExpect(jsonPath("$.items[21].scenes[0]").value("webgl-game"));
+  }
+
+  @Test
+  void androidBusinessFaultsPreserveWebServerAndAdvancedNativeCatalogs() throws Exception {
+    MockMvc mvc = MockMvcBuilders.standaloneSetup(newDemoController()).build();
+    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+    var actual = mapper.readTree(mvc.perform(get("/api/demo/faults")).andReturn()
+        .getResponse().getContentAsString()).get("items");
+    try (var input = getClass().getResourceAsStream("/protected-fault-catalog.json")) {
+      var expected = mapper.readTree(input);
+      var protectedIds = new java.util.HashSet<String>();
+      expected.forEach(item -> protectedIds.add(item.get("id").asText()));
+      var protectedActual = mapper.createArrayNode();
+      actual.forEach(item -> {
+        if (protectedIds.contains(item.get("id").asText())
+            || java.util.Set.of("service", "dependency", "jvm").contains(item.get("layer").asText())
+            || item.get("platforms").toString().contains("web")) protectedActual.add(item);
+      });
+      assertThat(protectedActual).isEqualTo(expected);
+      var newItems = new java.util.ArrayList<String>();
+      actual.forEach(item -> {
+        String id = item.get("id").asText();
+        if (!protectedIds.contains(id) && !java.util.Set.of("mobile_white_screen", "mobile_js_error", "mobile_slow_network").contains(id)) {
+          assertThat(item.get("platforms").toString()).isEqualTo("[\"android\"]");
+          assertThat(item.get("execution").asText()).isEqualTo("client");
+          newItems.add(id);
+        }
+      });
+      assertThat(newItems).containsExactly("mobile_detail_render_error", "mobile_add_cart_no_feedback",
+          "mobile_cart_total_stale", "mobile_checkout_ui_block", "mobile_content_slow", "mobile_content_timeout");
+    }
   }
 
   @Test
@@ -1314,7 +1529,23 @@ class OrderControllerTest {
         "",
         gameApplicationId,
         "android_rum_demo",
-        "ios_rum_demo");
+        "ios_rum_demo",
+        "");
+  }
+
+  private DemoController newDemoControllerWithMobileDevicePlayerUrl(String playerUrl, String... versions) {
+    return newDemoController(
+        new RestTemplate(),
+        "test",
+        "1.0.0",
+        "mall-h5",
+        "guance",
+        "",
+        "",
+        "game_web_docker_demo",
+        "android_rum_demo",
+        "ios_rum_demo",
+        playerUrl, versions);
   }
 
   private DemoController newDemoController(
@@ -1337,7 +1568,8 @@ class OrderControllerTest {
         workspaceId,
         "game_web_docker_demo",
         androidApplicationId,
-        iosApplicationId);
+        iosApplicationId,
+        "");
   }
 
   private DemoController newDemoController(
@@ -1350,7 +1582,8 @@ class OrderControllerTest {
       String workspaceId,
       String gameApplicationId,
       String androidApplicationId,
-      String iosApplicationId) {
+      String iosApplicationId,
+      String mobileDevicePlayerUrl, String... versions) {
     return new DemoController(
         restTemplate,
         "http://order-service.test",
@@ -1373,6 +1606,10 @@ class OrderControllerTest {
         datakitProvider,
         consoleUrl,
         workspaceId,
+        mobileDevicePlayerUrl,
+        versions.length > 0 ? versions[0] : "",
+        versions.length > 1 ? versions[1] : "",
+        versions.length > 2 ? versions[2] : "7.0",
         tempDir.toString(),
         false,
         240,

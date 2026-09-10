@@ -1,6 +1,23 @@
 export type MobilePlatform = 'android' | 'ios';
 export type FaultPlatform = MobilePlatform | 'web';
-export type StoreScreen = 'home' | 'detail' | 'purchase';
+export type StoreLanguage = 'zh' | 'en';
+export type StoreScreen = 'home' | 'path' | 'detail' | 'cart';
+export type StoreSort = 'recommended' | 'rating' | 'price-asc';
+export type DetailTab = 'overview' | 'chapters' | 'audience';
+export type CheckoutMode = 'single' | 'traffic';
+
+export interface DemoUser {
+  id: string;
+  name: string;
+  email: string;
+  tier: 'standard' | 'pro' | 'vip' | string;
+}
+
+export interface DemoAuthSession {
+  authenticated: boolean;
+  user: DemoUser | null;
+  personas: DemoUser[];
+}
 
 export interface FaultScenario {
   id: string;
@@ -23,6 +40,19 @@ export interface FaultCatalog {
   items: FaultScenario[];
   active: Record<string, unknown>;
 }
+
+export interface BookContent {
+  bookId: string;
+  title: string;
+  description: string;
+  parts: ReadonlyArray<readonly [string, string, string]>;
+}
+
+export type BookContentState =
+  | {status: 'idle'}
+  | {status: 'loading'; bookId: string}
+  | {status: 'ready'; bookId: string; data: BookContent}
+  | {status: 'error'; bookId: string; timeout: boolean};
 
 export interface MobileRumConfig {
   enabled: boolean;
@@ -60,6 +90,12 @@ export interface FaultHistoryItem {
   status: 'active' | 'recovered' | 'failed';
   timestamp: string;
   detail?: string;
+}
+
+export interface OrderRequest {
+  sku: string;
+  quantity: number;
+  amountCent: number;
 }
 
 export interface OrderResult {

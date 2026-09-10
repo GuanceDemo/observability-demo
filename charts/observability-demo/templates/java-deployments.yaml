@@ -163,6 +163,14 @@ spec:
               value: {{ $.Values.observabilityConsole.url | quote }}
             - name: OBSERVABILITY_WORKSPACE_ID
               value: {{ $.Values.observabilityConsole.workspaceId | quote }}
+            - name: MOBILE_DEVICE_PLAYER_URL
+              value: {{ $.Values.mobileDevice.playerUrl | quote }}
+            - name: MOBILE_DEVICE_PLAYER_VERSION
+              value: {{ $.Values.mobileDevice.playerVersion | default "" | quote }}
+            - name: MOBILE_DEVICE_APK_VERSION
+              value: {{ $.Values.mobileDevice.apkVersion | default "" | quote }}
+            - name: MOBILE_DEVICE_APK_MIN_ANDROID_VERSION
+              value: {{ $.Values.mobileDevice.apkMinAndroidVersion | default "7.0" | quote }}
             - name: DEMO_LOG_DIRECTORY
               value: /var/log/observability-demo
             {{- else if eq $service.name "inventory-service" }}

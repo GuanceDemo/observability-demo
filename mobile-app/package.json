@@ -10,8 +10,12 @@
     "start": "react-native start",
     "test": "jest",
     "typecheck": "tsc --noEmit",
+    "sync:storefront": "node scripts/sync-storefront-data.mjs",
+    "check:storefront": "node scripts/sync-storefront-data.mjs --check",
     "bundle:android": "bash scripts/bundle-sourcemap.sh android",
     "bundle:ios": "bash scripts/bundle-sourcemap.sh ios",
+    "demo:android-ui": "bash scripts/configure-android-demo-ui.sh",
+    "check:replay-cache": "bash scripts/check-replay-reflection-cache.sh",
     "verify:android-replay": "bash scripts/verify-android-replay-reflection.sh"
   },
   "dependencies": {

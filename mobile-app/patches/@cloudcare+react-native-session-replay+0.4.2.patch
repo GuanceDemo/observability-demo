@@ -4,13 +4,13 @@ index c2d70b7..3f2ed0d 100644
 +++ b/node_modules/@cloudcare/react-native-session-replay/FTSessionReplayReactNative.podspec
 @@ -1,7 +1,9 @@
  require "json"
-
+ 
  package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 -folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-to-32'
 +# RN 0.86's prebuilt dependencies omit folly/coro/Coroutine.h. Keep Folly from
 +# enabling coroutine support while the Session Replay Fabric wrapper compiles.
 +folly_compiler_flags = '-DFOLLY_NO_CONFIG -DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -DFOLLY_CFG_NO_COROUTINES=1 -Wno-comma -Wno-shorten-64-to-32'
-
+ 
  Pod::Spec.new do |s|
    s.name         = "FTSessionReplayReactNative"
 diff --git a/node_modules/@cloudcare/react-native-session-replay/android/build.gradle b/node_modules/@cloudcare/react-native-session-replay/android/build.gradle
@@ -24,10 +24,10 @@ index 00d05bf..f197b07 100644
 -    jcenter()
      gradlePluginPortal()
    }
-
+ 
 @@ -121,7 +120,9 @@ android {
        }
-
+ 
        if (reactNativeMajorVersion == 0) {
 -        if (reactNativeMinorVersion >= 80) {
 +        if (reactNativeMinorVersion >= 86) {
@@ -37,13 +37,284 @@ index 00d05bf..f197b07 100644
          } else if (reactNativeMinorVersion >= 79) {
            java.srcDirs += ['src/rn79/java']
 @@ -147,7 +148,6 @@ android {
-
+ 
  repositories {
    mavenCentral()
 -  jcenter()
    google()
    maven {
      url 'https://mvnrepo.jiagouyun.com/repository/maven-releases'
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/ReactNativeSessionReplayExtensionSupport.java b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/ReactNativeSessionReplayExtensionSupport.java
+index 16b328c..01d90ae 100644
+--- a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/ReactNativeSessionReplayExtensionSupport.java
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/ReactNativeSessionReplayExtensionSupport.java
+@@ -10,6 +10,9 @@ import com.ft.sdk.reactnative.sessionreplay.mappers.ReactEditTextMapper;
+ import com.ft.sdk.reactnative.sessionreplay.mappers.ReactNativeImageViewMapper;
+ import com.ft.sdk.reactnative.sessionreplay.mappers.ReactTextMapper;
+ import com.ft.sdk.reactnative.sessionreplay.mappers.ReactViewGroupMapper;
++import com.ft.sdk.reactnative.sessionreplay.mappers.ReactScrollViewMapper;
++import com.facebook.react.views.scroll.ReactScrollView;
++import com.facebook.react.views.scroll.ReactHorizontalScrollView;
+ import com.ft.sdk.reactnative.sessionreplay.mappers.ReactViewModalMapper;
+ import com.ft.sdk.reactnative.sessionreplay.utils.text.TextViewUtils;
+ import com.facebook.react.views.image.ReactImageView;
+@@ -37,6 +40,8 @@ public class ReactNativeSessionReplayExtensionSupport implements ExtensionSuppor
+     @Override
+     public List<MapperTypeWrapper<?>> getCustomViewMappers() {
+         return Arrays.asList(
++                new MapperTypeWrapper<>(ReactScrollView.class, new ReactScrollViewMapper<ReactScrollView>()),
++                new MapperTypeWrapper<>(ReactHorizontalScrollView.class, new ReactScrollViewMapper<ReactHorizontalScrollView>()),
+                 new MapperTypeWrapper<>(ReactImageView.class, new ReactNativeImageViewMapper()),
+                 new MapperTypeWrapper<>(ReactViewGroup.class, new ReactViewGroupMapper()),
+                 new MapperTypeWrapper<>(ReactTextView.class, new ReactTextMapper(textViewUtils)),
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/mappers/DefaultMapper.java b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/mappers/DefaultMapper.java
+index a99eecf..b03daee 100644
+--- a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/mappers/DefaultMapper.java
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/mappers/DefaultMapper.java
+@@ -10,6 +10,7 @@ import android.graphics.drawable.Drawable;
+ import android.view.View;
+ 
+ import com.ft.sdk.reactnative.sessionreplay.utils.DrawableUtils;
++import com.ft.sdk.reactnative.sessionreplay.utils.BorderSnapshotDrawable;
+ import com.ft.sdk.reactnative.sessionreplay.utils.ReactViewBackgroundDrawableUtils;
+ import com.ft.sdk.sessionreplay.model.ShapeBorder;
+ import com.ft.sdk.sessionreplay.model.ShapeStyle;
+@@ -55,6 +56,18 @@ public class DefaultMapper<T extends View> extends BaseWireframeMapper<T> {
+ 
+     float opacity = view.getAlpha();
+ 
++    BorderSnapshotDrawable borderImage = drawableUtils.resolveBorderImage(
++        backgroundDrawable, view.getWidth(), view.getHeight(), pixelDensity);
++    if (borderImage != null) {
++      Wireframe image = mappingContext.getImageWireframeHelper().createImageWireframeByDrawable(
++          view, mappingContext.getImagePrivacy(), 0, viewGlobalBounds.getX(), viewGlobalBounds.getY(),
++          view.getWidth(), view.getHeight(), false, borderImage,
++          (original, resources) -> ((BorderSnapshotDrawable) original).copy(),
++          asyncJobStatusCallback, null, new ShapeStyle(null, opacity, null), null,
++          "rn-border-background", borderImage.cacheKey());
++      if (image != null) return Collections.singletonList(image);
++    }
++
+     Pair<ShapeStyle, ShapeBorder> shapeAndBorder =
+       backgroundDrawable != null ?
+         drawableUtils.resolveShapeAndBorder(backgroundDrawable, opacity, pixelDensity)
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/mappers/ReactScrollViewMapper.java b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/mappers/ReactScrollViewMapper.java
+new file mode 100644
+index 0000000..dd4e7fe
+--- /dev/null
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/mappers/ReactScrollViewMapper.java
+@@ -0,0 +1,13 @@
++package com.ft.sdk.reactnative.sessionreplay.mappers;
++
++import android.view.ViewGroup;
++import com.ft.sdk.reactnative.sessionreplay.utils.ReactViewBackgroundDrawableUtils;
++import com.ft.sdk.sessionreplay.recorder.mapper.TraverseAllChildrenMapper;
++
++/** Keep the viewport in the parent wireframes even when its background is transparent. */
++public final class ReactScrollViewMapper<T extends ViewGroup> extends DefaultMapper<T>
++    implements TraverseAllChildrenMapper<T> {
++  public ReactScrollViewMapper() {
++    super(new ReactViewBackgroundDrawableUtils());
++  }
++}
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/BorderSnapshotDrawable.java b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/BorderSnapshotDrawable.java
+new file mode 100644
+index 0000000..8683753
+--- /dev/null
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/BorderSnapshotDrawable.java
+@@ -0,0 +1,84 @@
++package com.ft.sdk.reactnative.sessionreplay.utils;
++
++import android.graphics.Canvas;
++import android.graphics.ColorFilter;
++import android.graphics.Paint;
++import android.graphics.Path;
++import android.graphics.PixelFormat;
++import android.graphics.RectF;
++import android.graphics.drawable.Drawable;
++import java.util.Arrays;
++
++/** Immutable style snapshot. Rasterization happens on the SDK worker, never against a live View. */
++public final class BorderSnapshotDrawable extends Drawable {
++  private final int width;
++  private final int height;
++  private final int background;
++  private final float radius;
++  private final float[] edges;
++  private final int[] colors;
++
++  public BorderSnapshotDrawable(int width, int height, int background, float radius, float[] edges, int[] colors) {
++    this.width = width;
++    this.height = height;
++    this.background = background;
++    this.radius = radius;
++    this.edges = edges.clone();
++    this.colors = colors.clone();
++    setBounds(0, 0, width, height);
++  }
++
++  public BorderSnapshotDrawable copy() {
++    return new BorderSnapshotDrawable(width, height, background, radius, edges, colors);
++  }
++
++  public String cacheKey() {
++    return "rn-border-v1:" + width + ":" + height + ":" + background + ":" + radius
++        + ":" + Arrays.toString(edges) + ":" + Arrays.toString(colors);
++  }
++
++  @Override public int getIntrinsicWidth() { return width; }
++  @Override public int getIntrinsicHeight() { return height; }
++  @Override public void setAlpha(int alpha) { /* opacity belongs to the wireframe */ }
++  @Override public void setColorFilter(ColorFilter filter) {}
++  @Override public int getOpacity() { return PixelFormat.TRANSLUCENT; }
++
++  @Override public void draw(Canvas canvas) {
++    Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
++    float r = Math.max(0f, Math.min(radius, Math.min(width, height) / 2f));
++    Path outer = new Path();
++    outer.addRoundRect(new RectF(0, 0, width, height), r, r, Path.Direction.CW);
++    paint.setColor(background);
++    canvas.drawPath(outer, paint);
++    float l = Math.min(edges[0], width), t = Math.min(edges[1], height);
++    float right = Math.max(l, width - edges[2]), bottom = Math.max(t, height - edges[3]);
++    Path border = new Path(outer);
++    border.setFillType(Path.FillType.EVEN_ODD);
++    if (right > l && bottom > t) {
++      border.addRoundRect(new RectF(l, t, right, bottom), new float[] {
++          Math.max(0, r-l), Math.max(0, r-t), Math.max(0, r-edges[2]), Math.max(0, r-t),
++          Math.max(0, r-edges[2]), Math.max(0, r-edges[3]), Math.max(0, r-l), Math.max(0, r-edges[3])
++      }, Path.Direction.CW);
++    }
++    int save = canvas.save();
++    canvas.clipPath(border);
++    try {
++      drawEdge(canvas, paint, 0, new float[] {0,0, l,t, l,bottom, 0,height});
++      drawEdge(canvas, paint, 1, new float[] {0,0, width,0, right,t, l,t});
++      drawEdge(canvas, paint, 2, new float[] {width,0, width,height, right,bottom, right,t});
++      drawEdge(canvas, paint, 3, new float[] {0,height, l,bottom, right,bottom, width,height});
++    } finally {
++      canvas.restoreToCount(save);
++    }
++  }
++
++  private void drawEdge(Canvas canvas, Paint paint, int edge, float[] points) {
++    if (edges[edge] <= 0) return;
++    Path polygon = new Path();
++    polygon.moveTo(points[0], points[1]);
++    for (int i = 2; i < points.length; i += 2) polygon.lineTo(points[i], points[i+1]);
++    polygon.close();
++    paint.setColor(colors[edge]);
++    canvas.drawPath(polygon, paint);
++  }
++}
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ColorUtils.java b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ColorUtils.java
+index fd234a8..f1c0de9 100644
+--- a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ColorUtils.java
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ColorUtils.java
+@@ -6,19 +6,11 @@
+ 
+ package com.ft.sdk.reactnative.sessionreplay.utils;
+ 
+-public class ColorUtils {
+-    private static final int HEX_COLOR_INCLUDING_ALPHA_LENGTH = 8;
++import java.util.Locale;
+ 
++public class ColorUtils {
+     public static String formatAsRgba(int backgroundColor) {
+-        String colorHexString = Integer.toHexString(backgroundColor);
+-        return "#" + convertArgbToRgba(colorHexString);
++        return String.format(Locale.US, "#%08x", Integer.rotateLeft(backgroundColor, 8));
+     }
+ 
+-    private static String convertArgbToRgba(String hexString) {
+-        if (hexString.length() == HEX_COLOR_INCLUDING_ALPHA_LENGTH) {
+-            return hexString.substring(2, 8) + hexString.substring(0, 2);
+-        } else {
+-            return hexString;
+-        }
+-    }
+ }
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/DrawableUtils.java b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/DrawableUtils.java
+index d5cc139..c3a5fb8 100644
+--- a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/DrawableUtils.java
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/DrawableUtils.java
+@@ -31,4 +31,9 @@ public abstract class DrawableUtils {
+ 
+     public abstract Drawable getReactBackgroundFromDrawable(Drawable drawable);
+ 
++    // ShapeBorder only supports one integer width/color for all four edges.
++    public BorderSnapshotDrawable resolveBorderImage(Drawable drawable, int width, int height, float density) {
++        return null;
++    }
++
+ }
+diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ReflectionUtils.java b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ReflectionUtils.java
+index 0aa6bb4..c1b4170 100644
+--- a/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ReflectionUtils.java
++++ b/node_modules/@cloudcare/react-native-session-replay/android/src/main/java/com/ft/sdk/reactnative/sessionreplay/utils/ReflectionUtils.java
+@@ -7,17 +7,20 @@
+ package com.ft.sdk.reactnative.sessionreplay.utils;
+ 
+ import java.lang.reflect.Field;
++import java.util.HashMap;
++import java.util.Map;
+ 
+ public class ReflectionUtils {
++    // Cache metadata only. Every snapshot must still read the current view value.
++    private final Map<Class<?>, Map<String, Field>> fieldsByClass = new HashMap<>();
+     public Object getDeclaredField(Object instance, String fieldName) {
+         if (instance == null) {
+             return null;
+         }
+         Class<?> classInstance = instance.getClass();
+-        Field declaredField = searchForField(classInstance, fieldName);
++        Field declaredField = cachedField(classInstance, fieldName);
+ 
+         if (declaredField != null) {
+-            declaredField.setAccessible(true);
+             try {
+                 return declaredField.get(instance);
+             } catch (IllegalAccessException e) {
+@@ -27,17 +30,31 @@ public class ReflectionUtils {
+         return null;
+     }
+ 
++    private synchronized Field cachedField(Class<?> className, String fieldName) {
++        Map<String, Field> fields = fieldsByClass.get(className);
++        if (fields == null) {
++            fields = new HashMap<>();
++            fieldsByClass.put(className, fields);
++        }
++        // containsKey deliberately retains missing fields as cached nulls.
++        if (!fields.containsKey(fieldName)) {
++            fields.put(fieldName, searchForField(className, fieldName));
++        }
++        return fields.get(fieldName);
++    }
++
+     private Field searchForField(Class<?> className, String fieldName) {
+-        for (Field field : className.getDeclaredFields()) {
+-            if (field.getName().equals(fieldName)) {
++        for (Class<?> current = className; current != null; current = current.getSuperclass()) {
++            try {
++                Field field = current.getDeclaredField(fieldName);
++                field.setAccessible(true);
+                 return field;
++            } catch (NoSuchFieldException ignored) {
++                // Continue through the hierarchy only on the first lookup.
++            } catch (SecurityException ignored) {
++                return null;
+             }
+         }
+-
+-        if (className.getSuperclass() != null) {
+-            return searchForField(className.getSuperclass(), fieldName);
+-        } else {
+-            return null;
+-        }
++        return null;
+     }
+ }
 diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/extensions/ComputedBorderRadiusExt.java b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/extensions/ComputedBorderRadiusExt.java
 new file mode 100644
 index 0000000..1dcc0f8
@@ -90,10 +361,10 @@ index 0000000..1dcc0f8
 +}
 diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java
 new file mode 100644
-index 0000000..dec5ca9
+index 0000000..920a19d
 --- /dev/null
 +++ b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java
-@@ -0,0 +1,123 @@
+@@ -0,0 +1,197 @@
 +/*
 + * React Native 0.86 removed CSSBackgroundDrawable and made its replacement
 + * internal. Keep the replay integration isolated from that internal class by
@@ -104,12 +375,16 @@ index 0000000..dec5ca9
 +import android.graphics.Canvas;
 +import android.graphics.Color;
 +import android.graphics.ColorFilter;
++import android.content.Context;
++import android.graphics.RectF;
 +import android.graphics.PixelFormat;
 +import android.graphics.drawable.Drawable;
 +import android.graphics.drawable.InsetDrawable;
 +import android.graphics.drawable.LayerDrawable;
 +
 +import com.facebook.react.uimanager.style.ComputedBorderRadius;
++import com.facebook.react.uimanager.style.BorderInsets;
++import com.facebook.react.uimanager.style.ColorEdges;
 +import com.ft.sdk.reactnative.sessionreplay.extensions.ComputedBorderRadiusExt;
 +import com.ft.sdk.reactnative.sessionreplay.mappers.Pair;
 +import com.ft.sdk.sessionreplay.model.ShapeBorder;
@@ -118,6 +393,8 @@ index 0000000..dec5ca9
 +public class ReactViewBackgroundDrawableUtils extends DrawableUtils {
 +  private static final String BACKGROUND_DRAWABLE =
 +      "com.facebook.react.uimanager.drawable.BackgroundDrawable";
++  private static final String BORDER_DRAWABLE =
++      "com.facebook.react.uimanager.drawable.BorderDrawable";
 +  private static final String COMPUTED_BORDER_RADIUS_FIELD = "computedBorderRadius";
 +  private static final String BACKGROUND_COLOR_FIELD = "backgroundColor";
 +  private final ReflectionUtils reflectionUtils;
@@ -133,10 +410,16 @@ index 0000000..dec5ca9
 +  public static class BackgroundDrawableWrapper extends Drawable {
 +    public final String backgroundColor;
 +    public final float cornerRadius;
++    public final BorderSnapshot border;
 +
 +    public BackgroundDrawableWrapper(String backgroundColor, float cornerRadius) {
++      this(backgroundColor, cornerRadius, null);
++    }
++
++    public BackgroundDrawableWrapper(String backgroundColor, float cornerRadius, BorderSnapshot border) {
 +      this.backgroundColor = backgroundColor;
 +      this.cornerRadius = cornerRadius;
++      this.border = border;
 +    }
 +
 +    @Override
@@ -165,28 +448,90 @@ index 0000000..dec5ca9
 +    }
 +    return new Pair<>(
 +        new ShapeStyle(wrapper.backgroundColor, opacity, wrapper.cornerRadius),
-+        null);
++        wrapper.border == null ? null : wrapper.border.uniformBorder());
 +  }
 +
 +  @Override
 +  public Drawable getReactBackgroundFromDrawable(Drawable drawable) {
-+    BackgroundDrawableWrapper direct = toWrapper(drawable);
-+    if (direct != null) {
-+      return direct;
-+    }
++    if (drawable instanceof BackgroundDrawableWrapper) return drawable;
++    Drawable background = findLayer(drawable, BACKGROUND_DRAWABLE);
++    Drawable borderDrawable = findLayer(drawable, BORDER_DRAWABLE);
++    if (background == null && borderDrawable == null) return null;
++    BackgroundDrawableWrapper fill = toWrapper(background);
++    BorderSnapshot border = readBorder(borderDrawable);
++    ComputedBorderRadius radius = getComputedBorderRadius(borderDrawable);
++    return new BackgroundDrawableWrapper(
++        fill == null ? ColorUtils.formatAsRgba(Color.TRANSPARENT) : fill.backgroundColor,
++        fill == null ? (radius == null ? 0f : ComputedBorderRadiusExt.getAverage(radius)) : fill.cornerRadius,
++        border);
++  }
++
++  private Drawable findLayer(Drawable drawable, String className) {
++    if (drawable == null) return null;
++    if (className.equals(drawable.getClass().getName())) return drawable;
 +    if (drawable instanceof InsetDrawable) {
-+      return getReactBackgroundFromDrawable(((InsetDrawable) drawable).getDrawable());
++      return findLayer(((InsetDrawable) drawable).getDrawable(), className);
 +    }
 +    if (drawable instanceof LayerDrawable) {
 +      LayerDrawable layers = (LayerDrawable) drawable;
 +      for (int index = 0; index < layers.getNumberOfLayers(); index++) {
-+        BackgroundDrawableWrapper layer = toWrapper(layers.getDrawable(index));
++        Drawable layer = findLayer(layers.getDrawable(index), className);
 +        if (layer != null) {
 +          return layer;
 +        }
 +      }
 +    }
 +    return null;
++  }
++
++  private BorderSnapshot readBorder(Drawable drawable) {
++    if (drawable == null) return null;
++    Object insets = reflectionUtils.getDeclaredField(drawable, "borderInsets");
++    Object context = reflectionUtils.getDeclaredField(drawable, "context");
++    Object colors = reflectionUtils.getDeclaredField(drawable, "computedBorderColors");
++    if (!(insets instanceof BorderInsets) || !(context instanceof Context) || !(colors instanceof ColorEdges)) return null;
++    RectF widths = ((BorderInsets) insets).resolve(drawable.getLayoutDirection(), (Context) context);
++    ColorEdges edges = (ColorEdges) colors;
++    return new BorderSnapshot(widths.left, widths.top, widths.right, widths.bottom,
++        edges.getLeft(), edges.getTop(), edges.getRight(), edges.getBottom());
++  }
++
++  @Override
++  public BorderSnapshotDrawable resolveBorderImage(Drawable drawable, int width, int height, float density) {
++    BackgroundDrawableWrapper wrapper = toWrapper(drawable);
++    if (wrapper == null || wrapper.border == null || wrapper.border.uniformBorder() != null) return null;
++    float[] widths = wrapper.border.widths.clone();
++    boolean visible = false;
++    float scale = density > 0 ? density : 1f;
++    for (int i = 0; i < 4; i++) {
++      visible |= widths[i] > 0 && Color.alpha(wrapper.border.colors[i]) > 0;
++      widths[i] *= scale;
++    }
++    if (!visible || width <= 0 || height <= 0) return null;
++    // Our color formatter writes CSS #RRGGBBAA; Android parseColor expects #AARRGGBB.
++    String rgba = wrapper.backgroundColor.substring(1);
++    int color = (int) Long.parseLong(rgba.substring(6) + rgba.substring(0, 6), 16);
++    return new BorderSnapshotDrawable(width, height, color, wrapper.cornerRadius * scale, widths, wrapper.border.colors);
++  }
++
++  public static final class BorderSnapshot {
++    public final float[] widths;
++    public final int[] colors;
++
++    public BorderSnapshot(float left, float top, float right, float bottom, int leftColor, int topColor, int rightColor, int bottomColor) {
++      widths = new float[] {clean(left), clean(top), clean(right), clean(bottom)};
++      colors = new int[] {leftColor, topColor, rightColor, bottomColor};
++    }
++
++    private static float clean(float width) { return Float.isFinite(width) ? Math.max(0f, width) : 0f; }
++
++    public ShapeBorder uniformBorder() {
++      if (widths[0] <= 0f || widths[0] != Math.round(widths[0])) return null;
++      for (int i = 1; i < 4; i++) {
++        if (widths[i] != widths[0] || colors[i] != colors[0]) return null;
++      }
++      return new ShapeBorder(ColorUtils.formatAsRgba(colors[0]), Math.round(widths[0]));
++    }
 +  }
 +
 +  private BackgroundDrawableWrapper toWrapper(Drawable drawable) {
@@ -222,7 +567,7 @@ index ebaf41d..6bf9a25 100644
 --- a/node_modules/@cloudcare/react-native-session-replay/ios/FTRCTTextViewRecorder.m
 +++ b/node_modules/@cloudcare/react-native-session-replay/ios/FTRCTTextViewRecorder.m
 @@ -6,18 +6,20 @@
-
+ 
  #import "FTRCTTextViewRecorder.h"
  #import <React/RCTUIManagerUtils.h>
 +#ifndef RCT_REMOVE_LEGACY_ARCH
@@ -241,7 +586,7 @@ index ebaf41d..6bf9a25 100644
  #import <FTMobileSDK/FTSRUtils.h>
 -#import <React/RCTShadowView+Layout.h>
  #import "FTRCTFabricWrapper.h"
-
+ 
  @interface FTRCTTextViewRecorder ()
 @@ -38,9 +40,16 @@ -(instancetype)initWithUIManager:(RCTUIManager *)uiManager{
    return self;
@@ -275,10 +620,10 @@ index ebaf41d..6bf9a25 100644
  }
 +#endif
  @end
-
+ 
  @implementation FTRCTTextViewBuilder
 @@ -168,4 +179,3 @@ - (CGRect)textFrame{
  }
  @end
-
+ 
 -

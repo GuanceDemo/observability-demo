@@ -1,0 +1,61 @@
+--- a/com/ft/sdk/sessionreplay/internal/recorder/PermanentIdResolver.java
++++ b/com/ft/sdk/sessionreplay/internal/recorder/PermanentIdResolver.java
+@@ -1,10 +1,24 @@
+ package com.ft.sdk.sessionreplay.internal.recorder;
+ 
+ import android.view.View;
++import com.ft.sdk.FTViewPermanentIdResolver;
+ 
+ import java.lang.reflect.Method;
+ 
+ final class PermanentIdResolver {
++
++    private static final ThreadLocal<FTViewPermanentIdResolver.Snapshot> SNAPSHOT = new ThreadLocal<>();
++
++    static FTViewPermanentIdResolver.Snapshot beginSnapshot() {
++        FTViewPermanentIdResolver.Snapshot previous = SNAPSHOT.get();
++        SNAPSHOT.set(new FTViewPermanentIdResolver.Snapshot());
++        return previous;
++    }
++
++    static void endSnapshot(FTViewPermanentIdResolver.Snapshot previous) {
++        if (previous == null) SNAPSHOT.remove();
++        else SNAPSHOT.set(previous);
++    }
+ 
+     private PermanentIdResolver() {
+     }
+@@ -15,6 +29,8 @@
+         }
+ 
+         try {
++            FTViewPermanentIdResolver.Snapshot snapshot = SNAPSHOT.get();
++            if (snapshot != null) return snapshot.resolve(view);
+             Class<?> managerClass = Class.forName("com.ft.sdk.SessionReplayManager");
+             Object manager = managerClass.getMethod("get").invoke(null);
+             if (manager == null) {
+--- a/com/ft/sdk/sessionreplay/internal/recorder/SnapshotProducer.java
++++ b/com/ft/sdk/sessionreplay/internal/recorder/SnapshotProducer.java
+@@ -54,7 +54,9 @@
+             ImagePrivacy imagePrivacy,
+             RecordedDataQueueRefs recordedDataQueueRefs
+     ) {
+-        return convertViewToNode(
++        com.ft.sdk.FTViewPermanentIdResolver.Snapshot previous = PermanentIdResolver.beginSnapshot();
++        try {
++            return convertViewToNode(
+                 rootView,
+                 new MappingContext(systemInformation, imageWireframeHelper,
+                         false, textAndInputPrivacy, imagePrivacy,
+@@ -63,7 +65,10 @@
+                 )),
+                 new LinkedList<>(),
+                 recordedDataQueueRefs
+-        );
++            );
++        } finally {
++            PermanentIdResolver.endSnapshot(previous);
++        }
+     }
+ 
+     @UiThread

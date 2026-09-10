@@ -36,6 +36,10 @@ export interface DesignTokens {
     accent: string;
     accentEnd: string;
     accentSoft: string;
+    orange: string;
+    pink: string;
+    purple: string;
+    success: string;
     danger: string;
     overlay: string;
     onAccent: string;
@@ -52,15 +56,19 @@ export const storefrontTokens: DesignTokens = Object.freeze({
   colors: {
     background: '#f7f6f3',
     surface: '#ffffff',
-    surfaceSoft: '#fbfaf8',
-    text: '#1c1a18',
-    muted: '#706b64',
-    line: '#e6e1da',
-    accent: '#f04b3f',
+    surfaceSoft: '#fff9f7',
+    text: '#24152f',
+    muted: '#71666f',
+    line: '#e8dfdc',
+    accent: '#ff3856',
     accentEnd: '#d730ff',
-    accentSoft: '#fff1ed',
+    accentSoft: '#fff0f5',
+    orange: '#ff7a00',
+    pink: '#ff3856',
+    purple: '#d730ff',
+    success: '#12805c',
     danger: '#d92d20',
-    overlay: 'rgba(20, 17, 15, 0.44)',
+    overlay: 'rgba(36, 21, 47, 0.48)',
     onAccent: '#ffffff',
   },
 });

@@ -1,0 +1,12 @@
+{
+  "iceServers": [
+    {
+      "urls": [
+        "turn:__PUBLIC_IP__:3478?transport=udp",
+        "turn:__PUBLIC_IP__:3478?transport=tcp"
+      ],
+      "username": "__TURN_USER__",
+      "credential": "__TURN_PASSWORD__"
+    }
+  ]
+}

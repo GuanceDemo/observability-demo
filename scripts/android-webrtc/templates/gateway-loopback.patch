@@ -1,0 +1,17 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+index ab04cdf..538b355 100644
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -377,10 +377,10 @@ async def main():
+     app = init_app(args.videobridge_token)
+     runner = web.AppRunner(app)
+     await runner.setup()
+-    site = web.TCPSite(runner, "0.0.0.0", args.port)
++    site = web.TCPSite(runner, "127.0.0.1", args.port)
+     await site.start()
+ 
+-    logging.info(f"Gateway Webserver listening on http://0.0.0.0:{args.port}")
++    logging.info(f"Gateway Webserver listening on http://127.0.0.1:{args.port}")
+ 
+     # Run forever
+     try:

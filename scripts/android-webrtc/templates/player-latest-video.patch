@@ -1,0 +1,29 @@
+diff --git a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+--- a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
++++ b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+@@ -100,7 +100,8 @@
+    * @param config Configuration options.
+    */
+   constructor(wsUrl: string, emulator: EmulatorController | null = null, config: WsJsepConfig = {}) {
+-    this.wsUrl = wsUrl;
++    this.wsUrl = new URLSearchParams(window.location.search).get("latestVideo") === "1"
++      ? wsUrl.replace(/\/ws-jsep$/, "/ws-jsep-latest") : wsUrl;
+     this.emulator = emulator;
+     this.config = {
+       enableLogging: false,
+@@ -176,6 +177,7 @@
+    */
+   _queueReconnect = () => {
+     if (this.reconnectTimeoutId) return;
++    this.wsUrl = this.wsUrl.replace(/\/ws-jsep-latest$/, "/ws-jsep");
+ 
+     this.reconnectAttempts++;
+     if (this.reconnectAttempts > this.maxReconnectAttempts) {
+@@ -610,6 +612,7 @@
+ 
+   recoverConnection = (): boolean => {
+     if (!this.connected) return false;
++    this.wsUrl = this.wsUrl.replace(/\/ws-jsep-latest$/, "/ws-jsep");
+     this._disconnectState();
+     this._connect();
+     return true;

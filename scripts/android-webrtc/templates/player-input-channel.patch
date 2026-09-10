@@ -1,0 +1,39 @@
+diff --git a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+index 899bcf7..e933170 100644
+--- a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
++++ b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+@@ -462,6 +462,15 @@ export default class WsJsepProtocol {
+    * @param msg The protobuf message instance.
+    */
+   send = (label: string, msg: any) => {
++    // Emulator releases that expose the legacy per-event channels do not
++    // necessarily consume the newer unified `input` envelope. Prefer the
++    // channel announced by the Emulator and send that event's native proto.
++    const legacyForwarder = this.event_forwarders[label];
++    if (this.connected && legacyForwarder?.readyState === "open") {
++      legacyForwarder.send(msg.serializeBinary());
++      return;
++    }
++
+     let forwarder = this.event_forwarders["input"];
+     if (this.connected && forwarder && forwarder.readyState === "open") {
+       const inputEvent = new Proto.InputEvent();
+diff --git a/js/src/proto/emulator_controller_pb.d.ts b/js/src/proto/emulator_controller_pb.d.ts
+--- a/js/src/proto/emulator_controller_pb.d.ts
++++ b/js/src/proto/emulator_controller_pb.d.ts
+@@ -48,7 +48,15 @@ export class TouchEvent {
+   serializeBinary(): Uint8Array;
+ }
+ 
++export class InputEvent {
++  setMouseEvent(event: MouseEvent): void;
++  setKeyEvent(event: KeyboardEvent): void;
++  setTouchEvent(event: TouchEvent): void;
++  serializeBinary(): Uint8Array<ArrayBuffer>;
++}
++
+ declare const Proto: {
++  InputEvent: typeof InputEvent;
+   MouseEvent: typeof MouseEvent;
+   KeyboardEvent: typeof KeyboardEvent;
+   Touch: typeof Touch;

@@ -1,0 +1,328 @@
+{
+  "observability-engineering": {
+    "zh": {
+      "bookId": "observability-engineering",
+      "title": "可观测性工程",
+      "description": "一本面向现代复杂系统的实践指南，系统解释可观测性为何不同于传统监控，以及团队如何借助结构化事件、分布式追踪、OpenTelemetry、SLO 和组织协作，更快地理解与调试未知问题。",
+      "parts": [
+        [
+          "I",
+          "走向可观测性",
+          "定义、调试差异、规模化经验，以及与 DevOps / SRE 的关系。"
+        ],
+        [
+          "II",
+          "可观测性基础",
+          "结构化事件、分布式追踪、OpenTelemetry 与事件分析。"
+        ],
+        [
+          "III",
+          "面向团队的实践",
+          "可观测性驱动开发、SLO、告警与组织落地。"
+        ],
+        [
+          "IV",
+          "规模化可观测性",
+          "数据存储、采样、遥测管道与成熟度模型。"
+        ]
+      ]
+    },
+    "en": {
+      "bookId": "observability-engineering",
+      "title": "Observability Engineering",
+      "description": "A practical guide to modern, complex systems. It explains how observability differs from traditional monitoring and how teams use structured events, distributed tracing, OpenTelemetry, SLOs, and collaborative practices to debug previously unknown problems.",
+      "parts": [
+        [
+          "I",
+          "The path to observability",
+          "Definitions, debugging differences, scaling lessons, and DevOps / SRE."
+        ],
+        [
+          "II",
+          "Observability fundamentals",
+          "Structured events, distributed tracing, OpenTelemetry, and analysis."
+        ],
+        [
+          "III",
+          "Practices for teams",
+          "Team adoption, SLOs, alerting, and observability-driven development."
+        ],
+        [
+          "IV",
+          "Observability at scale",
+          "Data stores, sampling, telemetry pipelines, and maturity."
+        ]
+      ]
+    }
+  },
+  "distributed-observability": {
+    "zh": {
+      "bookId": "distributed-observability",
+      "title": "分布式系统可观测性",
+      "description": "聚焦分布式系统中的监控难题与取舍，讨论日志、指标和追踪各自的优势与局限，并给出逐步演进观测体系的清晰蓝图。",
+      "parts": [
+        [
+          "01",
+          "为什么需要可观测性",
+          "从分布式系统复杂度与运营挑战开始。"
+        ],
+        [
+          "02",
+          "监控与可观测性",
+          "告警、信号选择与不可监控故障。"
+        ],
+        [
+          "03",
+          "为可观测性编码",
+          "面向失败的代码与测试方法。"
+        ],
+        [
+          "04",
+          "日志、指标与追踪",
+          "三类遥测信号的优势、限制与组合。"
+        ]
+      ]
+    },
+    "en": {
+      "bookId": "distributed-observability",
+      "title": "Distributed Systems Observability",
+      "description": "A concise guide to monitoring tradeoffs in distributed systems. It compares logs, metrics, and traces, explains partial and soft failures, and offers a clear path for evolving an observability practice.",
+      "parts": [
+        [
+          "01",
+          "Why observability",
+          "Distributed-system complexity and operational challenges."
+        ],
+        [
+          "02",
+          "Monitoring and observability",
+          "Alerts, signal selection, and failures that evade monitoring."
+        ],
+        [
+          "03",
+          "Coding for observability",
+          "Failure-aware code and testing methods."
+        ],
+        [
+          "04",
+          "Logs, metrics, and traces",
+          "Strengths, limitations, and combinations of the three signals."
+        ]
+      ]
+    }
+  },
+  "implementing-slo": {
+    "zh": {
+      "bookId": "implementing-slo",
+      "title": "实施服务级别目标",
+      "description": "从用户视角定义有意义的 SLI 和 SLO，使用错误预算推动数据驱动决策，并从零开始建立支持 SLO 的工具、流程与组织文化。",
+      "parts": [
+        [
+          "I",
+          "SLO 开发",
+          "可靠性堆栈、SLI、目标与错误预算。"
+        ],
+        [
+          "II",
+          "SLO 实施",
+          "组织共识、测量、工具与案例。"
+        ],
+        [
+          "III",
+          "SLO 文化",
+          "推广、报告与持续改进。"
+        ]
+      ]
+    },
+    "en": {
+      "bookId": "implementing-slo",
+      "title": "Implementing Service Level Objectives",
+      "description": "Define meaningful SLIs and SLOs from the user perspective, apply error budgets to data-driven decisions, and build the tooling, process, and culture needed to operate an SLO program.",
+      "parts": [
+        [
+          "I",
+          "Developing SLOs",
+          "The reliability stack, SLIs, objectives, and error budgets."
+        ],
+        [
+          "II",
+          "Implementing SLOs",
+          "Alignment, measurement, tooling, and case studies."
+        ],
+        [
+          "III",
+          "SLO culture",
+          "Adoption, reporting, and continuous improvement."
+        ]
+      ]
+    }
+  },
+  "site-reliability-engineering": {
+    "zh": {
+      "bookId": "site-reliability-engineering",
+      "title": "网站可靠性工程",
+      "description": "Google SRE 团队总结如何以软件工程方法运行大型生产系统，覆盖风险、SLO、自动化、告警、故障响应、容量与组织协作。",
+      "parts": [
+        [
+          "I",
+          "概念与背景",
+          "Google 生产环境与 SRE 的基本定义。"
+        ],
+        [
+          "II",
+          "核心原则",
+          "风险、SLO、消除琐务、监控与自动化。"
+        ],
+        [
+          "III",
+          "工程实践",
+          "告警、值班、故障响应、容量与系统设计。"
+        ],
+        [
+          "IV",
+          "组织与管理",
+          "团队成长、协作和参与模式。"
+        ]
+      ]
+    },
+    "en": {
+      "bookId": "site-reliability-engineering",
+      "title": "Site Reliability Engineering",
+      "description": "Google SRE practitioners explain how software engineering can operate large production systems, covering risk, SLOs, automation, monitoring, incident response, capacity, and organizational collaboration.",
+      "parts": [
+        [
+          "I",
+          "Introduction",
+          "Google production environments and the definition of SRE."
+        ],
+        [
+          "II",
+          "Principles",
+          "Risk, SLOs, toil reduction, monitoring, and automation."
+        ],
+        [
+          "III",
+          "Practices",
+          "Alerting, on-call, incident response, capacity, and design."
+        ],
+        [
+          "IV",
+          "Management",
+          "Team growth, collaboration, and engagement models."
+        ]
+      ]
+    }
+  },
+  "sre-workbook": {
+    "zh": {
+      "bookId": "sre-workbook",
+      "title": "SRE 实战手册",
+      "description": "《网站可靠性工程》的实践伙伴，以 Google 与多家团队的真实案例说明如何落地 SLO、告警、值班、故障响应、消除琐务和组织变革。",
+      "parts": [
+        [
+          "I",
+          "基础",
+          "SRE 与 DevOps、SLO 和错误预算。"
+        ],
+        [
+          "II",
+          "实践",
+          "值班、事故响应、复盘与容量。"
+        ],
+        [
+          "III",
+          "流程",
+          "发布、配置、管道与恢复。"
+        ],
+        [
+          "IV",
+          "组织",
+          "SRE 参与模式与变革管理。"
+        ]
+      ]
+    },
+    "en": {
+      "bookId": "sre-workbook",
+      "title": "The Site Reliability Workbook",
+      "description": "The hands-on companion to the SRE book, using cases from Google and other organizations to implement SLOs, alerting, on-call, incident response, toil reduction, and organizational change.",
+      "parts": [
+        [
+          "I",
+          "Foundations",
+          "SRE and DevOps, SLOs, and error budgets."
+        ],
+        [
+          "II",
+          "Practices",
+          "On-call, incidents, postmortems, and capacity."
+        ],
+        [
+          "III",
+          "Processes",
+          "Releases, configuration, pipelines, and recovery."
+        ],
+        [
+          "IV",
+          "Organizations",
+          "SRE engagement and change management."
+        ]
+      ]
+    }
+  },
+  "secure-reliable-systems": {
+    "zh": {
+      "bookId": "secure-reliable-systems",
+      "title": "构建安全可靠的系统",
+      "description": "将安全与可靠性作为同一套系统质量来设计，讨论从架构、变更、恢复到组织协作的工程实践，帮助团队构建可扩展的生产系统。",
+      "parts": [
+        [
+          "I",
+          "设计原则",
+          "安全与可靠性的共同基础。"
+        ],
+        [
+          "II",
+          "系统设计",
+          "架构、隔离、最小权限与弹性。"
+        ],
+        [
+          "III",
+          "运营实践",
+          "变更、检测、响应和恢复。"
+        ],
+        [
+          "IV",
+          "组织协作",
+          "跨团队文化、流程和治理。"
+        ]
+      ]
+    },
+    "en": {
+      "bookId": "secure-reliable-systems",
+      "title": "Building Secure & Reliable Systems",
+      "description": "Treat security and reliability as one system quality. The book connects architecture, change, recovery, and organizational collaboration to help teams build scalable and resilient production systems.",
+      "parts": [
+        [
+          "I",
+          "Design principles",
+          "The shared foundations of security and reliability."
+        ],
+        [
+          "II",
+          "System design",
+          "Architecture, isolation, least privilege, and resilience."
+        ],
+        [
+          "III",
+          "Operations",
+          "Change, detection, response, and recovery."
+        ],
+        [
+          "IV",
+          "Collaboration",
+          "Cross-team culture, process, and governance."
+        ]
+      ]
+    }
+  }
+}

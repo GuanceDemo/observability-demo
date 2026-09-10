@@ -24,7 +24,7 @@ flowchart LR
   D --> DW["DataWay"]
 ```
 
-更多细节见 [架构与数据流](docs/architecture.md)、[可观测信号与字段](docs/observability.md) 和 [React Native 移动端 RUM Demo](docs/mobile-rum.md)。
+更多细节见 [架构与数据流](docs/architecture.md)、[可观测信号与字段](docs/observability.md)、[React Native 移动端 RUM Demo](docs/mobile-rum.md) 和 [真实 Android Emulator 网页接入](docs/android-emulator-webrtc.md)。
 
 ## 本地预览（Docker Compose）
 
@@ -275,3 +275,5 @@ Harbor 发布使用 `demo` 项目中具备 Repository Pull/Push 权限的机器�
 ## License
 
 [Apache License 2.0](LICENSE)
+
+Android 播放器与 APK 支持独立运行时版本：`mobileDevice.playerVersion`、`mobileDevice.apkVersion`、`mobileDevice.apkMinAndroidVersion`。首次升级支持该配置的 order-service 后，后续 Android 发布无需重建 Java 镜像，详见 [Android 独立版本配置](docs/android-emulator-webrtc.md#android-独立版本配置)。

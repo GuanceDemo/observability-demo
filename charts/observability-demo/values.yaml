@@ -58,6 +58,14 @@ rum:
     service: mall-mobile
     sessionReplayEnabled: true
 
+mobileDevice:
+  # Optional HTTPS player URL. Blank keeps the existing HTML mobile preview.
+  playerUrl: ""
+  # Independent artifact metadata/cache versions; never changes Java image.tag.
+  playerVersion: ""
+  apkVersion: ""
+  apkMinAndroidVersion: "7.0"
+
 observabilityConsole:
   # Empty uses the provider default (Guance or TrueWatch). Set a URL to override it.
   url: ""

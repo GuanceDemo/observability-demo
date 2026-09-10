@@ -1,0 +1,217 @@
+diff --git a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+index 4d79af6..40d0c54 100644
+--- a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
++++ b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+@@ -50,6 +50,13 @@ export interface JsepSignal {
+   bye?: boolean;
+ }
+ 
++interface PendingInput {
++  label: string;
++  msg: any;
++  queuedAt: number;
++  expiresAt: number;
++}
++
+ /**
+  * A JSEP protocol driver that uses WebSockets for signaling.
+  *
+@@ -81,6 +88,8 @@ export default class WsJsepProtocol {
+ 
+   reconnectAttempts: number;
+   reconnectTimeoutId: any | null;
++  pendingInputs: PendingInput[];
++  inputQueueTimer: any | null;
+ 
+   /**
+    * Creates an instance of WsJsepProtocol.
+@@ -121,6 +130,8 @@ export default class WsJsepProtocol {
+     // Reconnection state
+     this.reconnectAttempts = 0;
+     this.reconnectTimeoutId = null;
++    this.pendingInputs = [];
++    this.inputQueueTimer = null;
+   }
+ 
+   /**
+@@ -375,6 +386,10 @@ export default class WsJsepProtocol {
+    */
+   _setupDataChannel = (channel: RTCDataChannel) => {
+     this.event_forwarders[channel.label] = channel;
++    channel.addEventListener("open", this._flushPendingInputs);
++    if (channel.readyState === "open") {
++      this._flushPendingInputs();
++    }
+   };
+ 
+   /**
+@@ -477,57 +492,126 @@ export default class WsJsepProtocol {
+     }
+   };
+ 
+-  /**
+-   * Sends a control message (mouse, keyboard, touch) over either the corresponding
+-   * WebRTC DataChannel or via the fallback emulator controller.
+-   *
+-   * @param label The channel label ("mouse", "keyboard", "touch").
+-   * @param msg The protobuf message instance.
+-   */
+-  send = (label: string, msg: any) => {
+-    // Emulator releases that expose the legacy per-event channels do not
+-    // necessarily consume the newer unified `input` envelope. Prefer the
+-    // channel announced by the Emulator and send that event's native proto.
+-    const legacyForwarder = this.event_forwarders[label];
++  _notifyInput = (type: "dispatched" | "queued" | "dropped", input: PendingInput) => {
++    window.dispatchEvent(new CustomEvent(`mall-demo-input-${type}`, {
++      detail: {
++        label: input.label,
++        queuedAt: input.queuedAt,
++        dispatchedAt: performance.now(),
++      },
++    }));
++  };
++
++  _sendInputNow = (input: PendingInput): boolean => {
++    const legacyForwarder = this.event_forwarders[input.label];
+     if (this.connected && legacyForwarder?.readyState === "open") {
+-      legacyForwarder.send(msg.serializeBinary());
+-      return;
++      legacyForwarder.send(input.msg.serializeBinary());
++      this._notifyInput("dispatched", input);
++      return true;
+     }
+ 
+-    let forwarder = this.event_forwarders["input"];
+-    if (this.connected && forwarder && forwarder.readyState === "open") {
++    const forwarder = this.event_forwarders["input"];
++    if (this.connected && forwarder?.readyState === "open") {
+       const inputEvent = new Proto.InputEvent();
+-      switch (label) {
++      switch (input.label) {
+         case "mouse":
+-          inputEvent.setMouseEvent(msg);
++          inputEvent.setMouseEvent(input.msg);
+           break;
+         case "keyboard":
+-          inputEvent.setKeyEvent(msg);
++          inputEvent.setKeyEvent(input.msg);
+           break;
+         case "touch":
+-          inputEvent.setTouchEvent(msg);
++          inputEvent.setTouchEvent(input.msg);
+           break;
+         default:
+-          logger.warn(`Unsupported event label '${label}' for WebRTC data channel.`);
+-          return;
++          logger.warn(`Unsupported event label '${input.label}' for WebRTC data channel.`);
++          return false;
+       }
+-      let bytes = inputEvent.serializeBinary();
+-      forwarder.send(bytes);
+-    } else if (this.emulator) {
+-      switch (label) {
++      forwarder.send(inputEvent.serializeBinary());
++      this._notifyInput("dispatched", input);
++      return true;
++    }
++
++    if (this.emulator) {
++      switch (input.label) {
+         case "mouse":
+-          if (this.emulator.sendMouse) this.emulator.sendMouse(msg);
++          if (this.emulator.sendMouse) this.emulator.sendMouse(input.msg);
+           break;
+         case "keyboard":
+-          if (this.emulator.sendKey) this.emulator.sendKey(msg);
++          if (this.emulator.sendKey) this.emulator.sendKey(input.msg);
+           break;
+         case "touch":
+-          if (this.emulator.sendTouch) this.emulator.sendTouch(msg);
++          if (this.emulator.sendTouch) this.emulator.sendTouch(input.msg);
+           break;
++        default:
++          return false;
+       }
+-    } else {
+-      logger.warn(`Data channel 'input' is not open. Event was dropped.`);
++      this._notifyInput("dispatched", input);
++      return true;
+     }
++    return false;
++  };
++
++  _scheduleInputFlush = () => {
++    if (this.inputQueueTimer || !this.pendingInputs.length) return;
++    this.inputQueueTimer = setTimeout(() => {
++      this.inputQueueTimer = null;
++      this._flushPendingInputs();
++    }, 50);
++  };
++
++  _flushPendingInputs = () => {
++    if (this.inputQueueTimer) {
++      clearTimeout(this.inputQueueTimer);
++      this.inputQueueTimer = null;
++    }
++    const now = performance.now();
++    const remaining: PendingInput[] = [];
++    for (const input of this.pendingInputs) {
++      if (input.expiresAt <= now) {
++        this._notifyInput("dropped", input);
++      } else if (!this._sendInputNow(input)) {
++        remaining.push(input);
++      }
++    }
++    this.pendingInputs = remaining;
++    this._scheduleInputFlush();
++  };
++
++  /**
++   * Sends a control message (mouse, keyboard, touch) over either the corresponding
++   * WebRTC DataChannel or via the fallback emulator controller.
++   *
++   * @param label The channel label ("mouse", "keyboard", "touch").
++   * @param msg The protobuf message instance.
++   */
++  send = (label: string, msg: any): boolean => {
++    const queuedAt = performance.now();
++    const input = { label, msg, queuedAt, expiresAt: queuedAt + 1500 };
++    if (this._sendInputNow(input)) return true;
++    if (!this.connected) {
++      this._notifyInput("dropped", input);
++      return false;
++    }
++
++    // Preserve a short startup click while SCTP channels are still opening.
++    // Mouse/touch down and up stay ordered; stale input is never replayed after
++    // the user has already moved on.
++    while (this.pendingInputs.length >= 16) {
++      const dropped = this.pendingInputs.shift();
++      if (dropped) this._notifyInput("dropped", dropped);
++    }
++    this.pendingInputs.push(input);
++    this._notifyInput("queued", input);
++    this._scheduleInputFlush();
++    return false;
++  };
++
++  recoverConnection = (): boolean => {
++    if (!this.connected) return false;
++    this._disconnectState();
++    this._connect();
++    return true;
+   };
+ 
+   /**
+@@ -540,6 +624,11 @@ export default class WsJsepProtocol {
+   _disconnectState = () => {
+     this.signalQueue = [];
+     this.isProcessingSignal = false;
++    if (this.inputQueueTimer) {
++      clearTimeout(this.inputQueueTimer);
++      this.inputQueueTimer = null;
++    }
++    this.pendingInputs = [];
+ 
+     if (this.ws) {
+       this.ws.onclose = null;

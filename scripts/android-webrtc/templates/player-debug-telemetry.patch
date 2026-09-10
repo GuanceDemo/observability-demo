@@ -1,0 +1,47 @@
+diff --git a/js/example/index.html b/js/example/index.html
+--- a/js/example/index.html
++++ b/js/example/index.html
+@@ -7,5 +7,4 @@
+     <script type="module">
+-      window.addEventListener('error', (event) => {
+-        console.error('Uncaught Exception:', event.error || event.message);
+-      });
++      import { startPlayerDiagnostics } from './src/mall-demo-diagnostics.js';
++      startPlayerDiagnostics();
+     </script>
+diff --git a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+--- a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
++++ b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+@@ -16,6 +16,12 @@
+ import logger from "./logger";
+ import Proto from "../../../proto/emulator_controller_pb";
+ 
++declare global {
++  interface Window {
++    __mallDemoJsepDriver?: WsJsepProtocol;
++  }
++}
++
+ export interface WsJsepConfig {
+   enableLogging?: boolean;
+   onError?: (error: Error | Event) => void;
+@@ -294,6 +294,8 @@ export default class WsJsepProtocol {
+     if (this.peerConnection) return;
+ 
+     this.peerConnection = new RTCPeerConnection(playbackTransport(config, window.location.search));
++    window.__mallDemoJsepDriver = this;
++    window.dispatchEvent(new CustomEvent("mall-demo-peer-connection"));
+     this.peerConnection.ontrack = this._handlePeerConnectionTrack;
+     this.peerConnection.onicecandidate = this._handlePeerIceCandidate;
+     this.peerConnection.onconnectionstatechange = this._handlePeerConnectionStateChange;
+@@ -526,6 +528,10 @@ export default class WsJsepProtocol {
+       this.peerConnection.onconnectionstatechange = null;
+       this.peerConnection.ondatachannel = null;
+       this.peerConnection.close();
++      if (window.__mallDemoJsepDriver === this) {
++        delete window.__mallDemoJsepDriver;
++        window.dispatchEvent(new CustomEvent("mall-demo-peer-connection"));
++      }
+       this.peerConnection = null;
+     }
+ 

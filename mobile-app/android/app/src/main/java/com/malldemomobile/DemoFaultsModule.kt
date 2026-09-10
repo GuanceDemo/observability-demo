@@ -6,10 +6,13 @@ import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.util.Log
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
+import java.util.concurrent.atomic.AtomicLong
+import org.json.JSONObject
 
 class DemoFaultsModule(
   reactContext: ReactApplicationContext,
@@ -20,7 +23,14 @@ class DemoFaultsModule(
   override fun getConstants(): Map<String, Any> =
     mapOf(
       "dangerousFaultsEnabled" to BuildConfig.DEMO_FAULTS_ENABLED,
+      "replayDisabledForDiagnostics" to BuildConfig.DIAGNOSTIC_DISABLE_REPLAY,
       "gatewayUrl" to BuildConfig.GATEWAY_URL,
+      "rumDirectEnabled" to BuildConfig.RUM_DIRECT_ENABLED,
+      "rumAndroidAppId" to BuildConfig.RUM_ANDROID_APP_ID,
+      "rumService" to BuildConfig.RUM_SERVICE,
+      "rumEnv" to BuildConfig.RUM_ENV,
+      "appVersion" to BuildConfig.VERSION_NAME,
+      "rumNativeCoreInitialized" to BuildConfig.RUM_DIRECT_ENABLED,
     )
 
   @ReactMethod
@@ -48,6 +58,42 @@ class DemoFaultsModule(
       SystemClock.sleep(safeDuration)
       promise.resolve(null)
     }
+  }
+
+  @ReactMethod
+  fun blockCheckoutPreview(promise: Promise) {
+    val now = SystemClock.elapsedRealtime()
+    val previous = checkoutBlockAt.get()
+    if ((previous > 0L && now - previous < 15_000L) || !checkoutBlockAt.compareAndSet(previous, now)) {
+      promise.reject("CHECKOUT_PREVIEW_COOLDOWN", "Wait 15 seconds before demonstrating checkout again")
+      return
+    }
+    // A fixed, bounded native UI stall; the dangerous crash/ANR gates remain separate.
+    Handler(Looper.getMainLooper()).post {
+      val startedAt = SystemClock.elapsedRealtime()
+      SystemClock.sleep(1800L)
+      promise.resolve((SystemClock.elapsedRealtime() - startedAt).toDouble())
+    }
+  }
+
+  @ReactMethod
+  fun acknowledgeInteraction(action: String) {
+    val normalizedAction =
+      action
+        .trim()
+        .lowercase()
+        .replace(INVALID_INTERACTION_ACTION, "_")
+        .trim('_')
+        .take(80)
+    if (normalizedAction.isEmpty()) return
+
+    val payload =
+      JSONObject()
+        .put("version", 1)
+        .put("sequence", interactionSequence.incrementAndGet())
+        .put("action", normalizedAction)
+        .put("androidElapsedRealtimeMs", SystemClock.elapsedRealtime())
+    Log.i(INTERACTION_LOG_TAG, "$INTERACTION_LOG_PREFIX$payload")
   }
 
   @ReactMethod
@@ -93,5 +139,10 @@ class DemoFaultsModule(
   companion object {
     const val NAME = "DemoFaults"
     const val GUANCE_APP_PACKAGE = "com.cloudcare.ft.dataflux.mobile"
+    const val INTERACTION_LOG_TAG = "MallDemoInteraction"
+    const val INTERACTION_LOG_PREFIX = "MALL_DEMO_INTERACTION_ACK "
+    val INVALID_INTERACTION_ACTION = Regex("[^a-z0-9_.:-]+")
+    val interactionSequence = AtomicLong(0)
+    val checkoutBlockAt = AtomicLong(0)
   }
 }

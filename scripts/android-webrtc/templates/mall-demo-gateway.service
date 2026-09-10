@@ -1,0 +1,21 @@
+[Unit]
+Description=Mall Demo Android Emulator WebRTC Gateway
+After=network-online.target mall-demo-emulator.service
+Requires=mall-demo-emulator.service
+
+[Service]
+Type=simple
+User=cherry
+Group=cherry
+Environment=HOME=/home/cherry
+Environment=XDG_RUNTIME_DIR=/run/user/1002
+Environment=EMULATOR_ICE_CONFIG=/etc/mall-demo-webrtc/turn.json
+Environment=ANDROID_ADB=/home/cherry/android-sdk/platform-tools/adb
+Environment=ANDROID_SERIAL=emulator-5554
+Environment=ANDROID_PACKAGE=com.malldemomobile.safe
+ExecStart=/usr/local/bin/mall-demo-gateway
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

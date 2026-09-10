@@ -1,0 +1,15 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+index 9ab5bc2..78ff23f 100644
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -184,6 +184,9 @@ async def handle_websocket_jsep(request):
+         return ws
+ 
+     rtc_stub = rtc_grpc.RtcStub(VIDEOBRIDGE_CHANNEL)
+-    bridge_metadata = get_videobridge_metadata(request.app["videobridge_token"])
++    bridge_token = request.app["videobridge_token"]
++    bridge_metadata = (
++        get_videobridge_metadata(bridge_token) if bridge_token else get_emulator_metadata()
++    )
+     guid = None
+     stream_task = None

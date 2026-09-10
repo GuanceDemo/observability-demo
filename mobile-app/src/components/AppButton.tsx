@@ -7,6 +7,7 @@ import {
   type PressableProps,
 } from 'react-native';
 import type {DesignTokens} from '../designTokens';
+import {MIN_TOUCH_TARGET_SIZE} from '../layout';
 
 interface Props extends PressableProps {
   label: string;
@@ -56,13 +57,16 @@ export function AppButton({
               : tokens.colors.line,
           opacity: disabled || busy ? 0.5 : pressed ? 0.78 : 1,
         },
+        pressed && !disabled && !busy && styles.pressed,
         typeof style === 'function' ? style({pressed}) : style,
       ]}
       {...props}>
       {busy ? (
         <ActivityIndicator size="small" color={foreground} />
       ) : (
-        <Text style={[styles.label, {color: foreground}]}>{label}</Text>
+        <Text style={[styles.label, compact && styles.compactLabel, {color: foreground}]}>
+          {label}
+        </Text>
       )}
     </Pressable>
   );
@@ -70,7 +74,7 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: 44,
+    minHeight: MIN_TOUCH_TARGET_SIZE,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderWidth: 1,
@@ -79,13 +83,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   compact: {
-    minHeight: 34,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    minHeight: MIN_TOUCH_TARGET_SIZE,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
   },
   label: {
     fontSize: 13,
     lineHeight: 18,
     fontWeight: '800',
+  },
+  compactLabel: {
+    fontSize: 9,
+    lineHeight: 13,
+  },
+  pressed: {
+    transform: [{scale: 0.97}],
   },
 });

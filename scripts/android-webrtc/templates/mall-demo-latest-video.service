@@ -1,0 +1,18 @@
+[Unit]
+Description=Mall Demo latest-frame WebRTC video bridge
+After=network-online.target mall-demo-gateway.service
+Requires=mall-demo-gateway.service
+
+[Service]
+Type=simple
+User=cherry
+Group=cherry
+Environment=XDG_RUNTIME_DIR=/run/user/1002
+ExecStart=/opt/mall-demo-webrtc/latest-video-venv/bin/python /opt/mall-demo-webrtc/latest-video/bridge.py
+Restart=always
+RestartSec=3
+TimeoutStopSec=10
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

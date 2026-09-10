@@ -1,0 +1,155 @@
+diff --git a/js/example/index.html b/js/example/index.html
+index e8b7f1e..3fd7232 100644
+--- a/js/example/index.html
++++ b/js/example/index.html
+@@ -3,7 +3,7 @@
+   <head>
+     <meta charset="UTF-8" />
+     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+-    <title>Android Emulator WebRTC Demo</title>
++    <title>Mall Demo · Android Device</title>
+     <script type="module">
+       window.addEventListener('error', (event) => {
+         console.error('Uncaught Exception:', event.error || event.message);
+@@ -16,6 +16,9 @@
+         background-color: #f0f2f5;
+         color: #1c1e21;
+       }
++      html, body, #root {
++        min-height: 100%;
++      }
+     </style>
+   </head>
+   <body>
+diff --git a/js/example/src/App.tsx b/js/example/src/App.tsx
+index 052da42..606077a 100644
+--- a/js/example/src/App.tsx
++++ b/js/example/src/App.tsx
+@@ -1,9 +1,23 @@
+-import React, { useState, useRef } from 'react';
++import React, { useEffect, useState, useRef } from 'react';
+ import { Emulator, logger } from '../../src';
+ 
+-logger.setLevel("debug");
++logger.setLevel("warn");
+ 
+ function App() {
++  const embedded = new URLSearchParams(window.location.search).get("embedded") === "1";
++
++  const getEmbeddedSize = () => {
++    const deviceAspectRatio = 720 / 1600;
++    let width = window.innerWidth;
++    let height = window.innerHeight;
++    if (width / height > deviceAspectRatio) {
++      width = height * deviceAspectRatio;
++    } else {
++      height = width / deviceAspectRatio;
++    }
++    return { width, height };
++  };
++
+   // Retrieve default connection URI from URL query parameters (e.g. ?url=localhost:8080 or ?uri=localhost:8080)
+   const getInitialUri = () => {
+     const params = new URLSearchParams(window.location.search);
+@@ -17,10 +31,18 @@ function App() {
+ 
+   const [uri, setUri] = useState(getInitialUri());
+   const [connected, setConnected] = useState(hasDefaultUri());
++  const [embeddedSize, setEmbeddedSize] = useState(getEmbeddedSize());
+   const [gps, setGps] = useState({ latitude: 37.4220, longitude: -122.0841 });
+   const [inputGps, setInputGps] = useState({ lat: '37.4220', lng: '-122.0841' });
+   const emulatorRef = useRef(null);
+ 
++  useEffect(() => {
++    if (!embedded) return undefined;
++    const resize = () => setEmbeddedSize(getEmbeddedSize());
++    window.addEventListener('resize', resize);
++    return () => window.removeEventListener('resize', resize);
++  }, [embedded]);
++
+   const handleConnect = (e) => {
+     if (e) e.preventDefault();
+     setConnected(true);
+@@ -44,6 +66,21 @@ function App() {
+     });
+   };
+ 
++  if (embedded && connected) {
++    return (
++      <main style={{ width: '100vw', height: '100vh', display: 'grid', placeItems: 'center', overflow: 'hidden', background: '#000' }}>
++        <Emulator
++          ref={emulatorRef}
++          uri={uri}
++          width={embeddedSize.width}
++          height={embeddedSize.height}
++          muted
++          onError={(err) => console.error('Emulator Error:', err)}
++        />
++      </main>
++    );
++  }
++
+   return (
+     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+       <h1>Android Emulator WebRTC Demo</h1>
+diff --git a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+index ac83e5e..899bcf7 100644
+--- a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
++++ b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+@@ -287,37 +287,22 @@ export default class WsJsepProtocol {
+    * @param config The signaling start configuration.
+    */
+   _handleStart = async (config: RTCConfiguration) => {
+-    const localOnlyConfig: RTCConfiguration = {
+-      ...config,
+-      iceServers: []
+-    };
++    // The gateway and emulator can both announce the same RTC session. Keep
++    // the first peer connection so a duplicate `start` cannot discard its
++    // negotiated TURN configuration and pending ICE state.
++    if (this.peerConnection) return;
+ 
+-    this.peerConnection = new RTCPeerConnection(localOnlyConfig);
++    this.peerConnection = new RTCPeerConnection(config);
+     this.peerConnection.ontrack = this._handlePeerConnectionTrack;
+     this.peerConnection.onicecandidate = this._handlePeerIceCandidate;
+     this.peerConnection.onconnectionstatechange = this._handlePeerConnectionStateChange;
+     this.peerConnection.ondatachannel = this._handleDataChannel;
+ 
+-    this.peerConnection.addTransceiver("video", { direction: "recvonly" });
+-    this.peerConnection.addTransceiver("audio", { direction: "recvonly" });
+-
+     const input = this.peerConnection.createDataChannel("input");
+ 
+     this._setupDataChannel(input);
+ 
+     this.connected = true;
+-
+-    try {
+-      const offer = await this.peerConnection.createOffer();
+-      if (!this.peerConnection) return;
+-
+-      await this.peerConnection.setLocalDescription(offer);
+-      if (!this.peerConnection) return;
+-
+-      this._sendJsep({ sdp: offer });
+-    } catch (e) {
+-      logger.error("Failed to create or set local offer:", e);
+-    }
+   };
+ 
+   /**
+diff --git a/js/src/components/emulator/views/event_handler.tsx b/js/src/components/emulator/views/event_handler.tsx
+index 0a4de11..babe5dd 100644
+--- a/js/src/components/emulator/views/event_handler.tsx
++++ b/js/src/components/emulator/views/event_handler.tsx
+@@ -5,7 +5,7 @@ import logger from "../net/logger";
+ import WsJsepProtocol from "../net/ws_jsep_protocol_driver";
+ 
+-const DEFAULT_WIDTH = 1080;
+-const DEFAULT_HEIGHT = 2424;
++const DEFAULT_WIDTH = 720;
++const DEFAULT_HEIGHT = 1600;
+ 
+ export interface MouseKeyHandlerProps {
+   /** The REST endpoint to retrieve status. */

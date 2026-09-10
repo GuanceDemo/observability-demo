@@ -1,0 +1,21 @@
+[Unit]
+Description=Mall Demo Android Emulator
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=cherry
+Group=cherry
+Environment=HOME=/home/cherry
+Environment=XDG_RUNTIME_DIR=/run/user/1002
+Environment=ANDROID_SDK_ROOT=/home/cherry/android-sdk
+Environment=ANDROID_AVD_HOME=/home/cherry/.android/avd
+ExecStart=/home/cherry/android-sdk/emulator/emulator @MallDemo_API36 -no-window -no-audio -no-boot-anim -no-metrics -skin 720x1600 -gpu swiftshader -accel on -cores 4 -memory 4096 -no-snapshot -grpc 8554 -grpc-use-token -grpc-allowlist /etc/mall-demo-webrtc/emulator-access.json -turncfg "/bin/cat /etc/mall-demo-webrtc/turn.json"
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=multi-user.target

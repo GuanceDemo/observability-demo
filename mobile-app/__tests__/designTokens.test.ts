@@ -10,9 +10,11 @@ describe('mobile design tokens', () => {
     expect(storefrontTokens.colors).toMatchObject({
       background: '#f7f6f3',
       surface: '#ffffff',
-      text: '#1c1a18',
-      accent: '#f04b3f',
-      accentSoft: '#fff1ed',
+      text: '#24152f',
+      accent: '#ff3856',
+      accentSoft: '#fff0f5',
+      orange: '#ff7a00',
+      purple: '#d730ff',
     });
   });
 

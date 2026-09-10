@@ -1,0 +1,35 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+index a3ea3e6..e91cc91 100644
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -254,16 +254,16 @@ async def handle_websocket_jsep(request):
+                     reader_req, metadata=bridge_metadata
+                 ):
+                     msg_text = response_msg.jsep_msg.message
+-                    logging.info(
+-                        f"Received JSEP message from Video Bridge gRPC stream: '{msg_text}'"
+-                    )
+                     if not msg_text:
+                         logging.info(
+                             "Received empty JSEP message from Video Bridge. Stopping stream reader."
+                         )
+                         break
+                     parsed_jsep = json.loads(msg_text)
+-                    logging.info(f"Forwarding JSEP message to browser: {parsed_jsep}")
++                    logging.info(
++                        "Forwarding JSEP message type(s) to browser: %s",
++                        ",".join(parsed_jsep.keys()),
++                    )
+ 
+                     # If it's an SDP offer/answer, or an ICE candidate message
+                     await ws.send_json(parsed_jsep)
+@@ -280,7 +280,8 @@ async def handle_websocket_jsep(request):
+             if ws_msg.type == web.WSMsgType.TEXT:
+                 client_data = ws_msg.json()
+                 logging.info(
+-                    f"Received message from Client -> Video Bridge: {client_data}"
++                    "Received JSEP message type(s) from client: %s",
++                    ",".join(client_data.keys()),
+                 )
+ 
+                 send_req = rtc.SendJsepMessageRequest()

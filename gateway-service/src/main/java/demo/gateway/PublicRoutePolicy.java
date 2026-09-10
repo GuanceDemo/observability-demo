@@ -135,6 +135,12 @@ final class PublicRoutePolicy {
               Action.FORWARD,
               "asset.webgl-game-icon",
               "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/android-storefront-scene-icon.png",
+              Action.FORWARD,
+              "asset.android-storefront-icon",
+              "static_asset"),
           RouteRule.regex(
               READ_METHODS,
               USAGE_GUIDE_SLIDE_PATH,
@@ -226,6 +232,12 @@ final class PublicRoutePolicy {
               "/api/demo/faults/off",
               Action.FORWARD,
               "demo.faults.disable",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("GET"),
+              "/api/demo/mobile/book-content",
+              Action.FORWARD,
+              "demo.mobile-book-content",
               "demo_api"),
           RouteRule.exact(
               Set.of("GET"),

@@ -1,18 +1,20 @@
 import {
   BOOK_COVER_ASPECT_RATIO,
-  FAULT_EDGE_TAG_WIDTH,
-  FAULT_EDGE_TAG_MIN_HEIGHT,
+  FAULT_TOOLBAR_BUTTON_SIZE,
   STOREFRONT_BAG_COVER_WIDTH,
   STOREFRONT_BOOK_COVER_WIDTH,
+  STOREFRONT_HEADER_ACTION_SIZE,
+  STOREFRONT_SHELL_HORIZONTAL_INSET,
   bookCoverArtLayout,
   faultDrawerSafeSpacing,
   storefrontLayoutForWidth,
 } from '../src/layout';
 
 describe('mobile safe-area layout', () => {
-  it('keeps the collapsed fault handle narrow without shrinking the store', () => {
-    expect(FAULT_EDGE_TAG_WIDTH).toBe(30);
-    expect(FAULT_EDGE_TAG_MIN_HEIGHT).toBeGreaterThan(FAULT_EDGE_TAG_WIDTH);
+  it('keeps the fault control visually aligned with header actions', () => {
+    expect(FAULT_TOOLBAR_BUTTON_SIZE).toBeGreaterThanOrEqual(48);
+    expect(STOREFRONT_HEADER_ACTION_SIZE).toBe(FAULT_TOOLBAR_BUTTON_SIZE);
+    expect(STOREFRONT_SHELL_HORIZONTAL_INSET).toBe(16);
   });
 
   it.each([360, 390])(

@@ -1,0 +1,13 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+index 011c289..a3ea3e6 100644
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -237,7 +237,7 @@ async def handle_websocket_jsep(request):
+             ice_servers.append(entry)
+ 
+         start_msg = {"start": {"iceServers": ice_servers}}
+-        logging.info(f"Sending 'start' signal to client: {start_msg}")
++        logging.info("Sending 'start' signal with %d ICE server(s).", len(ice_servers))
+         await ws.send_json(start_msg)
+ 
+         # 3. Spawn background streaming reader to forward gRPC messages -> WebSocket

@@ -1,0 +1,31 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+index 78ff23f..011c289 100644
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -201,10 +201,23 @@ async def handle_websocket_jsep(request):
+     stream_task = None
+ 
+     try:
+-        # 1. Build default ICE configuration using public STUN server
++        # 1. Build ICE configuration from a VM-local file when provided.
+         ice_config = ice.IceServerConfig()
+-        stun_server = ice_config.ice_servers.add()
+-        stun_server.urls.append("stun:stun.l.google.com:19302")
++        ice_config_path = os.environ.get("EMULATOR_ICE_CONFIG", "")
++        if ice_config_path:
++            with open(ice_config_path, "r") as config_file:
++                configured_ice = json.load(config_file)
++            for configured_server in configured_ice.get("iceServers", []):
++                ice_server = ice_config.ice_servers.add()
++                urls = configured_server.get("urls", [])
++                if isinstance(urls, str):
++                    urls = [urls]
++                ice_server.urls.extend(urls)
++                ice_server.username = configured_server.get("username", "")
++                ice_server.credential = configured_server.get("credential", "")
++        else:
++            stun_server = ice_config.ice_servers.add()
++            stun_server.urls.append("stun:stun.l.google.com:19302")
+ 
+         # 2. Initialize signaling session with Video Bridge
+         stream_req = rtc.RtcStreamRequest(ice_server_config=ice_config)

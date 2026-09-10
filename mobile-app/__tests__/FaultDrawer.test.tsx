@@ -4,6 +4,7 @@ import {
   Animated,
   Modal,
   PanResponder,
+  ScrollView,
   StyleSheet,
 } from 'react-native';
 import type {
@@ -217,7 +218,7 @@ describe('FaultDrawer motion lifecycle', () => {
     );
     jest.spyOn(PanResponder, 'create').mockImplementation(callbacks => {
       panCallbacks = callbacks;
-      return {panHandlers: {}};
+      return {panHandlers: {onMoveShouldSetResponder: jest.fn()}};
     });
   });
 
@@ -253,6 +254,27 @@ describe('FaultDrawer motion lifecycle', () => {
 
     complete(exit);
     expect(tree.root.findByType(Modal).props.visible).toBe(false);
+    act(() => tree.unmount());
+  });
+
+  it('restricts drawer swipes to the header so horizontal scene scrolling keeps its gesture', () => {
+    const tree = renderDrawer(true);
+    expect(panCallbacks.onStartShouldSetPanResponder?.({} as GestureResponderEvent, gesture({}))).toBe(true);
+    expect(tree.root.findByProps({testID: 'fault-drawer-header'}).props.onMoveShouldSetResponder).toEqual(expect.any(Function));
+    expect(tree.root.findByProps({testID: 'fault-drawer'}).props.onMoveShouldSetResponder).toBeUndefined();
+    expect(tree.root.findByProps({testID: 'fault-drawer-scroll'}).props.onMoveShouldSetResponder).toBeUndefined();
+    act(() => tree.unmount());
+  });
+
+  it('keeps drawer geometry fixed at vertical and horizontal scroll boundaries', () => {
+    const tree = renderDrawer(true);
+
+    expect(
+      tree.root
+        .findAllByType(ScrollView)
+        .every(scrollView => scrollView.props.overScrollMode === 'never'),
+    ).toBe(true);
+
     act(() => tree.unmount());
   });
 

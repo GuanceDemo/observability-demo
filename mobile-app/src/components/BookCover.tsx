@@ -1,271 +1,192 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {
-  BOOK_COVER_ASPECT_RATIO,
-  STOREFRONT_BAG_COVER_WIDTH,
-  STOREFRONT_BOOK_COVER_WIDTH,
-  bookCoverArtLayout,
-} from '../layout';
+import {Image, StyleSheet, Text, View} from 'react-native';
+import {PRODUCTS, getProductText, type StorefrontProduct} from '../data';
 import type {DesignTokens} from '../designTokens';
+import type {StoreLanguage} from '../types';
+import {primaryCoverAssets} from '../storefrontAssets';
 
 interface Props {
   tokens: DesignTokens;
+  product?: StorefrontProduct;
+  language?: StoreLanguage;
   compact?: boolean;
   width?: number;
 }
 
-export function BookCover({tokens, compact = false, width}: Props) {
-  const coverWidth =
-    width ??
-    (compact ? STOREFRONT_BAG_COVER_WIDTH : STOREFRONT_BOOK_COVER_WIDTH);
-  const art = bookCoverArtLayout(coverWidth);
-  const scaled = (value: number) => value * art.scale;
-  const nodeSize = scaled(12);
-  const nodeBorderWidth = Math.max(1, scaled(2));
+export function BookCover({
+  tokens,
+  product = PRODUCTS[0],
+  language = 'zh',
+  compact = false,
+  width,
+}: Props) {
+  const coverWidth = width ?? (compact ? 64 : 180);
+  const small = coverWidth <= 100;
+  const tiny = coverWidth <= 48;
+  const text = getProductText(product, language);
+  if (product.id === 'observability-engineering') {
+    return (
+      <Image
+        testID={compact ? 'bag-book-cover' : 'book-cover'}
+        accessibilityLabel={
+          language === 'en'
+            ? `${text.title} book cover`
+            : `《${text.title}》封面`
+        }
+        source={primaryCoverAssets[language]}
+        resizeMode="cover"
+        style={[
+          styles.cover,
+          compact && styles.compact,
+          small && styles.smallCover,
+          {width: coverWidth, height: coverWidth / 0.75},
+        ]}
+      />
+    );
+  }
+
+  const palette =
+    'cover' in product && Array.isArray(product.cover)
+      ? product.cover
+      : ['#30283d', '#fff8f0', tokens.colors.accent];
+  const background = String(palette[0]);
+  const foreground = String(palette[1]);
+  const accent = String(palette[2]);
   return (
     <View
       testID={compact ? 'bag-book-cover' : 'book-cover'}
-      accessibilityLabel="《可观测性工程》中文版封面"
+      accessibilityRole="image"
+      accessibilityLabel={text.title}
       style={[
         styles.cover,
+        styles.generated,
         compact && styles.compact,
-        {width: coverWidth},
-        styles.coverBackground,
+        small && styles.smallCover,
+        small && styles.generatedSmall,
+        tiny && styles.generatedTiny,
         {
-          borderColor: tokens.colors.accent,
+          width: coverWidth,
+          height: coverWidth / 0.75,
+          backgroundColor: background,
+          borderColor: accent,
         },
       ]}>
-      <View
-        testID="book-cover-accent"
-        style={[
-          styles.accentBar,
-          {
-            left: scaled(16),
-            right: scaled(16),
-            top: art.accent.top,
-            height: Math.max(2, art.accent.height),
-            borderRadius: scaled(4),
-            backgroundColor: tokens.colors.accent,
-          },
-        ]}
-      />
-      <Text
-        allowFontScaling={false}
-        style={[
-          styles.label,
-          {
-            left: scaled(16),
-            top: art.label.top,
-            fontSize: Math.max(4, scaled(9)),
-            lineHeight: Math.max(5, art.label.lineHeight),
-            letterSpacing: scaled(1.5),
-            color: tokens.colors.accent,
-          },
-        ]}>
-        MALL DEMO
-      </Text>
-      <View
-        testID="book-cover-title"
-        style={[
-          styles.titleGroup,
-          {
-            left: scaled(16),
-            right: scaled(12),
-            top: art.title.top,
-          },
-        ]}>
-        <Text
-          allowFontScaling={false}
-          style={[
-            styles.title,
-            {
-              fontSize: scaled(27),
-              lineHeight: art.title.lineHeight,
-              color: tokens.colors.text,
-            },
-          ]}>
-          可观测性
-        </Text>
-        <Text
-          allowFontScaling={false}
-          style={[
-            styles.title,
-            {
-              fontSize: scaled(27),
-              lineHeight: art.title.lineHeight,
-              color: tokens.colors.text,
-            },
-          ]}>
-          工程
-        </Text>
-      </View>
+      <View style={[styles.orb, {backgroundColor: accent}]} />
+      <View style={[styles.slash, {backgroundColor: foreground}]} />
       <Text
         allowFontScaling={false}
         numberOfLines={1}
-        style={[
-          styles.subtitle,
-          {
-            left: scaled(16),
-            right: scaled(12),
-            top: art.subtitle.top,
-            fontSize: Math.max(4, scaled(8)),
-            lineHeight: Math.max(5, art.subtitle.lineHeight),
-            color: tokens.colors.muted,
-          },
-        ]}>
-        指标 · 日志 · 链路 · 用户体验
+        style={[styles.kicker, {color: accent}]}>
+        {text.badge.toUpperCase()}
       </Text>
-      <View
-        testID="book-cover-graph"
-        style={[
-          styles.graph,
-          {
-            left: scaled(16),
-            right: scaled(16),
-            top: art.graph.top,
-            height: art.graph.height,
-          },
-        ]}>
-        <GraphLine
-          left={scaled(9)}
-          top={scaled(14)}
-          width={scaled(34)}
-          angle="-20deg"
-          height={Math.max(1, scaled(2))}
-          color={tokens.colors.accent}
-        />
-        <GraphLine
-          left={scaled(47)}
-          top={scaled(13)}
-          width={scaled(34)}
-          angle="24deg"
-          height={Math.max(1, scaled(2))}
-          color={tokens.colors.accent}
-        />
-        <GraphLine
-          left={scaled(88)}
-          top={scaled(14)}
-          width={scaled(36)}
-          angle="-18deg"
-          height={Math.max(1, scaled(2))}
-          color={tokens.colors.accent}
-        />
-        {[0, 1, 2, 3].map((item, index) => (
-          <View
-            key={item}
-            style={[
-              styles.node,
-              {
-                left: `${index * 27}%`,
-                top: index % 2 === 0 ? scaled(11) : 0,
-                width: nodeSize,
-                height: nodeSize,
-                borderWidth: nodeBorderWidth,
-                borderRadius: nodeSize / 2,
-                borderColor: tokens.colors.accent,
-                backgroundColor: tokens.colors.surface,
-              },
-            ]}
-          />
-        ))}
-      </View>
       <Text
-        testID="book-cover-footer"
         allowFontScaling={false}
-        numberOfLines={1}
+        numberOfLines={compact ? 3 : 4}
         style={[
-          styles.footer,
-          {
-            left: scaled(16),
-            right: scaled(12),
-            top: art.footer.top,
-            fontSize: Math.max(4, scaled(8)),
-            lineHeight: Math.max(5, art.footer.lineHeight),
-            color: tokens.colors.accent,
-          },
+          styles.generatedTitle,
+          compact && styles.compactTitle,
+          small && styles.smallTitle,
+          tiny && styles.tinyTitle,
+          {color: foreground},
         ]}>
-        可观测性实践演示版
+        {text.shortTitle}
       </Text>
+      {!compact && (
+        <Text
+          allowFontScaling={false}
+          numberOfLines={2}
+          style={[styles.author, small && styles.smallAuthor, {color: foreground}]}>
+          {text.authorShort}
+        </Text>
+      )}
     </View>
-  );
-}
-
-function GraphLine({
-  left,
-  top,
-  width,
-  height,
-  angle,
-  color,
-}: {
-  left: number;
-  top: number;
-  width: number;
-  height: number;
-  angle: string;
-  color: string;
-}) {
-  return (
-    <View
-      style={[
-        styles.graphLine,
-        {
-          left,
-          top,
-          width,
-          height,
-          borderRadius: height / 2,
-          backgroundColor: color,
-          transform: [{rotate: angle}],
-        },
-      ]}
-    />
   );
 }
 
 const styles = StyleSheet.create({
   cover: {
-    width: STOREFRONT_BOOK_COVER_WIDTH,
-    aspectRatio: BOOK_COVER_ASPECT_RATIO,
-    borderWidth: 3,
-    borderRadius: 14,
+    borderRadius: 12,
     overflow: 'hidden',
-  },
-  compact: {
-    width: STOREFRONT_BAG_COVER_WIDTH,
-    borderWidth: 2,
-    borderRadius: 8,
-  },
-  coverBackground: {
     backgroundColor: '#fff4f1',
   },
-  accentBar: {
-    position: 'absolute',
+  compact: {
+    borderRadius: 7,
   },
-  label: {
+  smallCover: {
+    borderRadius: 8,
+  },
+  generated: {
+    borderWidth: 2,
+    padding: 12,
+  },
+  generatedSmall: {
+    padding: 8,
+    borderWidth: 1.5,
+  },
+  generatedTiny: {
+    padding: 4,
+    borderWidth: 1,
+  },
+  orb: {
     position: 'absolute',
+    width: '62%',
+    aspectRatio: 1,
+    right: '-18%',
+    bottom: '-6%',
+    borderRadius: 999,
+    opacity: 0.52,
+  },
+  slash: {
+    position: 'absolute',
+    width: '120%',
+    height: 2,
+    left: '-10%',
+    top: '62%',
+    opacity: 0.23,
+    transform: [{rotate: '-24deg'}],
+  },
+  kicker: {
+    fontSize: 7,
+    lineHeight: 10,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  generatedTitle: {
+    marginTop: 25,
+    fontSize: 18,
+    lineHeight: 22,
     fontWeight: '900',
   },
-  titleGroup: {
-    position: 'absolute',
+  compactTitle: {
+    marginTop: 8,
+    fontSize: 8,
+    lineHeight: 10,
   },
-  title: {
-    fontWeight: '900',
+  smallTitle: {
+    marginTop: 15,
+    fontSize: 12,
+    lineHeight: 15,
   },
-  subtitle: {
-    position: 'absolute',
+  tinyTitle: {
+    marginTop: 4,
+    fontSize: 5,
+    lineHeight: 6,
   },
-  graph: {
+  author: {
     position: 'absolute',
+    left: 12,
+    right: 12,
+    bottom: 14,
+    fontSize: 8,
+    lineHeight: 11,
+    fontWeight: '700',
+    opacity: 0.82,
   },
-  graphLine: {
-    position: 'absolute',
-  },
-  node: {
-    position: 'absolute',
-  },
-  footer: {
-    position: 'absolute',
-    fontWeight: '800',
+  smallAuthor: {
+    left: 8,
+    right: 8,
+    bottom: 8,
+    fontSize: 6,
+    lineHeight: 8,
   },
 });

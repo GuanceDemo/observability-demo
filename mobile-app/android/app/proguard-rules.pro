@@ -13,10 +13,11 @@
 -keep class com.malldemomobile.DemoFaultsPackage { *; }
 
 # Guance Session Replay 0.4.2 reads these React Native 0.86 internals by their
-# original class and field names. Preserve the two concrete rendering classes
+# original class and field names. Preserve the concrete rendering classes
 # so R8 cannot remove reflected fields through value propagation; the rest of
 # the release build remains minified.
 -keep class com.facebook.react.uimanager.drawable.BackgroundDrawable { *; }
+-keep class com.facebook.react.uimanager.drawable.BorderDrawable { *; }
 -keep class com.facebook.react.views.text.ReactTextView { *; }
 
 -keepattributes SourceFile,LineNumberTable

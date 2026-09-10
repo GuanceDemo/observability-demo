@@ -1,0 +1,5 @@
+aiortc==1.14.0
+av==16.1.0
+aiohttp==3.14.3
+grpcio==1.83.1
+protobuf==7.35.1

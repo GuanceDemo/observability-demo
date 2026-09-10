@@ -1,0 +1,79 @@
+diff --git a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+--- a/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
++++ b/js/src/components/emulator/net/ws_jsep_protocol_driver.ts
+@@ -17,1 +17,2 @@
++import { playbackTransport } from "./mall-demo-transport";
+ import logger from "./logger";
+@@ -306,4 +306,4 @@
+     if (this.peerConnection) return;
+ 
+-    this.peerConnection = new RTCPeerConnection(config);
++    this.peerConnection = new RTCPeerConnection(playbackTransport(config, window.location.search));
+     this.peerConnection.ontrack = this._handlePeerConnectionTrack;
+@@ -329,4 +329,19 @@ export default class WsJsepProtocol {
+   _handlePeerConnectionTrack = (e: RTCTrackEvent) => {
++    // Remote-control video values responsiveness over a deep playback buffer.
++    // These receiver hints are advisory and not implemented by every browser,
++    // so keep the connection usable when a browser rejects either setter.
++    const receiver = e.receiver as RTCRtpReceiver & {
++      playoutDelayHint?: number | null;
++      jitterBufferTarget?: number | null;
++    };
++    try {
++      receiver.playoutDelayHint = 0;
++      if ("jitterBufferTarget" in receiver) {
++        receiver.jitterBufferTarget = 0;
++      }
++    } catch (error) {
++      logger.warn("Browser did not accept low-latency receiver hints:", error);
++    }
+     if (this.onConnected) {
+       this.onConnected(e.track);
+     }
+diff --git a/js/src/components/emulator/views/webrtc_view.tsx b/js/src/components/emulator/views/webrtc_view.tsx
+--- a/js/src/components/emulator/views/webrtc_view.tsx
++++ b/js/src/components/emulator/views/webrtc_view.tsx
+@@ -16,6 +16,7 @@
+ import React, { useEffect, useRef, useState } from "react";
+ import logger from "../net/logger";
+ import WsJsepProtocol from "../net/ws_jsep_protocol_driver";
++import { replacePlaybackTrack } from "./mall-demo-playback";
+ 
+ export interface EmulatorWebrtcViewProps {
+   /** The JSEP protocol driver instance. */
+@@ -80,14 +81,17 @@
+       return;
+     }
+ 
+-    if (!video.srcObject) {
+-      video.srcObject = new MediaStream();
++    // The embedded demo is intentionally muted. Do not attach its silent
++    // audio track to the video element, because A/V synchronization can make
++    // Chrome hold otherwise-ready screen frames in its playback buffer.
++    if (track.kind === "audio" && video.muted) {
++      track.enabled = false;
++      setAudio(false);
++      return;
+     }
+-    
+-    const stream = video.srcObject as MediaStream;
+-    if (!stream.getTracks().find((t) => t.id === track.id)) {
+-      stream.addTrack(track);
+-    }
++
++    replacePlaybackTrack(video, track);
++    void video.play().catch(onError);
+ 
+     if (track.kind === "audio") {
+       setAudio(true);
+@@ -146,6 +150,10 @@
+   return (
+     <video
+       ref={videoRef}
++      autoPlay
++      playsInline
++      muted={muted}
++      disablePictureInPicture
+       style={{
+         display: "block",
+         position: "relative",

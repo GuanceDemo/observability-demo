@@ -1,0 +1,93 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+index ab8f605..3b7114e 100644
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -64,5 +64,9 @@ INTERACTION_ACTION_PATTERN = re.compile(r"^[a-z0-9_.:-]{1,80}$")
+ FRAME_REFRESH_LAST_AT = 0.0
+ FRAME_REFRESH_MIN_INTERVAL_SECONDS = 0.75
++FRAME_SNAPSHOT_CACHE = None
++FRAME_SNAPSHOT_CACHE_AT = 0.0
++FRAME_SNAPSHOT_TASK = None
++FRAME_SNAPSHOT_CACHE_TTL_SECONDS = 0.25
+ 
+ 
+ def parse_discovery_file(path):
+@@ -421,6 +425,70 @@ async def handle_frame_refresh(request):
+     )
+ 
+ 
++async def capture_frame_snapshot():
++    """Capture a fixed-size PNG from the real Android Emulator display."""
++    stub = ec_grpc.EmulatorControllerStub(EMULATOR_CHANNEL)
++    response = await stub.getScreenshot(
++        ec.ImageFormat(
++            format=ec.ImageFormat.PNG,
++            width=360,
++            height=800,
++            display=0,
++        ),
++        metadata=get_emulator_metadata(),
++        timeout=3,
++    )
++    image = bytes(response.image)
++    if not image.startswith(b"\x89PNG\r\n\x1a\n"):
++        raise RuntimeError("emulator returned an invalid frame")
++    return image
++
++
++async def handle_frame_snapshot(request):
++    """
++    GET /api/v1/emulator/frame.png
++    Returns a short-lived, fixed-size screenshot captured by the Emulator gRPC
++    controller. Callers cannot select a display, size, command, or file path.
++    """
++    global FRAME_SNAPSHOT_CACHE, FRAME_SNAPSHOT_CACHE_AT, FRAME_SNAPSHOT_TASK
++    if not EMULATOR_CHANNEL:
++        return web.json_response({"error": "frame unavailable"}, status=503)
++
++    fresh = request.query.get("fresh", "0")
++    if fresh not in ("0", "1") or set(request.query) - {"fresh"}:
++        return web.json_response({"error": "invalid frame freshness"}, status=400)
++
++    now = time.monotonic()
++    if (
++        fresh != "1"
++        and FRAME_SNAPSHOT_CACHE
++        and now - FRAME_SNAPSHOT_CACHE_AT < FRAME_SNAPSHOT_CACHE_TTL_SECONDS
++    ):
++        image = FRAME_SNAPSHOT_CACHE
++    else:
++        if not FRAME_SNAPSHOT_TASK or FRAME_SNAPSHOT_TASK.done():
++            FRAME_SNAPSHOT_TASK = asyncio.create_task(capture_frame_snapshot())
++        try:
++            image = await asyncio.shield(FRAME_SNAPSHOT_TASK)
++        except Exception as error:
++            logging.warning("Emulator frame snapshot failed: %s", error)
++            return web.json_response({"error": "frame unavailable"}, status=503)
++        finally:
++            if FRAME_SNAPSHOT_TASK and FRAME_SNAPSHOT_TASK.done():
++                FRAME_SNAPSHOT_TASK = None
++        FRAME_SNAPSHOT_CACHE = image
++        FRAME_SNAPSHOT_CACHE_AT = time.monotonic()
++
++    return web.Response(
++        body=image,
++        content_type="image/png",
++        headers={
++            "Cache-Control": "no-store, private, max-age=0",
++            "X-Content-Type-Options": "nosniff",
++        },
++    )
++
++
+ async def handle_gps(request):
+     """
+     POST /api/v1/emulator/gps
+@@ -634,6 +696,7 @@ def init_app(videobridge_token):
+     app.router.add_get("/api/v1/emulator/gfxinfo", handle_gfxinfo)
+     app.router.add_get("/api/v1/emulator/interaction-ack", handle_interaction_ack)
+     app.router.add_post("/api/v1/emulator/refresh-frame", handle_frame_refresh)
++    app.router.add_get("/api/v1/emulator/frame.png", handle_frame_snapshot)
+     app.router.add_post("/api/v1/emulator/gps", handle_gps)
+     app.router.add_get("/api/v1/emulator/logcat", handle_logcat)
+     app.router.add_get("/api/v1/emulator/ws-jsep", handle_websocket_jsep)

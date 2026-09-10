@@ -1,0 +1,15 @@
+{
+  "unprotected": [],
+  "allowlist": [
+    {
+      "iss": "android-studio",
+      "allowed": [
+        "/android.emulation.control.EmulatorController/getStatus",
+        "/android.emulation.control.EmulatorController/getScreenshot",
+        "/android.emulation.control.EmulatorController/setPhysicalModel",
+        "/android.emulation.control.EmulatorController/getLogcat",
+        "/android.emulation.control.v2.Rtc/.*"
+      ]
+    }
+  ]
+}

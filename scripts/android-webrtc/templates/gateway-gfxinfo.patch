@@ -1,0 +1,112 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -13,8 +13,10 @@
+ import argparse
+ import asyncio
+ import sys
+ import os
++import re
++import time
+ from pathlib import Path
+ 
+ # Add the proto/ directory to sys.path to allow absolute imports between sibling proto stubs
+@@ -47,6 +49,9 @@
+ DISCOVERY_PROPS = {}
+ EMULATOR_CHANNEL = None
+ VIDEOBRIDGE_CHANNEL = None
++GFXINFO_CACHE = None
++GFXINFO_CACHE_AT = 0.0
++GFXINFO_CACHE_TTL_SECONDS = 5
+ 
+ 
+ def parse_discovery_file(path):
+@@ -114,6 +119,76 @@
+         return web.json_response({"error": str(e)}, status=500)
+ 
+ 
++def parse_gfxinfo_metric(output, pattern, value_type=float):
++    match = re.search(pattern, output, re.MULTILINE)
++    return value_type(match.group(1)) if match else None
++
++
++async def handle_gfxinfo(request):
++    """
++    GET /api/v1/emulator/gfxinfo
++    Returns only aggregate frame-time percentiles for the configured APK.
++    The command, serial, and package are fixed by the service environment and
++    cannot be supplied by the HTTP caller.
++    """
++    global GFXINFO_CACHE, GFXINFO_CACHE_AT
++    now = time.monotonic()
++    if GFXINFO_CACHE and now - GFXINFO_CACHE_AT < GFXINFO_CACHE_TTL_SECONDS:
++        return web.json_response(GFXINFO_CACHE)
++
++    adb = os.environ.get(
++        "ANDROID_ADB", "/home/cherry/android-sdk/platform-tools/adb"
++    )
++    serial = os.environ.get("ANDROID_SERIAL", "emulator-5554")
++    package = os.environ.get("ANDROID_PACKAGE", "com.malldemomobile.safe")
++    if not os.path.isfile(adb) or not os.access(adb, os.X_OK):
++        logging.error("Configured adb executable is unavailable.")
++        return web.json_response({"error": "gfxinfo unavailable"}, status=503)
++
++    process = await asyncio.create_subprocess_exec(
++        adb,
++        "-s",
++        serial,
++        "shell",
++        "dumpsys",
++        "gfxinfo",
++        package,
++        stdout=asyncio.subprocess.PIPE,
++        stderr=asyncio.subprocess.PIPE,
++    )
++    try:
++        stdout, _ = await asyncio.wait_for(process.communicate(), timeout=5)
++    except asyncio.TimeoutError:
++        process.kill()
++        await process.wait()
++        logging.warning("Timed out while collecting aggregate gfxinfo metrics.")
++        return web.json_response({"error": "gfxinfo unavailable"}, status=503)
++
++    if process.returncode != 0:
++        logging.warning("adb gfxinfo exited with status %s.", process.returncode)
++        return web.json_response({"error": "gfxinfo unavailable"}, status=503)
++
++    output = stdout.decode("utf-8", errors="replace")
++    metrics = {
++        "sampledAt": int(time.time() * 1000),
++        "totalFrames": parse_gfxinfo_metric(
++            output, r"^Total frames rendered:\s*(\d+)\s*$", int
++        ),
++        "jankyFrames": parse_gfxinfo_metric(
++            output, r"^Janky frames:\s*(\d+)", int
++        ),
++        "jankyPercent": parse_gfxinfo_metric(
++            output, r"^Janky frames:\s*\d+\s*\(([\d.]+)%\)"
++        ),
++        "p50Ms": parse_gfxinfo_metric(output, r"^50th percentile:\s*([\d.]+)ms\s*$"),
++        "p90Ms": parse_gfxinfo_metric(output, r"^90th percentile:\s*([\d.]+)ms\s*$"),
++        "p95Ms": parse_gfxinfo_metric(output, r"^95th percentile:\s*([\d.]+)ms\s*$"),
++    }
++    if any(metrics[key] is None for key in ("p50Ms", "p90Ms", "p95Ms")):
++        logging.warning("gfxinfo output did not contain frame-time percentiles.")
++        return web.json_response({"error": "gfxinfo unavailable"}, status=503)
++
++    GFXINFO_CACHE = metrics
++    GFXINFO_CACHE_AT = now
++    return web.json_response(metrics)
++
++
+ async def handle_gps(request):
+     """
+     POST /api/v1/emulator/gps
+@@ -336,6 +411,7 @@
+ 
+     # Register routes
+     app.router.add_get("/api/v1/emulator/status", handle_status)
++    app.router.add_get("/api/v1/emulator/gfxinfo", handle_gfxinfo)
+     app.router.add_post("/api/v1/emulator/gps", handle_gps)
+     app.router.add_get("/api/v1/emulator/logcat", handle_logcat)
+     app.router.add_get("/api/v1/emulator/ws-jsep", handle_websocket_jsep)

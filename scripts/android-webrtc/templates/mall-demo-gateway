@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+for _ in $(seq 1 180); do
+  DISCOVERY_FILE=$(find /run/user/1002/avd/running -maxdepth 1 -name "pid_*.ini" -type f -print -quit 2>/dev/null || true)
+  if [[ -n "$DISCOVERY_FILE" ]] && grep -q '^grpc.port=8554$' "$DISCOVERY_FILE"; then
+    exec /opt/mall-demo-webrtc/android-emulator-container-scripts/gateway/venv/bin/videobridge-gateway \
+      --port=8080 \
+      --discovery_file="$DISCOVERY_FILE"
+  fi
+  sleep 1
+done
+
+echo "emulator gRPC discovery file was not ready" >&2
+exit 1

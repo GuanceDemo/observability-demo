@@ -1,0 +1,40 @@
+__PUBLIC_HOST__ {
+  encode zstd gzip
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy no-referrer
+  }
+
+  @mallDemoApk path /downloads/mall-demo-safe.apk
+  header @mallDemoApk Content-Disposition "attachment; filename=mall-demo-safe.apk"
+
+  handle /downloads/mall-demo-safe.apk {
+    root * /var/www
+    file_server
+  }
+
+  handle /downloads/mall-demo-safe.svg {
+    root * /var/www
+    file_server
+  }
+
+  handle /android-emulator-webrtc/* {
+    root * /var/www
+    try_files {path} /android-emulator-webrtc/index.html
+    file_server
+  }
+
+  @latestVideo path /__ACCESS_PATH__/api/v1/emulator/ws-jsep-latest /__ACCESS_PATH__/api/v1/emulator/latest-video-stats
+  handle @latestVideo {
+    uri strip_prefix /__ACCESS_PATH__
+    reverse_proxy 127.0.0.1:8091
+  }
+
+  handle_path /__ACCESS_PATH__/* {
+    reverse_proxy 127.0.0.1:8080
+  }
+
+  handle {
+    reverse_proxy 127.0.0.1:18080
+  }
+}

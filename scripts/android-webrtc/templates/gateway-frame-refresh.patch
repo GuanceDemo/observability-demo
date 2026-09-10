@@ -1,0 +1,88 @@
+diff --git a/gateway/src/videobridge_gateway/gateway_server.py b/gateway/src/videobridge_gateway/gateway_server.py
+index a70e82d..ab8f605 100644
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -62,6 +62,8 @@ INTERACTION_LOGCAT_PROCESS = None
+ INTERACTION_LAST_NATIVE_KEY = None
+ INTERACTION_LOG_PREFIX = "MALL_DEMO_INTERACTION_ACK "
+ INTERACTION_ACTION_PATTERN = re.compile(r"^[a-z0-9_.:-]{1,80}$")
++FRAME_REFRESH_LAST_AT = 0.0
++FRAME_REFRESH_MIN_INTERVAL_SECONDS = 0.75
+ 
+ 
+ def parse_discovery_file(path):
+@@ -359,6 +361,66 @@ async def handle_interaction_ack(request):
+     return web.json_response(current)
+ 
+ 
++async def handle_frame_refresh(request):
++    """
++    POST /api/v1/emulator/refresh-frame
++    Requests one side-effect-free redraw from the configured APK. The ADB
++    executable, serial, package, activity, and action are fixed by the service;
++    the HTTP caller cannot provide a shell command or target.
++    """
++    global FRAME_REFRESH_LAST_AT
++    now = time.monotonic()
++    if now - FRAME_REFRESH_LAST_AT < FRAME_REFRESH_MIN_INTERVAL_SECONDS:
++        return web.json_response(
++            {"status": "coalesced", "requestedAt": int(time.time() * 1000)}
++        )
++    FRAME_REFRESH_LAST_AT = now
++
++    adb = os.environ.get(
++        "ANDROID_ADB", "/home/cherry/android-sdk/platform-tools/adb"
++    )
++    serial = os.environ.get("ANDROID_SERIAL", "emulator-5554")
++    package = os.environ.get("ANDROID_PACKAGE", "com.malldemomobile.safe")
++    activity = os.environ.get(
++        "ANDROID_ACTIVITY", "com.malldemomobile.MainActivity"
++    )
++    if not os.path.isfile(adb) or not os.access(adb, os.X_OK):
++        logging.error("Frame refresh cannot access configured adb executable.")
++        return web.json_response({"error": "frame refresh unavailable"}, status=503)
++
++    process = await asyncio.create_subprocess_exec(
++        adb,
++        "-s",
++        serial,
++        "shell",
++        "am",
++        "start",
++        "-W",
++        "--activity-single-top",
++        "-a",
++        f"{package}.REFRESH_FRAME",
++        "-n",
++        f"{package}/{activity}",
++        stdout=asyncio.subprocess.DEVNULL,
++        stderr=asyncio.subprocess.DEVNULL,
++    )
++    try:
++        await asyncio.wait_for(process.wait(), timeout=3)
++    except asyncio.TimeoutError:
++        process.kill()
++        await process.wait()
++        logging.warning("Timed out while requesting an APK frame refresh.")
++        return web.json_response({"error": "frame refresh unavailable"}, status=503)
++    if process.returncode != 0:
++        logging.warning("APK frame refresh exited with status %s.", process.returncode)
++        return web.json_response({"error": "frame refresh unavailable"}, status=503)
++
++    logging.info("Requested one APK frame refresh.")
++    return web.json_response(
++        {"status": "requested", "requestedAt": int(time.time() * 1000)}
++    )
++
++
+ async def handle_gps(request):
+     """
+     POST /api/v1/emulator/gps
+@@ -571,6 +633,7 @@ def init_app(videobridge_token):
+     app.router.add_get("/api/v1/emulator/status", handle_status)
+     app.router.add_get("/api/v1/emulator/gfxinfo", handle_gfxinfo)
+     app.router.add_get("/api/v1/emulator/interaction-ack", handle_interaction_ack)
++    app.router.add_post("/api/v1/emulator/refresh-frame", handle_frame_refresh)
+     app.router.add_post("/api/v1/emulator/gps", handle_gps)
+     app.router.add_get("/api/v1/emulator/logcat", handle_logcat)
+     app.router.add_get("/api/v1/emulator/ws-jsep", handle_websocket_jsep)

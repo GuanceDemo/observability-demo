@@ -1,0 +1,16 @@
+[Unit]
+Description=Install and launch the latest Mall Demo APK
+After=mall-demo-emulator.service
+Requires=mall-demo-emulator.service
+
+[Service]
+Type=oneshot
+User=cherry
+Group=cherry
+Environment=HOME=/home/cherry
+Environment=ANDROID_SERIAL=emulator-5554
+ExecStart=/usr/local/bin/mall-demo-start-app
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

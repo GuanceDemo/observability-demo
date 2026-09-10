@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>商城 Demo 与故障注入 Demo</title>
   <link rel="icon" href="data:," />
-  <script src="assets/selfheal-i18n.js?v=20260901-observability-delay-v10"></script>
+  <script src="assets/selfheal-i18n.js?v=20260910-android-runtime-versions"></script>
   <script>
     (() => {
       try {
@@ -822,10 +822,12 @@
 
     .service-icon svg { width: 100%; height: 100%; display: block; }
     .service-icon path { fill: currentColor; }
+    .service-icon-android-storefront,
     .service-icon-webgl-game {
       overflow: hidden;
       background: transparent;
     }
+    .service-icon-android-storefront img,
     .service-icon-webgl-game img {
       width: 100%;
       height: 100%;
@@ -911,6 +913,163 @@
       justify-content: flex-end;
       gap: 7px;
     }
+
+    .apk-download-entry {
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .apk-download-trigger[hidden],
+    .apk-download-popover[hidden] { display: none; }
+
+    .apk-download-trigger {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 6px 10px;
+      border-color: rgba(23, 112, 230, .22);
+      color: var(--gc-primary);
+      background: var(--gc-primary-soft);
+      box-shadow: none;
+      font-size: 11px;
+    }
+
+    .apk-download-trigger svg,
+    .apk-download-action svg {
+      width: 15px;
+      height: 15px;
+      flex: 0 0 auto;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .apk-download-trigger::after {
+      content: "";
+      width: 6px;
+      height: 6px;
+      margin-left: 1px;
+      border-right: 1.5px solid currentColor;
+      border-bottom: 1.5px solid currentColor;
+      transform: translateY(-1px) rotate(45deg);
+      transition: transform 160ms var(--gc-ease-out);
+    }
+
+    .apk-download-trigger[aria-expanded="true"]::after {
+      transform: translateY(2px) rotate(225deg);
+    }
+
+    .apk-download-popover {
+      position: absolute;
+      top: calc(100% + 9px);
+      right: 0;
+      z-index: 40;
+      width: min(340px, calc(100vw - 40px));
+      padding: 14px;
+      border: 1px solid var(--gc-border);
+      border-radius: 12px;
+      color: var(--gc-text);
+      background: rgba(255, 255, 255, .98);
+      box-shadow: 0 20px 46px rgba(16, 24, 40, .18);
+      transform-origin: top right;
+      transition: opacity 160ms var(--gc-ease-out), transform 160ms var(--gc-ease-out);
+
+      @starting-style {
+        opacity: 0;
+        transform: translateY(-4px) scale(.97);
+      }
+    }
+
+    .apk-download-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .apk-download-head strong {
+      display: block;
+      color: var(--gc-ink);
+      font-size: 14px;
+      line-height: 1.35;
+    }
+
+    .apk-download-head p {
+      margin: 4px 0 0;
+      color: var(--gc-muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .apk-download-close {
+      width: 28px;
+      min-width: 28px;
+      min-height: 28px;
+      padding: 0;
+      border-color: var(--gc-border);
+      color: var(--gc-muted);
+      background: #fff;
+      box-shadow: none;
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .apk-download-content {
+      display: grid;
+      grid-template-columns: 116px minmax(0, 1fr);
+      gap: 13px;
+      align-items: center;
+      margin-top: 13px;
+    }
+
+    .apk-download-qr {
+      width: 116px;
+      height: 116px;
+      padding: 6px;
+      border: 1px solid #e5ebf3;
+      border-radius: 9px;
+      background: #fff;
+      object-fit: contain;
+    }
+
+    .apk-download-copy {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+      align-content: center;
+    }
+
+    .apk-download-copy p {
+      margin: 0;
+      color: var(--gc-muted);
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .apk-download-meta {
+      color: #526174;
+      font: 700 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    .apk-download-action {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--gc-primary);
+      font-size: 11px;
+      font-weight: 800;
+      transition: transform 140ms var(--gc-ease-out);
+    }
+
+    .apk-download-action:active { transform: scale(.97); }
 
     .mobile-drawer-button {
       display: none;
@@ -1387,6 +1546,51 @@
       border-radius: 0 0 24px 24px;
     }
 
+    .preview-stage[data-source-kind="android-device"] .phone-camera,
+    .preview-stage[data-source-kind="android-device"] .phone-statusbar,
+    .preview-stage[data-source-kind="android-device"] .android-nav {
+      display: none;
+    }
+
+    .preview-stage[data-source-kind="android-device"] .preview-shell.phone-shell {
+      width: auto;
+      height: 100%;
+      aspect-ratio: 9 / 20;
+      padding: 0;
+      border: 0;
+      border-radius: 20px;
+      overflow: hidden;
+      isolation: isolate;
+      background: #111827;
+    }
+
+    .preview-stage[data-source-kind="android-device"] .preview-shell.phone-shell::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      border: 3px solid #111827;
+      border-radius: inherit;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12);
+      pointer-events: none;
+    }
+
+    .preview-stage[data-source-kind="android-device"] .phone-screen {
+      border-radius: 0;
+      background: #fff;
+    }
+
+    .preview-stage[data-source-kind="android-device"] .phone-frame-wrap {
+      height: 100%;
+      border-radius: 0;
+      background: #fff;
+    }
+
+    .preview-stage[data-source-kind="android-device"] .shop-frame {
+      border-radius: 0;
+      background: #fff;
+    }
+
     .fault-history {
       min-width: 0;
       min-height: 0;
@@ -1605,6 +1809,147 @@
     .control-sidebar .observability-link-actions { display: grid; grid-template-columns: 1fr; }
     .control-sidebar .observability-delay-hint { font-size: 10px; }
     .control-sidebar .trace-link { width: 100%; min-height: 36px; padding: 8px; font-size: 11px; }
+
+    .android-debug-panel[hidden] { display: none; }
+    .control-sidebar .panel[hidden],
+    .control-sidebar .trace-link-card[hidden] { display: none; }
+
+    .android-debug-panel {
+      display: grid;
+      gap: 12px;
+      padding: 12px;
+    }
+
+    .android-debug-summary,
+    .android-debug-section,
+    .android-debug-note {
+      border: 1px solid var(--gc-border);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    .android-debug-summary { padding: 12px; }
+
+    .android-debug-summary-head,
+    .android-debug-section-head,
+    .android-debug-row {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .android-debug-summary-head strong,
+    .android-debug-section-head h2 {
+      margin: 0;
+      color: var(--gc-ink);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .android-debug-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: #526174;
+      background: #eef2f6;
+      font-size: 10px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .android-debug-status::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #7b8ba1;
+    }
+
+    .android-debug-status[data-state="connected"] { color: #08724f; background: #e8f8f1; }
+    .android-debug-status[data-state="connected"]::before { background: var(--gc-success); }
+    .android-debug-status[data-state="connecting"] { color: #955a08; background: #fff5db; }
+    .android-debug-status[data-state="connecting"]::before { background: #f59e0b; }
+    .android-debug-status[data-state="disconnected"],
+    .android-debug-status[data-state="failed"] { color: #a5222e; background: #fff0f1; }
+    .android-debug-status[data-state="disconnected"]::before,
+    .android-debug-status[data-state="failed"]::before { background: var(--gc-danger); }
+
+    .android-debug-route {
+      margin-top: 7px;
+      overflow: hidden;
+      color: var(--gc-muted);
+      font: 600 10px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .android-debug-metrics {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 7px;
+      margin-top: 11px;
+    }
+
+    .android-debug-metric {
+      min-width: 0;
+      padding: 9px;
+      border: 1px solid #e7edf4;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .android-debug-metric span {
+      display: block;
+      color: var(--gc-muted);
+      font-size: 9px;
+      font-weight: 700;
+    }
+
+    .android-debug-metric strong {
+      display: block;
+      margin-top: 3px;
+      overflow: hidden;
+      color: var(--gc-ink);
+      font: 800 15px/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .android-debug-section { overflow: hidden; }
+    .android-debug-section-head { padding: 10px 11px; border-bottom: 1px solid #edf1f6; }
+    .android-debug-rows { padding: 3px 11px; }
+    .android-debug-row { min-height: 31px; border-bottom: 1px solid #f0f3f7; font-size: 10px; }
+    .android-debug-row:last-child { border-bottom: 0; }
+    .android-debug-row span { color: var(--gc-muted); }
+    .android-debug-row code {
+      min-width: 0;
+      overflow: hidden;
+      color: var(--gc-ink);
+      background: transparent;
+      font-size: 9px;
+      font-weight: 700;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .android-debug-note {
+      padding: 11px;
+      color: var(--gc-muted);
+      background: #f8fbff;
+      font-size: 10px;
+      line-height: 1.55;
+    }
+
+    .android-debug-note strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--gc-ink);
+      font-size: 11px;
+    }
 
     .drawer-backdrop {
       display: none;
@@ -1903,6 +2248,11 @@
     @media (max-width: 520px) {
       .workbench-brand-copy strong { max-width: 34vw; }
       .usage-guide-button { width: 34px; min-height: 34px; padding: 0; }
+      .apk-download-trigger span { display: none; }
+      .apk-download-trigger { width: 34px; padding: 0; justify-content: center; }
+      .apk-download-trigger::after { display: none; }
+      .apk-download-content { grid-template-columns: 100px minmax(0, 1fr); }
+      .apk-download-qr { width: 100px; height: 100px; }
       .usage-guide-button span { display: none; }
       .preview-toggle button { min-height: 30px; padding: 5px 6px; font-size: 10px; }
       .simulator-actions { gap: 4px; }
@@ -1970,7 +2320,7 @@
             <div class="sidebar-title">
               <span class="sidebar-heading-copy">
                 <strong data-i18n="businessScenes">业务场景</strong>
-                <span id="businessSceneCount">2 个场景</span>
+                <span id="businessSceneCount">3 个场景</span>
               </span>
             </div>
             <button class="collapse-button" id="leftCollapseBtn" type="button" aria-expanded="true" aria-label="收起业务场景" data-i18n-aria-label="collapseScenes"></button>
@@ -1990,6 +2340,32 @@
               </span>
             </div>
             <div class="simulator-actions">
+              <div class="apk-download-entry" id="apkDownloadEntry">
+                <button class="apk-download-trigger" id="apkDownloadToggle" type="button" aria-expanded="false" aria-controls="apkDownloadPopover" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+                  <span data-i18n="androidApkDownloadTrigger">获取 APK</span>
+                </button>
+                <section class="apk-download-popover" id="apkDownloadPopover" aria-labelledby="apkDownloadTitle" hidden>
+                  <div class="apk-download-head">
+                    <div>
+                      <strong id="apkDownloadTitle" data-i18n="androidApkDownloadTitle">安装商城 App Demo</strong>
+                      <p data-i18n="androidApkDownloadDescription">下载当前演示使用的 APK，可安装到 Android 设备或本地 Emulator。</p>
+                    </div>
+                    <button class="apk-download-close" id="apkDownloadClose" type="button" aria-label="关闭 APK 下载" data-i18n-aria-label="androidApkDownloadClose">×</button>
+                  </div>
+                  <div class="apk-download-content">
+                    <img class="apk-download-qr" id="apkDownloadQr" alt="APK 下载二维码" data-i18n-alt="androidApkDownloadQrAlt" width="116" height="116" />
+                    <div class="apk-download-copy">
+                      <p data-i18n="androidApkDownloadScanHint">使用手机扫码下载，或在当前设备直接下载安装包。</p>
+                      <span class="apk-download-meta" id="apkDownloadMeta">Android 7.0+</span>
+                      <a class="apk-download-action" id="apkDownloadLink" href="#" rel="noopener">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 20h14"></path></svg>
+                        <span data-i18n="androidApkDownloadAction">下载 APK</span>
+                      </a>
+                    </div>
+                  </div>
+                </section>
+              </div>
               <div class="preview-toggle" id="previewToggle" role="tablist" aria-label="预览模式" aria-orientation="horizontal">
                 <button id="previewModeWebTab" type="button" role="tab" data-preview-mode="web" aria-selected="true" aria-controls="previewStage" tabindex="0" data-i18n="previewWeb">Web 预览</button>
                 <button id="previewModeMobileTab" type="button" role="tab" data-preview-mode="mobile" aria-selected="false" aria-controls="previewStage" tabindex="-1" data-i18n="previewMobile">移动端</button>
@@ -2031,15 +2407,15 @@
                 </div>
                 <div class="phone-frame-wrap" id="shopFrameWrap">
                   <div class="shop-frame-canvas" id="shopFrameCanvas">
-                    <iframe id="shopFrame" class="shop-frame" title="商城 Demo"></iframe>
+                    <iframe id="shopFrame" class="shop-frame" title="商城 Demo" allow="autoplay; fullscreen" referrerpolicy="no-referrer"></iframe>
                   </div>
                 </div>
                 <div class="android-nav" aria-hidden="true"><span></span></div>
               </div>
             </div>
-            <section class="fault-history" aria-label="最近故障注入记录" data-i18n-aria-label="faultHistoryTitle">
+            <section class="fault-history" id="activityHistoryPanel" aria-label="最近故障注入记录" data-i18n-aria-label="faultHistoryTitle">
               <div class="fault-history-head">
-                <h2 data-i18n="faultHistoryTitle">最近故障注入记录</h2>
+                <h2 id="activityHistoryTitle" data-i18n="faultHistoryTitle">最近故障注入记录</h2>
                 <span class="fault-history-count" id="faultHistoryCount">0 条记录</span>
               </div>
               <div class="fault-history-list" id="faultHistoryList" aria-live="polite"></div>
@@ -2051,14 +2427,14 @@
           <div class="sidebar-head">
             <div class="sidebar-title">
               <span class="sidebar-heading-copy">
-                <strong data-i18n="faultConsoleTitle">故障注入控制台</strong>
+                <strong id="controlSidebarTitle" data-i18n="faultConsoleTitle">故障注入控制台</strong>
                 <span id="lastRefresh" data-i18n="parentLastRefresh">未刷新</span>
               </span>
             </div>
             <button class="collapse-button" id="rightCollapseBtn" type="button" aria-expanded="true" aria-label="收起故障控制台" data-i18n-aria-label="collapseFaults"></button>
           </div>
           <div class="sidebar-content">
-            <section class="panel" aria-label="多层级故障配置" data-i18n-aria-label="parentFaultPanel">
+            <section class="panel" id="faultControlPanel" aria-label="多层级故障配置" data-i18n-aria-label="parentFaultPanel">
             <div class="panel-head">
               <h2 data-i18n="parentFaultPanel">多层级故障配置</h2>
             </div>
@@ -2099,7 +2475,101 @@
             </div>
             </section>
 
-            <section class="trace-link-card" aria-label="观测详情" data-i18n-aria-label="parentTraceLinkPanel">
+            <section class="android-debug-panel" id="androidDebugPanel" aria-label="真实 APK 调试信息" data-i18n-aria-label="androidDebugPanelTitle" hidden>
+              <article class="android-debug-summary">
+                <div class="android-debug-summary-head">
+                  <strong data-i18n="androidConnectionQuality">连接质量</strong>
+                  <span class="android-debug-status" id="androidConnectionStatus" data-state="waiting">等待播放器</span>
+                </div>
+                <div class="android-debug-route" id="androidCandidatePath">候选链路：-</div>
+                <div class="android-debug-metrics">
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricRtt">RTT</span>
+                    <strong id="androidRtt">-</strong>
+                  </div>
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricDataChannelRtt">输入 RTT (SCTP)</span>
+                    <strong id="androidDataChannelRtt">-</strong>
+                  </div>
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricLoss">丢包率</span>
+                    <strong id="androidPacketLoss">-</strong>
+                  </div>
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricFps">解码 FPS</span>
+                    <strong id="androidDecodedFps">-</strong>
+                  </div>
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricBitrate">接收码率</span>
+                    <strong id="androidBitrate">-</strong>
+                  </div>
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricInputToFrame">点击→下一帧</span>
+                    <strong id="androidInputToFrame">-</strong>
+                  </div>
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricInputToVisualChange">点击→首个画面变化帧</span>
+                    <strong id="androidInputToVisualChange">-</strong>
+                  </div>
+                  <div class="android-debug-metric">
+                    <span data-i18n="androidMetricInputToAppAck">点击→APK 操作确认</span>
+                    <strong id="androidInputToAppAck">-</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article class="android-debug-section">
+                <div class="android-debug-section-head">
+                  <h2 data-i18n="androidTransportDetails">传输与解码</h2>
+                </div>
+                <div class="android-debug-rows">
+                  <div class="android-debug-row"><span data-i18n="androidIceState">ICE 状态</span><code id="androidIceState">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidSignalingState">信令状态</span><code id="androidSignalingState">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidMediaReadiness">媒体就绪</span><code id="androidMediaReadiness">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidFrameRecovery">画面恢复请求</span><code id="androidFrameRecovery">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidInputQueueDelay">最近输入排队</span><code id="androidInputQueueDelay">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidInputReleaseToAck">松开→APK 确认</span><code id="androidInputReleaseToAck">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidVideoFrames">呈帧 / 解码帧</span><code id="androidVideoFrames">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidPlaybackTime">播放时间 / 页面</span><code id="androidPlaybackTime">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidVideoFrameAge">视频帧龄</span><code id="androidVideoFrameAge">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidVideoLatency">视频回显 p50 / p95</span><code id="androidVideoLatency">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidSnapshotLatency">截图回显 p50 / p95</span><code id="androidSnapshotLatency">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidVideoSamples">视频样本 / 超时</span><code id="androidVideoSamples">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidSnapshotSamples">截图样本 / 超时</span><code id="androidSnapshotSamples">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidResolution">视频分辨率</span><code id="androidResolution">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidCodec">视频编码</span><code id="androidCodec">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidJitter">抖动</span><code id="androidJitter">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidJitterBufferAverage">区间抖动缓冲</span><code id="androidJitterBufferAverage">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidDecodeAverage">区间单帧解码</span><code id="androidDecodeAverage">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidFreezes">冻结次数 / 总时长</span><code id="androidFreezes">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidDroppedFrames">累计丢帧</span><code id="androidDroppedFrames">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidInputChannels">输入通道</span><code id="androidInputChannels">-</code></div>
+                </div>
+              </article>
+
+              <article class="android-debug-section">
+                <div class="android-debug-section-head">
+                  <h2 data-i18n="androidRuntimeDetails">设备与应用</h2>
+                </div>
+                <div class="android-debug-rows">
+                  <div class="android-debug-row"><span>Emulator</span><code id="androidDeviceStatus">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidDeviceUptime">设备运行时间</span><code id="androidDeviceUptime">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidGfxP50">gfxinfo p50</span><code id="androidGfxP50">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidGfxP90">gfxinfo p90</span><code id="androidGfxP90">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidGfxP95">gfxinfo p95</span><code id="androidGfxP95">-</code></div>
+                  <div class="android-debug-row"><span data-i18n="androidLastAppAckAction">最近 APK 确认操作</span><code id="androidLastAppAckAction">-</code></div>
+                  <div class="android-debug-row"><span>APK</span><code>com.malldemomobile.safe</code></div>
+                  <div class="android-debug-row"><span>RUM</span><code data-i18n="androidRumSource">APK 原生 SDK</code></div>
+                </div>
+              </article>
+
+              <article class="android-debug-note">
+                <strong data-i18n="androidFaultEntryTitle">应用内故障注入</strong>
+                <span data-i18n="androidFaultEntryHint">请在 APK 顶部警告入口中选择并触发故障；Web 侧只展示连接、设备与观测调试信息。</span>
+              </article>
+            </section>
+
+            <section class="trace-link-card" id="observabilityPanel" aria-label="观测详情" data-i18n-aria-label="parentTraceLinkPanel">
               <div>
                 <h2 data-i18n="parentTraceLinkPanel">观测详情</h2>
                 <p id="rumViewLinkHint" data-i18n="parentRumViewLinkPending" hidden>前端异常触发后，可打开对应的 RUM View。</p>
@@ -2146,6 +2616,9 @@
     const I18N = window.SelfhealI18n;
     const apiPrefix = window.location.pathname.startsWith('/selfheal') ? '/selfheal' : '';
     const STATUS_REFRESH_INTERVAL_MS = 60000;
+    const ANDROID_PLAYER_MESSAGE_SOURCE = 'mall-demo-android-player';
+    const ANDROID_PLAYER_MESSAGE_VERSION = 1;
+    const ANDROID_DEBUG_EVENT_LIMIT = 24;
     const SHOP_BUILD_ID = '20260817-bookstore-v44';
     const GAME_BUILD_ID = '20260901-fault-rum-link-v13';
     const USAGE_GUIDE_SLIDES = Object.freeze([
@@ -2167,6 +2640,16 @@
         descriptionKey: 'sceneBookstoreDescription',
         frameUrl: 'shop.html',
         supportedViews: ['web', 'mobile'],
+        statusKey: 'sceneRunning',
+      },
+      {
+        id: 'android-storefront',
+        titleKey: 'sceneAndroidTitle',
+        descriptionKey: 'sceneAndroidDescription',
+        frameUrl: 'shop.html',
+        frameSource: 'android-device',
+        faultSceneId: 'mobile-storefront',
+        supportedViews: ['mobile'],
         statusKey: 'sceneRunning',
       },
       {
@@ -2230,6 +2713,20 @@
       selectedSceneId: initialSelectedSceneId,
       previewMode: initialPreviewMode(initialSelectedSceneId),
       demoConfig: {},
+      lastStatusRefreshedAt: 0,
+      androidDebug: {
+        playerReady: false,
+        connectionState: 'waiting',
+        iceConnectionState: 'new',
+        signalingState: 'stable',
+        inputChannels: [],
+        mediaReadiness: 'connecting',
+        frameRefreshCount: 0,
+        frameRefreshStatus: 'idle',
+        sampledAt: 0,
+        device: null,
+      },
+      androidDebugEvents: [],
     };
 
     const els = {
@@ -2241,6 +2738,8 @@
       simulatorSceneName: document.getElementById('simulatorSceneName'),
       faultHistoryList: document.getElementById('faultHistoryList'),
       faultHistoryCount: document.getElementById('faultHistoryCount'),
+      activityHistoryPanel: document.getElementById('activityHistoryPanel'),
+      activityHistoryTitle: document.getElementById('activityHistoryTitle'),
       businessSceneList: document.getElementById('businessSceneList'),
       businessSceneCount: document.getElementById('businessSceneCount'),
       sceneRail: document.getElementById('sceneRail'),
@@ -2259,10 +2758,59 @@
       usageGuideDots: document.getElementById('usageGuideDots'),
       drawerBackdrop: document.getElementById('drawerBackdrop'),
       openShopLink: document.getElementById('openShopLink'),
+      apkDownloadEntry: document.getElementById('apkDownloadEntry'),
+      apkDownloadToggle: document.getElementById('apkDownloadToggle'),
+      apkDownloadPopover: document.getElementById('apkDownloadPopover'),
+      apkDownloadClose: document.getElementById('apkDownloadClose'),
+      apkDownloadLink: document.getElementById('apkDownloadLink'),
+      apkDownloadQr: document.getElementById('apkDownloadQr'),
+      apkDownloadMeta: document.getElementById('apkDownloadMeta'),
       logs: document.getElementById('logs'),
       rumStatus: document.getElementById('rumStatus'),
       rumDot: document.getElementById('rumDot'),
       lastRefresh: document.getElementById('lastRefresh'),
+      controlSidebar: document.getElementById('controlSidebar'),
+      controlSidebarTitle: document.getElementById('controlSidebarTitle'),
+      faultControlPanel: document.getElementById('faultControlPanel'),
+      observabilityPanel: document.getElementById('observabilityPanel'),
+      androidDebugPanel: document.getElementById('androidDebugPanel'),
+      androidConnectionStatus: document.getElementById('androidConnectionStatus'),
+      androidCandidatePath: document.getElementById('androidCandidatePath'),
+      androidRtt: document.getElementById('androidRtt'),
+      androidDataChannelRtt: document.getElementById('androidDataChannelRtt'),
+      androidPacketLoss: document.getElementById('androidPacketLoss'),
+      androidDecodedFps: document.getElementById('androidDecodedFps'),
+      androidBitrate: document.getElementById('androidBitrate'),
+      androidInputToFrame: document.getElementById('androidInputToFrame'),
+      androidInputToVisualChange: document.getElementById('androidInputToVisualChange'),
+      androidInputToAppAck: document.getElementById('androidInputToAppAck'),
+      androidIceState: document.getElementById('androidIceState'),
+      androidSignalingState: document.getElementById('androidSignalingState'),
+      androidMediaReadiness: document.getElementById('androidMediaReadiness'),
+      androidFrameRecovery: document.getElementById('androidFrameRecovery'),
+      androidInputQueueDelay: document.getElementById('androidInputQueueDelay'),
+      androidInputReleaseToAck: document.getElementById('androidInputReleaseToAck'),
+      androidVideoFrameAge: document.getElementById('androidVideoFrameAge'),
+      androidVideoFrames: document.getElementById('androidVideoFrames'),
+      androidPlaybackTime: document.getElementById('androidPlaybackTime'),
+      androidVideoLatency: document.getElementById('androidVideoLatency'),
+      androidSnapshotLatency: document.getElementById('androidSnapshotLatency'),
+      androidVideoSamples: document.getElementById('androidVideoSamples'),
+      androidSnapshotSamples: document.getElementById('androidSnapshotSamples'),
+      androidResolution: document.getElementById('androidResolution'),
+      androidCodec: document.getElementById('androidCodec'),
+      androidJitter: document.getElementById('androidJitter'),
+      androidJitterBufferAverage: document.getElementById('androidJitterBufferAverage'),
+      androidDecodeAverage: document.getElementById('androidDecodeAverage'),
+      androidFreezes: document.getElementById('androidFreezes'),
+      androidDroppedFrames: document.getElementById('androidDroppedFrames'),
+      androidInputChannels: document.getElementById('androidInputChannels'),
+      androidDeviceStatus: document.getElementById('androidDeviceStatus'),
+      androidDeviceUptime: document.getElementById('androidDeviceUptime'),
+      androidGfxP50: document.getElementById('androidGfxP50'),
+      androidGfxP90: document.getElementById('androidGfxP90'),
+      androidGfxP95: document.getElementById('androidGfxP95'),
+      androidLastAppAckAction: document.getElementById('androidLastAppAckAction'),
       orderHealth: document.getElementById('orderHealth'),
       inventoryHealth: document.getElementById('inventoryHealth'),
       paymentHealth: document.getElementById('paymentHealth'),
@@ -2473,28 +3021,490 @@
       return url.pathname + url.search;
     }
 
+    function mobileDevicePlayerUrl() {
+      if (state.demoConfig.mobileDeviceEnabled !== true) return '';
+      const configured = typeof state.demoConfig.mobileDevicePlayerUrl === 'string'
+        ? state.demoConfig.mobileDevicePlayerUrl.trim()
+        : '';
+      if (!configured) return '';
+      try {
+        const url = new URL(configured);
+        if (url.protocol !== 'https:' || url.username || url.password || url.hash) return '';
+        return url.href;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function mobileDeviceVersion(key) {
+      const value = state.demoConfig[key];
+      return typeof value === 'string' && /^[a-z0-9][a-z0-9._+-]{0,127}$/i.test(value.trim()) ? value.trim() : '';
+    }
+
+    function mobileDeviceAssetUrl(filename) {
+      const playerUrl = mobileDevicePlayerUrl();
+      if (!playerUrl || !/^[a-z0-9][a-z0-9._-]*$/i.test(filename)) return '';
+      try {
+        const url = new URL(`/downloads/${filename}`, playerUrl);
+        const version = mobileDeviceVersion('mobileDeviceApkVersion');
+        if (version) url.searchParams.set('v', version);
+        return url.href;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function closeApkDownload(options = {}) {
+      if (!els.apkDownloadPopover || !els.apkDownloadToggle) return;
+      els.apkDownloadPopover.hidden = true;
+      els.apkDownloadToggle.setAttribute('aria-expanded', 'false');
+      if (options.restoreFocus && !els.apkDownloadToggle.hidden) {
+        els.apkDownloadToggle.focus({ preventScroll: true });
+      }
+    }
+
+    function renderApkDownload() {
+      if (!els.apkDownloadToggle || !els.apkDownloadPopover) return;
+      const version = mobileDeviceVersion('mobileDeviceApkVersion');
+      const configuredMin = state.demoConfig.mobileDeviceApkMinAndroidVersion;
+      const minVersion = typeof configuredMin === 'string' && /^[0-9]+(\.[0-9]+){0,2}$/.test(configuredMin) ? configuredMin : '7.0';
+      if (els.apkDownloadMeta) els.apkDownloadMeta.textContent = t(version ? 'androidApkDownloadMeta' : 'androidApkDownloadMetaUnknown', { version, minVersion });
+      const visible = usesAndroidDeviceFrame();
+      const apkUrl = visible ? mobileDeviceAssetUrl('mall-demo-safe.apk') : '';
+      const qrUrl = visible ? mobileDeviceAssetUrl('mall-demo-safe.svg') : '';
+      els.apkDownloadToggle.hidden = !apkUrl;
+      if (!apkUrl) {
+        closeApkDownload();
+        if (els.apkDownloadLink) els.apkDownloadLink.removeAttribute('href');
+        if (els.apkDownloadQr) els.apkDownloadQr.removeAttribute('src');
+        return;
+      }
+      if (els.apkDownloadLink) els.apkDownloadLink.href = apkUrl;
+      if (els.apkDownloadQr) els.apkDownloadQr.src = qrUrl;
+    }
+
+    function toggleApkDownload() {
+      if (!els.apkDownloadPopover || !els.apkDownloadToggle || els.apkDownloadToggle.hidden) return;
+      const willOpen = els.apkDownloadPopover.hidden;
+      els.apkDownloadPopover.hidden = !willOpen;
+      els.apkDownloadToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+
+    function isAndroidDeviceScene() {
+      return selectedBusinessScene().frameSource === 'android-device';
+    }
+
+    function usesAndroidDeviceFrame() {
+      return isAndroidDeviceScene() && Boolean(mobileDevicePlayerUrl());
+    }
+
+    function finiteDebugNumber(value) {
+      if (value === null || value === '' || typeof value === 'boolean') return null;
+      const number = Number(value);
+      return Number.isFinite(number) ? number : null;
+    }
+
+    function androidConnectionLabel(debug) {
+      const connectionState = debug?.connectionState || 'waiting';
+      if (connectionState === 'connected') {
+        const readinessLabels = {
+          'waiting-first-frame': 'androidConnectionWaitingFirstFrame',
+          'recovering-frame': 'androidConnectionRecoveringFrame',
+          reconnecting: 'androidConnectionReconnecting',
+          'snapshot-fallback': 'androidConnectionSnapshotFallback',
+          'waiting-input': 'androidConnectionWaitingInput',
+          unavailable: 'androidConnectionUnavailable',
+          ready: 'androidConnectionConnected',
+        };
+        if (readinessLabels[debug?.mediaReadiness]) return t(readinessLabels[debug.mediaReadiness]);
+      }
+      const labelKeys = {
+        waiting: 'androidConnectionWaiting',
+        new: 'androidConnectionWaiting',
+        connecting: 'androidConnectionConnecting',
+        connected: 'androidConnectionConnected',
+        disconnected: 'androidConnectionDisconnected',
+        failed: 'androidConnectionFailed',
+        closed: 'androidConnectionDisconnected',
+      };
+      return t(labelKeys[connectionState] || labelKeys.waiting);
+    }
+
+    function androidConnectionVisualState(debug) {
+      const stateValue = debug?.connectionState || 'waiting';
+      if (stateValue === 'connected' && debug?.mediaReadiness !== 'ready') return 'connecting';
+      return stateValue;
+    }
+
+    function androidCandidateRoute(debug = state.androidDebug) {
+      const localType = String(debug?.localCandidateType || '').toLowerCase();
+      const remoteType = String(debug?.remoteCandidateType || '').toLowerCase();
+      const protocol = String(debug?.protocol || '').toUpperCase();
+      const relayProtocol = String(debug?.relayProtocol || '').toUpperCase();
+      const candidateTypes = [localType, remoteType];
+      const kind = candidateTypes.includes('relay')
+        ? 'turn'
+        : candidateTypes.some((type) => type === 'srflx' || type === 'prflx')
+          ? 'stun'
+          : candidateTypes.includes('host')
+            ? 'direct'
+            : '';
+      const labels = { direct: 'androidRouteDirect', stun: 'androidRouteStun', turn: 'androidRouteTurn' };
+      const transport = [protocol, kind === 'turn' ? relayProtocol : ''].filter(Boolean).join('/');
+      return {
+        kind,
+        signature: [kind, localType, remoteType, protocol, relayProtocol].join(':'),
+        label: kind ? `${t(labels[kind])}${transport ? ` · ${transport}` : ''}` : '-',
+      };
+    }
+
+    function formatDebugMetric(value, suffix, decimals = 0) {
+      const number = finiteDebugNumber(value);
+      return number === null ? '-' : `${number.toFixed(decimals)}${suffix}`;
+    }
+
+    function formatDebugBitrate(value) {
+      const number = finiteDebugNumber(value);
+      if (number === null) return '-';
+      return number >= 1000 ? `${(number / 1000).toFixed(2)} Mbps` : `${Math.round(number)} kbps`;
+    }
+
+    function formatDebugDuration(value) {
+      const milliseconds = finiteDebugNumber(value);
+      if (milliseconds === null) return '-';
+      return milliseconds >= 1000
+        ? `${(milliseconds / 1000).toFixed(2)} s`
+        : `${milliseconds.toFixed(1)} ms`;
+    }
+
+    function formatInteractionLatency(value, status) {
+      if (status === 'waiting') return t('androidMetricMeasuring');
+      if (status === 'timeout') return t('androidMetricTimeout');
+      if (status === 'ambiguous') return t('androidMetricAmbiguous');
+      if (status === 'input-not-ready') return t('androidMetricInputNotReady');
+      return formatDebugMetric(value, ' ms', 1);
+    }
+
+    function androidMediaReadinessLabel(value) {
+      const keys = {
+        connecting: 'androidConnectionConnecting',
+        'waiting-first-frame': 'androidConnectionWaitingFirstFrame',
+        'recovering-frame': 'androidConnectionRecoveringFrame',
+        reconnecting: 'androidConnectionReconnecting',
+        'snapshot-fallback': 'androidConnectionSnapshotFallback',
+        'waiting-input': 'androidConnectionWaitingInput',
+        unavailable: 'androidConnectionUnavailable',
+        ready: 'androidConnectionConnected',
+      };
+      return t(keys[value] || 'androidConnectionWaiting');
+    }
+
+    function formatDeviceUptime(value) {
+      const milliseconds = finiteDebugNumber(value);
+      if (milliseconds === null) return '-';
+      const totalMinutes = Math.max(0, Math.floor(milliseconds / 60000));
+      const days = Math.floor(totalMinutes / 1440);
+      const hours = Math.floor((totalMinutes % 1440) / 60);
+      const minutes = totalMinutes % 60;
+      if (days) return `${days}d ${hours}h`;
+      if (hours) return `${hours}h ${minutes}m`;
+      return `${minutes}m`;
+    }
+
+    function pushAndroidDebugEvent(kind, options = {}) {
+      state.androidDebugEvents.unshift({
+        id: `android-debug-${Date.now()}-${Math.random().toString(16).slice(2, 7)}`,
+        kind,
+        value: String(options.value || ''),
+        detail: String(options.detail || ''),
+        status: options.status || 'info',
+        route: options.route || null,
+        occurredAt: Date.now(),
+      });
+      state.androidDebugEvents = state.androidDebugEvents.slice(0, ANDROID_DEBUG_EVENT_LIMIT);
+    }
+
+    function resetAndroidDebugState() {
+      state.androidDebug = {
+        playerReady: false,
+        connectionState: 'waiting',
+        iceConnectionState: 'new',
+        signalingState: 'stable',
+        inputChannels: [],
+        mediaReadiness: 'connecting',
+        frameRefreshCount: 0,
+        frameRefreshStatus: 'idle',
+        sampledAt: 0,
+        device: null,
+      };
+      state.androidDebugEvents = [];
+    }
+
+    function normalizeAndroidLatencyWindow(value) {
+      const boundedCount = number => Number.isSafeInteger(number) && number >= 0 && number <= 100 ? number : 0;
+      const nonnegative = number => Number.isFinite(number) && number >= 0 ? number : null;
+      return Object.fromEntries(['video', 'snapshot', 'waiting', 'mixed'].map(mode => {
+        const entry = value?.modes?.[mode];
+        return [mode, {
+          count: boundedCount(entry?.count),
+          ...Object.fromEntries(['nextFrame', 'visual', 'appAck'].map(metric => {
+            const result = entry?.[metric];
+            return [metric, {count: boundedCount(result?.count), p50Ms: nonnegative(result?.p50Ms),
+              p95Ms: nonnegative(result?.p95Ms), timeoutCount: boundedCount(result?.timeoutCount),
+              timeoutPercent: nonnegative(result?.timeoutPercent) <= 100 ? nonnegative(result?.timeoutPercent) : null,
+              excludedCount: boundedCount(result?.excludedCount)}];
+          })),
+        }];
+      }));
+    }
+
+    function normalizeAndroidDebugPayload(payload) {
+      const allowedStates = new Set(['new', 'connecting', 'connected', 'disconnected', 'failed', 'closed']);
+      const connectionState = String(payload?.connectionState || '').toLowerCase();
+      const inputChannels = Array.isArray(payload?.inputChannels)
+        ? payload.inputChannels.slice(0, 12).map((channel) => ({
+            label: String(channel?.label || '').slice(0, 32),
+            state: String(channel?.state || '').slice(0, 16),
+          })).filter((channel) => channel.label)
+        : [];
+      const device = payload?.device && typeof payload.device === 'object'
+        ? {
+            booted: payload.device.booted === true,
+            uptimeMs: finiteDebugNumber(payload.device.uptimeMs),
+            version: String(payload.device.version || '').slice(0, 80),
+            gfxinfo: payload.device.gfxinfo && typeof payload.device.gfxinfo === 'object'
+              ? {
+                  sampledAt: finiteDebugNumber(payload.device.gfxinfo.sampledAt),
+                  totalFrames: finiteDebugNumber(payload.device.gfxinfo.totalFrames),
+                  jankyFrames: finiteDebugNumber(payload.device.gfxinfo.jankyFrames),
+                  jankyPercent: finiteDebugNumber(payload.device.gfxinfo.jankyPercent),
+                  p50Ms: finiteDebugNumber(payload.device.gfxinfo.p50Ms),
+                  p90Ms: finiteDebugNumber(payload.device.gfxinfo.p90Ms),
+                  p95Ms: finiteDebugNumber(payload.device.gfxinfo.p95Ms),
+                }
+              : null,
+          }
+        : null;
+      return {
+        playerReady: true,
+        connectionState: allowedStates.has(connectionState) ? connectionState : 'connecting',
+        iceConnectionState: String(payload?.iceConnectionState || '-').slice(0, 24),
+        signalingState: String(payload?.signalingState || '-').slice(0, 24),
+        rttMs: finiteDebugNumber(payload?.rttMs),
+        dataChannelRttMs: finiteDebugNumber(payload?.dataChannelRttMs),
+        packetLossPercent: finiteDebugNumber(payload?.packetLossPercent),
+        decodedFps: finiteDebugNumber(payload?.decodedFps),
+        bitrateKbps: finiteDebugNumber(payload?.bitrateKbps),
+        jitterMs: finiteDebugNumber(payload?.jitterMs),
+        jitterBufferAverageMs: finiteDebugNumber(payload?.jitterBufferAverageMs),
+        averageDecodeTimeMs: finiteDebugNumber(payload?.averageDecodeTimeMs),
+        freezeCount: finiteDebugNumber(payload?.freezeCount),
+        freezeDurationMs: finiteDebugNumber(payload?.freezeDurationMs),
+        inputToNextFrameMs: finiteDebugNumber(payload?.inputToNextFrameMs),
+        inputToNextFrameSampledAt: finiteDebugNumber(payload?.inputToNextFrameSampledAt),
+        inputNextFrameStatus: ['idle', 'waiting', 'received', 'timeout', 'unavailable', 'input-not-ready']
+          .includes(payload?.inputNextFrameStatus) ? payload.inputNextFrameStatus : 'unavailable',
+        inputDispatchDelayMs: finiteDebugNumber(payload?.inputDispatchDelayMs),
+        inputToVisualChangeMs: finiteDebugNumber(payload?.inputToVisualChangeMs),
+        inputToVisualChangeSampledAt: finiteDebugNumber(payload?.inputToVisualChangeSampledAt),
+        inputVisualChangeScorePercent: finiteDebugNumber(payload?.inputVisualChangeScorePercent),
+        inputVisualChangeStatus: ['idle', 'waiting', 'received', 'timeout', 'unavailable']
+          .includes(payload?.inputVisualChangeStatus) ? payload.inputVisualChangeStatus : 'unavailable',
+        inputToAppAckMs: finiteDebugNumber(payload?.inputToAppAckMs),
+        inputReleaseToAppAckMs: finiteDebugNumber(payload?.inputReleaseToAppAckMs),
+        inputPressDurationMs: finiteDebugNumber(payload?.inputPressDurationMs),
+        statsIntervalMs: finiteDebugNumber(payload?.statsIntervalMs),
+        videoFrameTiming: Object.fromEntries(['ageMs', 'receiveToDisplayMs', 'processingMs', 'sinceLastFrameMs']
+          .map(key => [key, finiteDebugNumber(payload?.videoFrameTiming?.[key])])),
+        latencyWindow: normalizeAndroidLatencyWindow(payload?.latencyWindow),
+        inputToAppAckSampledAt: finiteDebugNumber(payload?.inputToAppAckSampledAt),
+        inputAppAckAction: String(payload?.inputAppAckAction || '').slice(0, 80),
+        inputAppAckStatus: ['idle', 'waiting', 'received', 'timeout', 'unavailable', 'ambiguous']
+          .includes(payload?.inputAppAckStatus) ? payload.inputAppAckStatus : 'unavailable',
+        packetsReceived: finiteDebugNumber(payload?.packetsReceived),
+        packetsLost: finiteDebugNumber(payload?.packetsLost),
+        framesDecoded: finiteDebugNumber(payload?.framesDecoded),
+        presentedCallbackCount: finiteDebugNumber(payload?.presentedCallbackCount),
+        videoPlaybackTime: finiteDebugNumber(payload?.videoPlaybackTime),
+        videoPixelsUsable: payload?.videoPixelsUsable === true,
+        pageVisibility: ['visible', 'hidden'].includes(payload?.pageVisibility) ? payload.pageVisibility : 'unknown',
+        framesDropped: finiteDebugNumber(payload?.framesDropped),
+        frameWidth: finiteDebugNumber(payload?.frameWidth),
+        frameHeight: finiteDebugNumber(payload?.frameHeight),
+        codec: String(payload?.codec || '').slice(0, 32),
+        localCandidateType: String(payload?.localCandidateType || '').slice(0, 16),
+        remoteCandidateType: String(payload?.remoteCandidateType || '').slice(0, 16),
+        protocol: String(payload?.protocol || '').slice(0, 12),
+        relayProtocol: String(payload?.relayProtocol || '').slice(0, 12),
+        inputChannels,
+        mediaReadiness: ['connecting', 'waiting-first-frame', 'recovering-frame', 'reconnecting', 'snapshot-fallback', 'waiting-input', 'unavailable', 'ready']
+          .includes(payload?.mediaReadiness) ? payload.mediaReadiness : 'connecting',
+        firstPresentedFrameAt: finiteDebugNumber(payload?.firstPresentedFrameAt),
+        lastPresentedFrameAt: finiteDebugNumber(payload?.lastPresentedFrameAt),
+        frameRefreshCount: finiteDebugNumber(payload?.frameRefreshCount),
+        frameRefreshStatus: ['idle', 'requesting', 'requested', 'failed']
+          .includes(payload?.frameRefreshStatus) ? payload.frameRefreshStatus : 'idle',
+        sampledAt: finiteDebugNumber(payload?.sampledAt) || Date.now(),
+        device,
+      };
+    }
+
+    function renderAndroidDebug() {
+      const debug = state.androidDebug;
+      const connectionState = androidConnectionVisualState(debug);
+      const route = androidCandidateRoute(debug);
+      if (els.androidConnectionStatus) {
+        els.androidConnectionStatus.dataset.state = connectionState;
+        els.androidConnectionStatus.textContent = androidConnectionLabel(debug);
+      }
+      setText(els.androidCandidatePath, t('androidCandidatePath', { route: route.label }));
+      setText(els.androidRtt, formatDebugMetric(debug.rttMs, ' ms'));
+      setText(els.androidDataChannelRtt, formatDebugMetric(debug.dataChannelRttMs, ' ms', 1));
+      setText(els.androidPacketLoss, formatDebugMetric(debug.packetLossPercent, '%', 2));
+      setText(els.androidDecodedFps, formatDebugMetric(debug.decodedFps, '', 1));
+      setText(els.androidBitrate, formatDebugBitrate(debug.bitrateKbps));
+      setText(els.androidInputToFrame, formatInteractionLatency(
+        debug.inputToNextFrameMs,
+        debug.inputNextFrameStatus,
+      ));
+      setText(els.androidInputToVisualChange, formatInteractionLatency(
+        debug.inputToVisualChangeMs,
+        debug.inputVisualChangeStatus,
+      ));
+      setText(els.androidInputToAppAck, formatInteractionLatency(
+        debug.inputToAppAckMs,
+        debug.inputAppAckStatus,
+      ));
+      setText(els.androidIceState, debug.iceConnectionState || '-');
+      setText(els.androidSignalingState, debug.signalingState || '-');
+      setText(els.androidMediaReadiness, androidMediaReadinessLabel(debug.mediaReadiness));
+      setText(els.androidFrameRecovery, t('androidFrameRecoveryCount', {
+        count: Math.max(0, Math.round(finiteDebugNumber(debug.frameRefreshCount) || 0)),
+      }));
+      setText(els.androidInputQueueDelay, formatDebugMetric(debug.inputDispatchDelayMs, ' ms', 1));
+      setText(els.androidInputReleaseToAck, formatInteractionLatency(debug.inputReleaseToAppAckMs, debug.inputAppAckStatus));
+      setText(els.androidVideoFrames, `${formatDebugMetric(debug.presentedCallbackCount, '', 0)} / ${formatDebugMetric(debug.framesDecoded, '', 0)}`);
+      setText(els.androidPlaybackTime, `${formatDebugMetric(debug.videoPlaybackTime, ' s', 1)} / ${debug.pageVisibility || '-'}`);
+      setText(els.androidVideoFrameAge, formatDebugMetric(debug.videoFrameTiming?.ageMs, ' ms', 1));
+      for (const mode of ['video', 'snapshot']) {
+        const metric = debug.latencyWindow?.[mode]?.visual;
+        const latencyElement = mode === 'video' ? els.androidVideoLatency : els.androidSnapshotLatency;
+        const countElement = mode === 'video' ? els.androidVideoSamples : els.androidSnapshotSamples;
+        setText(latencyElement, metric?.count
+          ? `${formatDebugMetric(metric.p50Ms, '', 0)} / ${formatDebugMetric(metric.p95Ms, ' ms', 0)}` : '-');
+        setText(countElement, metric
+          ? `${metric.count} / ${metric.timeoutCount} (${formatDebugMetric(metric.timeoutPercent, '%', 0)})` : '-');
+      }
+      setText(els.androidResolution, debug.frameWidth && debug.frameHeight ? `${debug.frameWidth} × ${debug.frameHeight}` : '-');
+      setText(els.androidCodec, debug.codec || '-');
+      setText(els.androidJitter, formatDebugMetric(debug.jitterMs, ' ms', 1));
+      setText(els.androidJitterBufferAverage, formatDebugMetric(debug.jitterBufferAverageMs, ' ms', 1));
+      setText(els.androidDecodeAverage, formatDebugMetric(debug.averageDecodeTimeMs, ' ms', 2));
+      const freezeCount = finiteDebugNumber(debug.freezeCount);
+      setText(els.androidFreezes, freezeCount === null
+        ? '-'
+        : `${Math.round(freezeCount)} / ${formatDebugDuration(debug.freezeDurationMs)}`);
+      setText(els.androidDroppedFrames, finiteDebugNumber(debug.framesDropped) === null ? '-' : String(debug.framesDropped));
+      const openChannels = debug.inputChannels?.filter((channel) => channel.state === 'open') || [];
+      setText(els.androidInputChannels, openChannels.length
+        ? openChannels.map((channel) => channel.label).join(' · ')
+        : '-');
+      const deviceVersion = debug.device?.version ? ` · ${debug.device.version.split(' ')[0]}` : '';
+      setText(els.androidDeviceStatus, debug.device
+        ? `${t(debug.device.booted ? 'androidDeviceOnline' : 'androidDeviceOffline')}${deviceVersion}`
+        : '-');
+      setText(els.androidDeviceUptime, formatDeviceUptime(debug.device?.uptimeMs));
+      setText(els.androidGfxP50, formatDebugMetric(debug.device?.gfxinfo?.p50Ms, ' ms'));
+      setText(els.androidGfxP90, formatDebugMetric(debug.device?.gfxinfo?.p90Ms, ' ms'));
+      setText(els.androidGfxP95, formatDebugMetric(debug.device?.gfxinfo?.p95Ms, ' ms'));
+      setText(els.androidLastAppAckAction, debug.inputAppAckAction || '-');
+      if (usesAndroidDeviceFrame() && els.lastRefresh) {
+        els.lastRefresh.textContent = debug.sampledAt
+          ? t('androidDebugUpdatedAt', { time: new Date(debug.sampledAt).toLocaleTimeString() })
+          : t('parentLastRefresh');
+      }
+    }
+
+    function renderControlSidebarMode() {
+      const androidMode = usesAndroidDeviceFrame();
+      if (els.controlSidebar) {
+        els.controlSidebar.dataset.mode = androidMode ? 'android-debug' : 'faults';
+        els.controlSidebar.setAttribute('aria-label', t(androidMode ? 'androidDebugConsoleTitle' : 'faultConsoleTitle'));
+      }
+      if (els.controlSidebarTitle) {
+        els.controlSidebarTitle.textContent = t(androidMode ? 'androidDebugConsoleTitle' : 'faultConsoleTitle');
+      }
+      if (els.faultControlPanel) els.faultControlPanel.hidden = androidMode;
+      if (els.observabilityPanel) els.observabilityPanel.hidden = androidMode;
+      if (els.androidDebugPanel) els.androidDebugPanel.hidden = !androidMode;
+      if (!androidMode && els.lastRefresh) {
+        els.lastRefresh.textContent = state.lastStatusRefreshedAt
+          ? t('parentLastRefreshAt', { time: new Date(state.lastStatusRefreshedAt).toLocaleTimeString() })
+          : t('parentLastRefresh');
+      }
+      if (els.activityHistoryTitle) {
+        els.activityHistoryTitle.textContent = t(androidMode ? 'androidEventHistoryTitle' : 'faultHistoryTitle');
+      }
+      if (els.activityHistoryPanel) {
+        els.activityHistoryPanel.setAttribute('aria-label', t(androidMode ? 'androidEventHistoryTitle' : 'faultHistoryTitle'));
+      }
+      renderAndroidDebug();
+      renderFaultHistory();
+      renderLayoutState();
+    }
+
+    function activeFrameSource(options = {}) {
+      if (usesAndroidDeviceFrame()) {
+        const url = new URL(mobileDevicePlayerUrl());
+        if (url.pathname === '/android-emulator-webrtc/') {
+          const playerVersion = mobileDeviceVersion('mobileDevicePlayerVersion');
+          if (playerVersion) url.searchParams.set('v', playerVersion);
+          if (!url.searchParams.has('latestVideo')) url.searchParams.set('latestVideo', '1');
+        }
+        if (new URLSearchParams(window.location.search).get('rtcTransport') === 'relay') url.searchParams.set('rtcTransport', 'relay');
+        const playerUrl = url.href;
+        return {
+          kind: 'android-device',
+          standaloneUrl: playerUrl,
+          embeddedUrl: playerUrl,
+        };
+      }
+      return {
+        kind: 'web-scene',
+        standaloneUrl: sceneUrl(state.language, options),
+        embeddedUrl: sceneUrl(state.language, { ...options, embedded: true }),
+      };
+    }
+
     function setText(element, value) {
       if (element) element.textContent = value;
     }
 
     function updateFrameUrls(options = {}) {
-      const standaloneUrl = sceneUrl(state.language, options);
-      const embeddedUrl = sceneUrl(state.language, { ...options, embedded: true });
+      const source = activeFrameSource(options);
       if (els.openShopLink) {
-        els.openShopLink.href = standaloneUrl;
+        els.openShopLink.href = source.standaloneUrl;
         els.openShopLink.title = t('parentOpenScene');
         els.openShopLink.setAttribute('aria-label', t('parentOpenScene'));
       }
-      const frameChanged = els.shopFrame.dataset.sceneId !== state.selectedSceneId;
+      const frameChanged = els.shopFrame.dataset.sceneId !== state.selectedSceneId
+        || els.shopFrame.dataset.sourceKind !== source.kind;
       if (!els.shopFrame.getAttribute('src') || frameChanged) {
         state.shopReady = false;
-        els.shopFrame.src = embeddedUrl;
+        if (source.kind === 'android-device') resetAndroidDebugState();
+        els.shopFrame.src = source.embeddedUrl;
         els.shopFrame.dataset.sceneId = state.selectedSceneId;
+        els.shopFrame.dataset.sourceKind = source.kind;
       }
       els.shopFrame.dataset.previewMode = state.previewMode;
       els.shopFrame.title = t(selectedBusinessScene().titleKey);
-      if (els.previewStage) els.previewStage.dataset.scene = state.selectedSceneId;
+      if (els.previewStage) {
+        els.previewStage.dataset.scene = state.selectedSceneId;
+        els.previewStage.dataset.sourceKind = source.kind;
+      }
       updateWebBookstorePreviewScale();
+      renderApkDownload();
+      renderControlSidebarMode();
     }
 
     function updateWorkbenchUrl() {
@@ -2515,9 +3525,13 @@
       const mark = document.createElement('span');
       mark.className = `service-icon service-icon-${sceneId}`;
       mark.setAttribute('aria-hidden', 'true');
-      if (sceneId === 'webgl-game') {
+      const imageSources = {
+        'android-storefront': 'assets/android-storefront-scene-icon.png?v=20260902-image2-v1',
+        'webgl-game': 'assets/webgl-game-scene-icon.png?v=20260828-image2-v1',
+      };
+      if (imageSources[sceneId]) {
         const image = document.createElement('img');
-        image.src = 'assets/webgl-game-scene-icon.png?v=20260828-image2-v1';
+        image.src = imageSources[sceneId];
         image.alt = '';
         image.width = 256;
         image.height = 256;
@@ -2645,7 +3659,7 @@
         button.classList.toggle('active', active);
         button.setAttribute('aria-selected', active ? 'true' : 'false');
         button.tabIndex = active ? 0 : -1;
-        button.title = supported ? '' : t('previewWebOnly');
+        button.title = supported ? '' : t(scene.supportedViews[0] === 'mobile' ? 'previewMobileOnly' : 'previewWebOnly');
         if (active) selectedTabId = button.id;
       });
       if (els.previewStage && selectedTabId) els.previewStage.setAttribute('aria-labelledby', selectedTabId);
@@ -2685,6 +3699,7 @@
       renderFaultCatalog();
       updateWorkbenchUrl();
       if (changed) updateFrameUrls();
+      else renderControlSidebarMode();
       syncPreviewContext();
     }
 
@@ -2695,6 +3710,8 @@
       renderPreviewMode();
       updateWorkbenchUrl();
       updateFrameUrls({ preserveStoreState: true });
+      renderFaultCatalog();
+      renderControlSidebarMode();
       syncPreviewContext();
     }
 
@@ -2713,6 +3730,9 @@
       const compact = compactViewport.matches;
       const leftExpanded = compact ? state.leftDrawerOpen : !state.leftCollapsed;
       const rightExpanded = compact ? state.rightDrawerOpen : !state.rightCollapsed;
+      const rightCollapseKey = usesAndroidDeviceFrame()
+        ? (rightExpanded ? 'collapseDiagnostics' : 'expandDiagnostics')
+        : (rightExpanded ? 'collapseFaults' : 'expandFaults');
       if (els.leftCollapseBtn) {
         els.leftCollapseBtn.setAttribute('aria-expanded', leftExpanded ? 'true' : 'false');
         els.leftCollapseBtn.setAttribute('aria-label', t(leftExpanded ? 'collapseScenes' : 'expandScenes'));
@@ -2720,8 +3740,8 @@
       }
       if (els.rightCollapseBtn) {
         els.rightCollapseBtn.setAttribute('aria-expanded', rightExpanded ? 'true' : 'false');
-        els.rightCollapseBtn.setAttribute('aria-label', t(rightExpanded ? 'collapseFaults' : 'expandFaults'));
-        els.rightCollapseBtn.title = t(rightExpanded ? 'collapseFaults' : 'expandFaults');
+        els.rightCollapseBtn.setAttribute('aria-label', t(rightCollapseKey));
+        els.rightCollapseBtn.title = t(rightCollapseKey);
       }
       if (els.mobileScenesBtn) {
         els.mobileScenesBtn.setAttribute('aria-expanded', state.leftDrawerOpen ? 'true' : 'false');
@@ -2730,8 +3750,11 @@
       }
       if (els.mobileFaultsBtn) {
         els.mobileFaultsBtn.setAttribute('aria-expanded', state.rightDrawerOpen ? 'true' : 'false');
-        els.mobileFaultsBtn.setAttribute('aria-label', t(state.rightDrawerOpen ? 'collapseFaults' : 'expandFaults'));
-        els.mobileFaultsBtn.title = t(state.rightDrawerOpen ? 'collapseFaults' : 'expandFaults');
+        const mobileRightKey = usesAndroidDeviceFrame()
+          ? (state.rightDrawerOpen ? 'collapseDiagnostics' : 'expandDiagnostics')
+          : (state.rightDrawerOpen ? 'collapseFaults' : 'expandFaults');
+        els.mobileFaultsBtn.setAttribute('aria-label', t(mobileRightKey));
+        els.mobileFaultsBtn.title = t(mobileRightKey);
       }
     }
 
@@ -2824,8 +3847,76 @@
       return t(keys[status] || keys.pending);
     }
 
+    function renderAndroidDebugHistory() {
+      els.faultHistoryCount.textContent = t('androidEventCount', { count: state.androidDebugEvents.length });
+      if (!state.androidDebugEvents.length) {
+        const empty = document.createElement('div');
+        empty.className = 'fault-history-empty';
+        empty.textContent = t('androidEventEmpty');
+        els.faultHistoryList.replaceChildren(empty);
+        return;
+      }
+
+      const locale = state.language === 'en' ? 'en-US' : 'zh-CN';
+      const rows = state.androidDebugEvents.map((event) => {
+        const row = document.createElement('article');
+        row.className = 'fault-record';
+        row.dataset.status = event.status === 'failed' ? 'failed' : event.status === 'warning' ? 'pending' : 'active';
+
+        const dot = document.createElement('span');
+        dot.className = 'fault-record-dot';
+        dot.setAttribute('aria-hidden', 'true');
+
+        const copy = document.createElement('div');
+        copy.className = 'fault-record-copy';
+        const titleRow = document.createElement('div');
+        titleRow.className = 'fault-record-title-row';
+        const title = document.createElement('strong');
+        title.className = 'fault-record-title';
+        if (event.kind === 'connection') {
+          title.textContent = t('androidEventConnection', { state: androidConnectionLabel(event.value) });
+        } else if (event.kind === 'route') {
+          title.textContent = t('androidEventRoute', { route: androidCandidateRoute(event.route || {}).label });
+        } else if (event.kind === 'error') {
+          title.textContent = t('androidEventError');
+        } else {
+          title.textContent = t('androidEventPlayerReady');
+        }
+        title.title = title.textContent;
+
+        const status = document.createElement('span');
+        status.className = 'fault-record-status';
+        status.textContent = t(event.status === 'failed'
+          ? 'androidEventFailed'
+          : event.status === 'warning'
+            ? 'androidEventWarning'
+            : 'androidEventInfo');
+        titleRow.append(title, status);
+
+        const meta = document.createElement('div');
+        meta.className = 'fault-record-meta';
+        const time = document.createElement('span');
+        time.textContent = new Date(event.occurredAt).toLocaleTimeString(locale, { hour12: false });
+        meta.append(time);
+        if (event.detail) {
+          const detail = document.createElement('span');
+          detail.textContent = event.detail;
+          detail.title = event.detail;
+          meta.append(detail);
+        }
+        copy.append(titleRow, meta);
+        row.append(dot, copy);
+        return row;
+      });
+      els.faultHistoryList.replaceChildren(...rows);
+    }
+
     function renderFaultHistory() {
       if (!els.faultHistoryList || !els.faultHistoryCount) return;
+      if (usesAndroidDeviceFrame()) {
+        renderAndroidDebugHistory();
+        return;
+      }
       els.faultHistoryCount.textContent = t('faultHistoryCount', { count: state.faultRecords.length });
       if (!state.faultRecords.length) {
         const empty = document.createElement('div');
@@ -3184,6 +4275,8 @@
         const { response, body } = await requestJson('/api/demo/config');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.demoConfig = body && typeof body === 'object' ? body : {};
+        updateFrameUrls({ preserveStoreState: true });
+        renderFaultCatalog();
         updateObservabilityRumViewLink();
         updateObservabilityTraceLink();
       } catch (error) {
@@ -3193,7 +4286,8 @@
     }
 
     function sendShopMessage(type, payload = {}) {
-      if (!els.shopFrame.contentWindow) return;
+      if (!els.shopFrame.contentWindow || els.shopFrame.dataset.sourceKind !== 'web-scene') return;
+      if (isAndroidDeviceScene()) return;
       const message = state.selectedSceneId === 'bookstore'
         ? { source: 'mall-demo-parent', type, payload }
         : {
@@ -3271,11 +4365,15 @@
     }
 
     function faultsForSelectedScene() {
+      const scene = selectedBusinessScene();
+      const androidDeviceActive = usesAndroidDeviceFrame();
+      const sceneId = androidDeviceActive ? scene.faultSceneId : scene.id;
       return state.faults.filter((scenario) => {
+        if (androidDeviceActive && scenario.clientSide) return false;
         if (!Array.isArray(scenario.scenes) || !scenario.scenes.length) {
-          return state.selectedSceneId === 'bookstore';
+          return sceneId === 'bookstore';
         }
-        return scenario.scenes.includes(state.selectedSceneId);
+        return scenario.scenes.includes(sceneId);
       });
     }
 
@@ -3433,7 +4531,9 @@
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.faults = Array.isArray(body.items)
           ? body.items.filter((scenario) =>
-              !Array.isArray(scenario.platforms) || scenario.platforms.includes('web'))
+              !Array.isArray(scenario.platforms)
+              || scenario.platforms.includes('web')
+              || scenario.platforms.includes('android'))
           : [];
         renderFaultCatalog();
         renderActiveFault(state.faultMode);
@@ -3451,7 +4551,10 @@
         setText(els.orderHealth, body.order?.health?.status || body.order?.status || '-');
         setText(els.inventoryHealth, body.inventory?.health?.status || body.inventory?.health?.error || '-');
         setText(els.paymentHealth, body.payment?.health?.status || body.payment?.health?.error || '-');
-        els.lastRefresh.textContent = t('parentLastRefreshAt', { time: new Date().toLocaleTimeString() });
+        state.lastStatusRefreshedAt = Date.now();
+        if (!usesAndroidDeviceFrame()) {
+          els.lastRefresh.textContent = t('parentLastRefreshAt', { time: new Date(state.lastStatusRefreshedAt).toLocaleTimeString() });
+        }
         setFaultStatus(summarizeFaults(body));
       } catch (error) {
         setText(els.orderHealth, t('commonUnknown'));
@@ -3569,7 +4672,73 @@
       return faultRadioForValue(els.faultScenarioTabs, scenarioId);
     }
 
+    function androidPlayerOrigin() {
+      try {
+        return new URL(mobileDevicePlayerUrl()).origin;
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function handleAndroidPlayerMessage(event) {
+      if (!usesAndroidDeviceFrame()
+          || event.source !== els.shopFrame.contentWindow
+          || event.origin !== androidPlayerOrigin()) {
+        return false;
+      }
+      const data = event.data;
+      if (!data || data.source !== ANDROID_PLAYER_MESSAGE_SOURCE
+          || data.version !== ANDROID_PLAYER_MESSAGE_VERSION) {
+        return false;
+      }
+
+      if (data.type === 'player-ready') {
+        if (!state.androidDebug.playerReady) {
+          state.androidDebug.playerReady = true;
+          state.androidDebug.connectionState = 'connecting';
+          pushAndroidDebugEvent('ready');
+        }
+      } else if (data.type === 'webrtc-stats') {
+        const previous = state.androidDebug;
+        const next = normalizeAndroidDebugPayload(data.payload || {});
+        const previousRoute = androidCandidateRoute(previous);
+        const nextRoute = androidCandidateRoute(next);
+        state.androidDebug = next;
+        if (previous.connectionState !== next.connectionState) {
+          const status = next.connectionState === 'failed'
+            ? 'failed'
+            : next.connectionState === 'connected'
+              ? 'info'
+              : 'warning';
+          pushAndroidDebugEvent('connection', {
+            value: next.connectionState,
+            status,
+            detail: `ICE ${next.iceConnectionState}`,
+          });
+        }
+        if (nextRoute.kind && previousRoute.signature !== nextRoute.signature) {
+          pushAndroidDebugEvent('route', {
+            route: next,
+            detail: [next.localCandidateType, next.remoteCandidateType].filter(Boolean).join(' → '),
+          });
+        }
+      } else if (data.type === 'player-error') {
+        const message = String(data.payload?.message || 'Unknown player error').slice(0, 240);
+        pushAndroidDebugEvent('error', { detail: message, status: 'failed' });
+        state.androidDebug.connectionState = 'failed';
+        state.androidDebug.sampledAt = finiteDebugNumber(data.payload?.sampledAt) || Date.now();
+      } else {
+        return true;
+      }
+
+      renderAndroidDebug();
+      renderFaultHistory();
+      return true;
+    }
+
     function handleShopMessage(event) {
+      if (handleAndroidPlayerMessage(event)) return;
+      if (els.shopFrame.dataset.sourceKind !== 'web-scene') return;
       if (event.origin !== window.location.origin || event.source !== els.shopFrame.contentWindow) {
         log(t('parentSceneMessageBlocked'), { status: 'warn' });
         return;
@@ -3720,6 +4889,16 @@
     if (els.mobileScenesBtn) els.mobileScenesBtn.addEventListener('click', () => toggleSidebar('left'));
     if (els.mobileFaultsBtn) els.mobileFaultsBtn.addEventListener('click', () => toggleSidebar('right'));
     if (els.usageGuideBtn) els.usageGuideBtn.addEventListener('click', openUsageGuide);
+    if (els.apkDownloadToggle) els.apkDownloadToggle.addEventListener('click', toggleApkDownload);
+    if (els.apkDownloadClose) els.apkDownloadClose.addEventListener('click', () => closeApkDownload({ restoreFocus: true }));
+    if (els.apkDownloadEntry) {
+      document.addEventListener('pointerdown', (event) => {
+        if (!els.apkDownloadPopover?.hidden && !els.apkDownloadEntry.contains(event.target)) closeApkDownload();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !els.apkDownloadPopover?.hidden) closeApkDownload({ restoreFocus: true });
+      });
+    }
     if (els.usageGuideCloseBtn) els.usageGuideCloseBtn.addEventListener('click', closeUsageGuide);
     if (els.usageGuidePreviousBtn) els.usageGuidePreviousBtn.addEventListener('click', () => showUsageGuideSlide(usageGuideSlideIndex - 1));
     if (els.usageGuideNextBtn) els.usageGuideNextBtn.addEventListener('click', () => showUsageGuideSlide(usageGuideSlideIndex + 1));

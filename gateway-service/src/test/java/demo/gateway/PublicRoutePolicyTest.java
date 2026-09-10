@@ -86,6 +86,11 @@ class PublicRoutePolicyTest {
                 "static_asset"),
             new RouteExpectation(
                 "GET",
+                "/assets/android-storefront-scene-icon.png",
+                "asset.android-storefront-icon",
+                "static_asset"),
+            new RouteExpectation(
+                "GET",
                 "/assets/guide-carousel/image2-slide-01.png",
                 "asset.usage-guide-slide",
                 "static_asset"),
@@ -108,6 +113,7 @@ class PublicRoutePolicyTest {
                 "POST", "/api/demo/auth/session", "demo.auth.session.login", "demo_api"),
             new RouteExpectation(
                 "DELETE", "/api/demo/auth/session", "demo.auth.session.logout", "demo_api"),
+            new RouteExpectation("GET", "/api/demo/mobile/book-content", "demo.mobile-book-content", "demo_api"),
             new RouteExpectation("GET", "/api/demo/config", "demo.config", "demo_api"),
             new RouteExpectation("GET", "/api/demo/status", "demo.status", "demo_api"),
             new RouteExpectation(
@@ -181,12 +187,15 @@ class PublicRoutePolicyTest {
             new RouteRequest("GET", "/assets/webgl-replay-game.js.map"),
             new RouteRequest("GET", "/assets/webgl-replay-game-worker.js"),
             new RouteRequest("GET", "/assets/webgl-game-scene-icon@2x.png"),
+            new RouteRequest("GET", "/assets/android-storefront-scene-icon@2x.png"),
             new RouteRequest("POST", "/api/demo/game-assets/orbital-shield-texture.webp"),
             new RouteRequest("GET", "/api/demo/game-assets/orbital-shield-texture@2x.webp"),
             new RouteRequest("GET", "/api/demo/game-assets/orbital-shield-texture.webp.map"),
             new RouteRequest("GET", "/assets/avatars/demo-reader-d.png"),
             new RouteRequest("GET", "/assets/guide-carousel/image2-slide-06.png"),
             new RouteRequest("GET", "/api/demo/new-endpoint"),
+            new RouteRequest("POST", "/api/demo/mobile/book-content"),
+            new RouteRequest("GET", "/api/demo/mobile/book-content/extra"),
             new RouteRequest("POST", "/rum-proxy/v1/datakit/pull"),
             new RouteRequest("GET", "/assets/%2e%2e/application.properties"));
 
