@@ -205,7 +205,7 @@
           if (active !== "air-battle") return;
           // Restore the intermediate iframe as well as the inner canvas: the
           // canvas can still be its document's activeElement after host clicks.
-          frame.focus({ preventScroll: true });
+          if (document.activeElement !== frame) frame.focus({ preventScroll: true });
         }
         frame.contentWindow?.postMessage(d, location.origin);
       }

@@ -4377,7 +4377,7 @@
       if (state.selectedSceneId !== 'webgl-game' || state.activeGameId !== 'air-battle' || !els.shopFrame.contentWindow) return;
       window.requestAnimationFrame(() => {
         if (state.selectedSceneId !== 'webgl-game' || state.activeGameId !== 'air-battle') return;
-        els.shopFrame.focus({ preventScroll: true });
+        if (document.activeElement !== els.shopFrame) els.shopFrame.focus({ preventScroll: true });
         sendShopMessage('focus-scene-controls');
       });
     }
@@ -5131,6 +5131,14 @@
     document.addEventListener('keydown', handleUsageGuideKeydown);
     if (els.drawerBackdrop) els.drawerBackdrop.addEventListener('click', closeDrawers);
     compactViewport.addEventListener('change', closeDrawers);
+    els.controlSidebar.addEventListener('mousedown', (event) => {
+      // A mouse click must not interrupt held Space/arrows before click hands
+      // focus back. Keep keyboard activation and text fields unchanged.
+      if (event.button === 0 && state.selectedSceneId === 'webgl-game'
+          && state.activeGameId === 'air-battle' && event.target.closest('button')) {
+        event.preventDefault();
+      }
+    });
     els.controlSidebar.addEventListener('click', (event) => {
       // Pointer clicks hand controls back to the running aircraft. Keyboard
       // activation retains normal Tab/radio navigation in the console.
