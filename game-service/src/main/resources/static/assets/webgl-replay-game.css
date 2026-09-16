@@ -135,6 +135,42 @@ select {
     radial-gradient(circle, transparent 45%, rgba(1, 2, 10, 0.48) 100%);
 }
 
+.direction-hint {
+  position: absolute;
+  right: clamp(12px, 2.5vw, 28px);
+  bottom: clamp(12px, 2.5vw, 28px);
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  color: rgba(231, 248, 255, 0.8);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+  user-select: none;
+}
+
+.direction-keys {
+  display: grid;
+  grid-template-columns: repeat(3, clamp(28px, 3vw, 38px));
+  grid-template-rows: repeat(2, clamp(28px, 3vw, 38px));
+  gap: 5px;
+}
+
+.direction-keys kbd {
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(206, 238, 255, 0.4);
+  border-radius: 8px;
+  background: rgba(218, 241, 255, 0.08);
+  font: 20px/1 ui-sans-serif, system-ui, sans-serif;
+}
+
+.direction-up { grid-area: 1 / 2; }
+.direction-left { grid-area: 2 / 1; }
+.direction-down { grid-area: 2 / 2; }
+.direction-right { grid-area: 2 / 3; }
+
 .game-hud {
   position: absolute;
   top: 18px;
