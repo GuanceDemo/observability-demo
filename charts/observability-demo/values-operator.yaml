@@ -1,0 +1,5 @@
+# Overlay only after DataKit Operator and its scoped rule pass admission tests.
+# Must be paired with business images built from the 2.4.0+ plain-Java Dockerfiles.
+ddtrace:
+  mode: operator
+  version: v1.65.6-ext

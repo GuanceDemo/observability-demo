@@ -1,0 +1,25 @@
+--- a/gateway/src/videobridge_gateway/gateway_server.py
++++ b/gateway/src/videobridge_gateway/gateway_server.py
+@@ -24,6 +24,22 @@
+     if not os.path.isfile(adb) or not os.access(adb, os.X_OK):
+         logging.error("Frame refresh cannot access configured adb executable.")
+         return web.json_response({"error": "frame refresh unavailable"}, status=503)
++
++    # Recovery must never launch the APK over Android Home or another app.
++    probe = await asyncio.create_subprocess_exec(
++        adb, "-s", serial, "shell", "dumpsys", "activity", "activities",
++        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL,
++    )
++    try:
++        output, _ = await asyncio.wait_for(probe.communicate(), timeout=3)
++    except asyncio.TimeoutError:
++        probe.kill()
++        await probe.wait()
++        return web.json_response({"status": "skipped"})
++    resumed = [line for line in output.decode(errors="replace").splitlines()
++               if "mResumedActivity:" in line or "topResumedActivity=" in line]
++    if probe.returncode or not any(f"{package}/" in line for line in resumed):
++        return web.json_response({"status": "skipped"})
+ 
+     process = await asyncio.create_subprocess_exec(
+         adb,

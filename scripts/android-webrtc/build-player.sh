@@ -36,6 +36,7 @@ git -C "$UPSTREAM_ROOT" apply --recount "$SCRIPT_ROOT/templates/player-low-laten
 git -C "$UPSTREAM_ROOT" apply --recount "$SCRIPT_ROOT/templates/player-debug-telemetry.patch"
 git -C "$UPSTREAM_ROOT" apply --recount "$SCRIPT_ROOT/templates/player-readiness-recovery.patch"
 git -C "$UPSTREAM_ROOT" apply --recount "$SCRIPT_ROOT/templates/player-latest-video.patch"
+install -m 0644 "$SCRIPT_ROOT/player/mall-demo-control.js" "$UPSTREAM_ROOT/js/example/src/mall-demo-control.js"
 install -m 0644 "$SCRIPT_ROOT/player/diagnostics.js" \
   "$UPSTREAM_ROOT/js/example/src/mall-demo-diagnostics.js"
 install -m 0644 "$SCRIPT_ROOT/player/playback.ts" \

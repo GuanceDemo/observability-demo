@@ -181,7 +181,7 @@ class FileBackendLogReader implements BackendLogReader {
 
 class KubernetesBackendLogReader implements BackendLogReader {
   private static final List<String> SERVICES =
-      List.of("gateway-service", "order-service", "inventory-service", "payment-service");
+      List.of("gateway-service", "order-service", "inventory-service", "payment-service", "game-service");
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final Path SERVICE_ACCOUNT_DIR =
       Path.of("/var/run/secrets/kubernetes.io/serviceaccount");

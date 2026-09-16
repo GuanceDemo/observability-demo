@@ -1,0 +1,168 @@
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  background: #f4f6ef;
+  color: #254434;
+  font: 14px -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+}
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 1px solid #d5dece;
+  border-radius: 20px;
+  padding: 9px 18px;
+  background: #fff;
+  color: #254434;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+button:focus-visible,
+.cards-item:focus-visible {
+  outline: 3px solid #97c740;
+  outline-offset: 2px;
+}
+.pvz-header,
+.pvz-main {
+  max-width: 1120px;
+  margin: auto;
+  padding: 20px 24px;
+}
+.pvz-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pvz-header small {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #788773;
+}
+.pvz-header h1 {
+  font-size: 26px;
+  margin: 8px 0;
+}
+.pvz-header p {
+  margin: 0;
+  color: #788773;
+}
+.pvz-main {
+  padding-top: 0;
+}
+.pvz-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+}
+.pvz-toolbar > div {
+  display: flex;
+  gap: 8px;
+}
+#viewport {
+  max-width: 900px;
+  margin: 0 auto;
+  position: relative;
+  overflow: clip;
+  border-radius: 18px;
+  border: 1px solid #c9d6be;
+  background: #344521;
+}
+#pvzWorld {
+  position: relative;
+  width: 900px;
+  height: 600px;
+  transform-origin: top left;
+  overflow: clip;
+}
+#pvzWorld .content-box {
+  border: 0;
+}
+#sceneBackground {
+  position: absolute;
+  left: -120px;
+  top: 0;
+  width: 1400px;
+  height: 600px;
+  pointer-events: none;
+}
+#canvas {
+  position: relative;
+  background: transparent;
+  border: 0;
+  touch-action: none;
+}
+.cards-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.cards-item {
+  cursor: pointer;
+}
+.intro-game {
+  font: 16px/1.8 -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+  color: #f6ecd0;
+  text-shadow: 0 1px 3px #000;
+}
+.startGame-btn {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: #ff0;
+}
+.menu-box {
+  display: none !important;
+}
+#guide {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #6e8069;
+}
+footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 11px;
+  color: #84917c;
+}
+footer a {
+  color: inherit;
+}
+#result {
+  padding: 18px;
+  margin: 15px 0;
+  border: 1px solid #cad9bc;
+  border-radius: 16px;
+  background: #eaf2df;
+}
+#result h2 {
+  margin: 0 0 12px;
+  font-size: 21px;
+}
+@media (max-width: 600px) {
+  .pvz-header,
+  .pvz-main {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .pvz-header h1 {
+    font-size: 22px;
+  }
+  .pvz-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  button {
+    padding: 8px 13px;
+  }
+  .intro-game {
+    font-size: 16px;
+  }
+}

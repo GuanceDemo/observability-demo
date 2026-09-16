@@ -161,6 +161,8 @@ jobs:
           scripts/test-workshop.sh
       - name: Render Compose
         run: docker compose --env-file .env.example config >/dev/null
+      - name: Check external Java Agent contracts
+        run: python3 scripts/test-ddtrace-injection.py
       - name: Lint and render Helm
         run: |
           helm lint charts/observability-demo
@@ -212,8 +214,8 @@ jobs:
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/datakit-rendered.yaml
       - name: Verify workshop release contract
         run: |
-          grep -q '^version: 2.3.6$' charts/observability-demo/Chart.yaml
-          grep -q '^appVersion: "2.3.6"$' charts/observability-demo/Chart.yaml
+          grep -q '^version: 2.4.0$' charts/observability-demo/Chart.yaml
+          grep -q '^appVersion: "2.4.0"$' charts/observability-demo/Chart.yaml
           grep -q "if: github.repository == 'cherrycove/observability-demo'" .github/workflows/release-images.yml
           if rg 'values-workshop-truewatch\.yaml|TRUEWATCH_WORKSPACE_ID|pubrepo\.truewatch\.com/chartrepo/datakit|export AWS_REGION|--region "\$AWS_REGION"' README.md; then
             echo 'obsolete Workshop platform or Region reference found in README' >&2
@@ -297,7 +299,7 @@ jobs:
           version: v3.17.3
       - name: Build and load images
         run: |
-          for service in gateway order inventory payment; do
+          for service in gateway order inventory payment game; do
             docker build -f "${service}-service/Dockerfile" -t "docker.io/library/observability-demo-${service}-service:ci" .
             kind load docker-image --name observability-demo "docker.io/library/observability-demo-${service}-service:ci"
           done

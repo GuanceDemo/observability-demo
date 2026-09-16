@@ -18,12 +18,14 @@ class MainActivity : ReactActivity() {
     super.onCreate(savedInstanceState)
     configureSystemBars()
     handleFrameRefreshIntent(intent)
+    RemoteDemoControl.accept(intent)
   }
 
   override fun onNewIntent(intent: Intent) {
     super.onNewIntent(intent)
     setIntent(intent)
     handleFrameRefreshIntent(intent)
+    RemoteDemoControl.accept(intent)
   }
 
   /**

@@ -11,7 +11,7 @@ It installs and configures:
 - Caddy for TLS, static player assets, WebSocket, and HTTP proxying;
 - a stable HTTPS APK download plus a deployment-generated QR code;
 - an optional full Mall Demo workbench on loopback port 18080;
-- systemd units that reinstall and launch the latest safe APK after a reboot.
+- systemd units that reinstall the latest safe APK and show Android Home after a reboot.
 
 The pinned upstream gateway currently omits the emulator bearer token in its direct-RTC path and hardcodes a public STUN server. The provisioner applies scoped compatibility patches so the token remains VM-local, the browser/emulator receive the VM-local coturn configuration, and TURN credentials are redacted from gateway logs.
 
@@ -176,3 +176,36 @@ Rollback: restore the backed-up player entrypoint and workbench image, or set
 service. Do not replace the gateway venv or broaden the Emulator allowlist.
 
 Android 播放器与 APK 支持独立运行时版本：`mobileDevice.playerVersion`、`mobileDevice.apkVersion`、`mobileDevice.apkMinAndroidVersion`。首次升级支持该配置的 order-service 后，后续 Android 发布无需重建 Java 镜像，详见 [Android 独立版本配置](../../docs/android-emulator-webrtc.md#android-独立版本配置)。
+
+## Shared emulator idle behavior
+
+Boot/install leaves the emulator on the real Android launcher. Open the installed
+Mall Demo icon to enter the app. A single server timer for the shared emulator
+returns to Home after 30 seconds without dispatched Android input, then waits
+15 more seconds before force-stopping only `com.malldemomobile.safe`. This grace
+period lets pending telemetry upload; it is not a flush or cloud-playback guarantee.
+Any accepted input cancels the grace and starts a new idle period. Opening the
+app through another surface is checked again before stopping. Failure to determine
+the resumed activity defers stopping. ADB failures retry without claiming success.
+The timer continues after browser disconnection. Video frames, stats polling,
+heartbeats, and peer connections do not count as input. Shared viewers share this
+policy; connecting a new viewer never interrupts an active viewer by resetting Home.
+
+Latest-video input resets the timer directly on the server. Native-video fallback
+uses the access-path-protected POST `/api/v1/emulator/activity` with no parameters
+or body; bounded browser requests report dispatched inputs (500 ms coalescing).
+Refresh-frame now skips when the Demo is not the resumed activity, so background
+recovery does not normally bring it over Home. This foreground check and ADB start
+are separate operations; it is not an atomic Android foreground-only refresh API.
+
+Deployment requires the updated player build, latest-video Python files, Caddy
+activity route, startup script and `gateway-home-safe-refresh.patch` together.
+Use `build-player.sh` then the provisioner for a full rollout. The provisioner
+restarts the emulator, so schedule that interruption. These source changes alone
+do not alter an already running remote installation or a USB-connected phone.
+
+Validation: `python3 tests/idle_test.py`, `python3 tests/latest_video_test.py`,
+`node --test tests/*.test.mjs`, and `python3 tests/gateway_test.py <patched_gateway>`.
+Live acceptance: open the app, wait 30 seconds for Home, reopen during the next
+15 seconds to cancel; repeat without reopening and verify the process is stopped.
+Check both latest-video and native fallback, plus disconnect during the grace.

@@ -1,3 +1,4 @@
+import {startDemoControl} from './mall-demo-control.js';
 // Browser diagnostics for the pinned Android Emulator player.
 // Keep recovery work independent of diagnostic sample admission.
 export function startPlayerDiagnostics({
@@ -100,6 +101,30 @@ export function startPlayerDiagnostics({
       || window.location.origin;
     return gateway.replace(/\/$/, '');
   };
+
+  startDemoControl({window, fetch, gatewayEndpoint});
+
+  let lastActivitySentAt = -Infinity;
+  let activityTimer = null;
+  const notifyActivity = () => {
+    if (window.__mallDemoJsepDriver?.wsUrl?.endsWith('/ws-jsep-latest')) return;
+    const send = () => {
+      activityTimer = null;
+      lastActivitySentAt = performance.now();
+      const controller = new AbortController();
+      const timer = window.setTimeout(() => controller.abort(), 2000);
+      fetch(`${gatewayEndpoint()}/api/v1/emulator/activity`, {
+        method: 'POST', signal: controller.signal, cache: 'no-store',
+      }).catch(() => {}).finally(() => clearTimeout(timer));
+    };
+    if (performance.now() - lastActivitySentAt >= 500) {
+      if (activityTimer) clearTimeout(activityTimer);
+      send();
+    } else if (!activityTimer) {
+      activityTimer = window.setTimeout(send, 500);
+    }
+  };
+  window.addEventListener('mall-demo-input-dispatched', notifyActivity);
 
   const requestFrameRefresh = async (reason) => {
     if (window.__mallDemoJsepDriver?.wsUrl?.endsWith('/ws-jsep-latest')) return false;

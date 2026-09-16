@@ -361,10 +361,10 @@ index 0000000..1dcc0f8
 +}
 diff --git a/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java
 new file mode 100644
-index 0000000..920a19d
+index 0000000..2ab0d1d
 --- /dev/null
 +++ b/node_modules/@cloudcare/react-native-session-replay/android/src/rn86/java/com/ft/sdk/reactnative/sessionreplay/utils/ReactViewBackgroundDrawableUtils.java
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,224 @@
 +/*
 + * React Native 0.86 removed CSSBackgroundDrawable and made its replacement
 + * internal. Keep the replay integration isolated from that internal class by
@@ -384,6 +384,11 @@ index 0000000..920a19d
 +
 +import com.facebook.react.uimanager.style.ComputedBorderRadius;
 +import com.facebook.react.uimanager.style.BorderInsets;
++import com.facebook.react.uimanager.style.BorderRadiusStyle;
++import com.facebook.react.uimanager.style.BorderColors;
++import com.facebook.react.uimanager.PixelUtil;
++import java.lang.reflect.Method;
++import java.lang.reflect.InvocationTargetException;
 +import com.facebook.react.uimanager.style.ColorEdges;
 +import com.ft.sdk.reactnative.sessionreplay.extensions.ComputedBorderRadiusExt;
 +import com.ft.sdk.reactnative.sessionreplay.mappers.Pair;
@@ -395,7 +400,17 @@ index 0000000..920a19d
 +      "com.facebook.react.uimanager.drawable.BackgroundDrawable";
 +  private static final String BORDER_DRAWABLE =
 +      "com.facebook.react.uimanager.drawable.BorderDrawable";
-+  private static final String COMPUTED_BORDER_RADIUS_FIELD = "computedBorderRadius";
++  // Kotlin value-class methods have JVM names which Java cannot call directly.
++  // Cache metadata only; resolve the current style on every snapshot.
++  private static final Method RESOLVE_BORDER_COLORS = resolveBorderColorsMethod();
++
++  private static Method resolveBorderColorsMethod() {
++    try {
++      return BorderColors.class.getDeclaredMethod("resolve-impl", Integer[].class, int.class, Context.class);
++    } catch (NoSuchMethodException e) {
++      throw new IllegalStateException("RN 0.86 border color ABI changed", e);
++    }
++  }
 +  private static final String BACKGROUND_COLOR_FIELD = "backgroundColor";
 +  private final ReflectionUtils reflectionUtils;
 +
@@ -488,10 +503,17 @@ index 0000000..920a19d
 +    if (drawable == null) return null;
 +    Object insets = reflectionUtils.getDeclaredField(drawable, "borderInsets");
 +    Object context = reflectionUtils.getDeclaredField(drawable, "context");
-+    Object colors = reflectionUtils.getDeclaredField(drawable, "computedBorderColors");
-+    if (!(insets instanceof BorderInsets) || !(context instanceof Context) || !(colors instanceof ColorEdges)) return null;
++    Object colors = reflectionUtils.getDeclaredField(drawable, "borderColors");
++    if (!(insets instanceof BorderInsets) || !(context instanceof Context)) return null;
 +    RectF widths = ((BorderInsets) insets).resolve(drawable.getLayoutDirection(), (Context) context);
-+    ColorEdges edges = (ColorEdges) colors;
++    ColorEdges edges;
++    try {
++      edges = (ColorEdges) RESOLVE_BORDER_COLORS.invoke(null,
++          colors instanceof Integer[] ? colors : new Integer[com.facebook.react.uimanager.style.LogicalEdge.values().length],
++          drawable.getLayoutDirection(), context);
++    } catch (IllegalAccessException | InvocationTargetException e) {
++      throw new IllegalStateException("Unable to resolve RN border colors", e);
++    }
 +    return new BorderSnapshot(widths.left, widths.top, widths.right, widths.bottom,
 +        edges.getLeft(), edges.getTop(), edges.getRight(), edges.getBottom());
 +  }
@@ -556,10 +578,15 @@ index 0000000..920a19d
 +    return value instanceof Integer ? (Integer) value : null;
 +  }
 +
-+  private ComputedBorderRadius getComputedBorderRadius(Object drawable) {
-+    Object value =
-+        reflectionUtils.getDeclaredField(drawable, COMPUTED_BORDER_RADIUS_FIELD);
-+    return value instanceof ComputedBorderRadius ? (ComputedBorderRadius) value : null;
++  private ComputedBorderRadius getComputedBorderRadius(Drawable drawable) {
++    if (drawable == null) return null;
++    Object radius = reflectionUtils.getDeclaredField(drawable, "borderRadius");
++    Object context = reflectionUtils.getDeclaredField(drawable, "context");
++    if (!(radius instanceof BorderRadiusStyle) || !(context instanceof Context)) return null;
++    // computedBorderRadius is populated by draw(), after Replay can sample.
++    return ((BorderRadiusStyle) radius).resolve(drawable.getLayoutDirection(), (Context) context,
++        PixelUtil.toDIPFromPixel(drawable.getBounds().width()),
++        PixelUtil.toDIPFromPixel(drawable.getBounds().height()));
 +  }
 +}
 diff --git a/node_modules/@cloudcare/react-native-session-replay/ios/FTRCTTextViewRecorder.m b/node_modules/@cloudcare/react-native-session-replay/ios/FTRCTTextViewRecorder.m

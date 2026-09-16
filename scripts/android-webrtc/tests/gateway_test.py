@@ -6,6 +6,7 @@ import asyncio
 from collections import deque
 import json
 import logging
+import os
 from pathlib import Path
 import re
 import sys
@@ -24,16 +25,30 @@ class Response:
 class GatewayTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.ns = dict(asyncio=asyncio, deque=deque, json=json, logging=logging,
-                       re=re, time=time, uuid=uuid, EMULATOR_CHANNEL=True,
+                       re=re, time=time, uuid=uuid, os=os, EMULATOR_CHANNEL=True,
                        web=SimpleNamespace(Response=Response,
                            json_response=lambda body, status=200: Response(body=body, status=status)))
         tree = ast.parse(SOURCE)
         nodes = [node for node in tree.body if
                  isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name in
-                 ('handle_frame_snapshot', 'handle_interaction_ack', 'parse_interaction_ack_line')
+                 ('handle_frame_refresh', 'handle_frame_snapshot', 'handle_interaction_ack', 'parse_interaction_ack_line')
                  or isinstance(node, ast.Assign) and any(isinstance(target, ast.Name) and
-                     target.id.startswith(('FRAME_SNAPSHOT_', 'INTERACTION_')) for target in node.targets)]
+                     target.id.startswith(('FRAME_REFRESH_', 'FRAME_SNAPSHOT_', 'INTERACTION_')) for target in node.targets)]
         exec(compile(ast.Module(body=nodes, type_ignores=[]), '<actual patched gateway>', 'exec'), self.ns)
+
+    async def test_refresh_skips_background_app(self):
+        from unittest.mock import patch
+        calls = []
+        async def spawn(*args, **kwargs):
+            calls.append(args)
+            async def communicate():
+                return b'topResumedActivity=ActivityRecord{ x com.android.launcher3/.Launcher }', b''
+            return SimpleNamespace(communicate=communicate, returncode=0)
+        with patch.object(os.path, 'isfile', return_value=True), patch.object(os, 'access', return_value=True), patch.object(asyncio, 'create_subprocess_exec', side_effect=spawn):
+            result = await self.call('handle_frame_refresh')
+        self.assertEqual(result.body['status'], 'skipped')
+        self.assertEqual(len(calls), 1)
+        self.assertIn('dumpsys', calls[0])
 
     async def call(self, handler, **query):
         return await self.ns[handler](SimpleNamespace(query=query))

@@ -85,13 +85,16 @@ class GatewayProxyFilter extends OncePerRequestFilter {
 
   private final RestTemplate restTemplate;
   private final String orderUrl;
+  private final String gameUrl;
   private final PublicRoutePolicy publicRoutePolicy;
 
   GatewayProxyFilter(
       RestTemplate gatewayRestTemplate,
-      @Value("${gateway.order-url:http://127.0.0.1:8083}") String orderUrl) {
+      @Value("${gateway.order-url:http://127.0.0.1:8083}") String orderUrl,
+      @Value("${gateway.game-url:http://127.0.0.1:8084}") String gameUrl) {
     this.restTemplate = gatewayRestTemplate;
     this.orderUrl = trimTrailingSlash(orderUrl);
+    this.gameUrl = trimTrailingSlash(gameUrl);
     this.publicRoutePolicy = new PublicRoutePolicy();
   }
 
@@ -121,7 +124,7 @@ class GatewayProxyFilter extends OncePerRequestFilter {
         return;
       }
 
-      URI downstream = downstreamUri(request);
+      URI downstream = downstreamUri(request, route);
       long startedAt = System.nanoTime();
       log.info(
           language.text(
@@ -244,10 +247,11 @@ class GatewayProxyFilter extends OncePerRequestFilter {
         source.referer());
   }
 
-  private URI downstreamUri(HttpServletRequest request) {
+  private URI downstreamUri(HttpServletRequest request, PublicRoutePolicy.Decision route) {
+    String targetUrl = route.routeId().startsWith("game.") ? gameUrl : orderUrl;
     String query = request.getQueryString();
     return URI.create(
-        orderUrl + request.getRequestURI() + (query == null || query.isBlank() ? "" : "?" + query));
+        targetUrl + request.getRequestURI() + (query == null || query.isBlank() ? "" : "?" + query));
   }
 
   private HttpHeaders requestHeaders(HttpServletRequest request, String visitorId) {

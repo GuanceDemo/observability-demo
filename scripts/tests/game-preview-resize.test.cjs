@@ -1,0 +1,23 @@
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const html = fs.readFileSync('order-service/src/main/resources/static/business.html', 'utf8');
+const source = html.slice(html.indexOf('    let previewScaleFrame = 0;'), html.indexOf('    function renderPreviewMode()'));
+test('resize notifications defer and coalesce layout writes, then settle without repeated writes', () => {
+  const pending = [], values = new Map();
+  let writes = 0;
+  const style = {getPropertyValue: k => values.get(k) || '', setProperty(k,v) { writes++; values.set(k,v); }, removeProperty(k) {values.delete(k);}};
+  const wrap = {clientWidth:756,clientHeight:500};
+  const state = {previewMode:'web',selectedSceneId:'webgl-game'};
+  const context = vm.createContext({els:{shopFrameWrap:wrap,shopFrameCanvas:{style}},state,WEB_BOOKSTORE_VIEWPORT:{width:1512},requestAnimationFrame: fn => {pending.push(fn);return pending.length;}});
+  vm.runInContext(source,context);
+  const resize = () => vm.runInContext('updateWebBookstorePreviewScale()',context);
+  resize();resize();resize();
+  assert.equal(writes,0);assert.equal(pending.length,1);
+  pending.shift()();assert.equal(values.get('--web-bookstore-preview-scale'),'0.5');assert.equal(values.get('--web-bookstore-preview-height'),'1000px');
+  resize();pending.shift()();assert.equal(writes,2);
+  wrap.clientWidth=1008;resize();pending.shift()();assert.equal(values.get('--web-bookstore-preview-height'),'750px');
+  state.selectedSceneId='bookstore';resize();pending.shift()();assert.equal(writes,4);
+  state.previewMode='mobile';resize();pending.shift()();assert.equal(values.size,0);
+});

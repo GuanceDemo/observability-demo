@@ -34,6 +34,15 @@ class DemoFaultsModule(
     )
 
   @ReactMethod
+  fun takeRemoteCommand(promise: Promise) { promise.resolve(RemoteDemoControl.take()) }
+
+  @ReactMethod
+  fun publishRemoteState(value: String) { if (BuildConfig.REMOTE_CONTROL_ENABLED) RemoteDemoControl.update(value) }
+
+  @ReactMethod
+  fun finishRemoteCommand(id: String, status: String) { RemoteDemoControl.finish(id, status) }
+
+  @ReactMethod
   fun crash(message: String, promise: Promise) {
     if (!BuildConfig.DEMO_FAULTS_ENABLED) {
       promise.reject("DEMO_FAULTS_DISABLED", "Native crash is disabled in the Safe build")

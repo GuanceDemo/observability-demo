@@ -3,7 +3,7 @@
   'use strict'
 
   var SCENE_ID = 'webgl-game'
-  var GAME_VIEW_NAME = 'game/orbital-drift'
+  var GAME_VIEW_NAME = 'games/air-battle'
   var RENDER_OVERLOAD_DURATION_MS = 10000
   var RENDER_OVERLOAD_TARGET_FPS = 12
   var RENDER_OVERLOAD_FRAME_INTERVAL_MS =
@@ -76,9 +76,9 @@
   var language = query.get('lang') === 'en' ? 'en' : 'zh'
   var copyByLanguage = {
     zh: {
-      title: 'ORBITAL DRIFT · WebGL 回放实验',
+      title: '飞机大战 · WebGL 回放实验',
       intro: '持续 WebGL 绘制、碰撞粒子和动态负载，用来观察 Replay 的绘制驱动快照效果。',
-      back: '返回 Demo 工作台', canvasLabel: 'WebGL 太空生存游戏', telemetry: 'Replay 遥测',
+      back: '返回游戏大厅', canvasLabel: 'WebGL 太空生存游戏', telemetry: 'Replay 遥测',
       drawCalls: '绘制调用', sceneObjects: '场景对象', replaySnapshots: 'Replay 快照',
       lastMutation: '最近变更', captureLatency: '采集延迟', captureCadence: '采集频率',
       session: '会话', lastSegment: '最近分片', gameControls: '游戏控制',
@@ -101,9 +101,9 @@
       stopped: '已停止', sampledOut: '未采样', webglUnavailable: 'WebGL 不可用'
     },
     en: {
-      title: 'ORBITAL DRIFT · WebGL Replay Lab',
+      title: '飞机大战 · WebGL Replay Lab',
       intro: 'Continuous WebGL drawing, collision particles, and dynamic load demonstrate draw-driven Replay snapshots.',
-      back: 'Back to Demo Workbench', canvasLabel: 'WebGL space survival game', telemetry: 'Replay telemetry',
+      back: 'Back to games', canvasLabel: 'WebGL space survival game', telemetry: 'Replay telemetry',
       drawCalls: 'Draw calls', sceneObjects: 'Scene objects', replaySnapshots: 'Replay snapshots',
       lastMutation: 'Last mutation', captureLatency: 'Capture latency', captureCadence: 'Capture cadence',
       session: 'Session', lastSegment: 'Last segment', gameControls: 'Game controls',
@@ -190,7 +190,7 @@
   }
 
   async function initializeRum() {
-    var response = await fetch(SCENE_API_PREFIX + '/api/demo/rum-config', { cache: 'no-store' })
+    var response = await fetch(SCENE_API_PREFIX + '/api/games/rum-config', { cache: 'no-store' })
     if (!response.ok) throw new Error('RUM config HTTP ' + response.status)
     var config = await response.json()
     var gameApplicationId = config.gameApplicationId || config.applicationId || ''
@@ -234,6 +234,7 @@
         : config.sessionReplayOnErrorSampleRate,
       sessionPersistence: 'local-storage',
       trackViewsManually: true,
+      beforeSend: window.GameRuntime.enrichRumEvent,
       defaultPrivacyLevel: 'mask-user-input',
       replayCanvasEnabled: true,
       replayCanvasMode: 'auto',
@@ -262,6 +263,7 @@
     setRumContext('business_scene', SCENE_ID)
     setRumContext('preview_mode', 'web')
     setRumContext('page', 'game')
+    window.GameRuntime.bindRum()
     if (window.DATAFLUX_RUM.startView) {
       window.DATAFLUX_RUM.startView({ name: GAME_VIEW_NAME })
     }
@@ -278,6 +280,7 @@
   async function bootstrap() {
     document.documentElement.dataset.embedded = query.get('embedded') === '1' ? 'true' : 'false'
     applyLanguage(language)
+    try { await window.GameRuntime.restore() } catch (_) {}
     try {
       await initializeRum()
     } catch (error) {
@@ -295,6 +298,7 @@
       postSceneMessage('rum-status', { status: 'failed', message: bootstrapState.rumError })
       postSceneMessage('scene-log', { status: 'error', message: bootstrapState.rumError })
     }
+    if (!await window.GameRuntime.requireAuth()) return
     startGame()
   }
 
@@ -354,6 +358,8 @@
   var assetLoadFailureRecoveryTimer
   var replayEnabled = Boolean(window.DATAFLUX_RUM && !sampledOut)
   var paused = false
+  var runEnded = false
+  window.GameRuntime.beginRun()
   var stressMode = query.get('stress') === '1'
   var pointerDown = false
   var pointerInsideCanvas = false
@@ -463,7 +469,7 @@
       window.DATAFLUX_RUM &&
       typeof window.DATAFLUX_RUM.addAction === 'function'
     ) {
-      window.DATAFLUX_RUM.addAction(name, context)
+      window.GameRuntime.action(name, context)
     }
   }
 
@@ -1503,6 +1509,13 @@
     if (destroyed) {
       return
     }
+    if (!window.GameRuntime.authenticated) {
+      paused = true
+      keys = {}
+      lastFrameAt = now
+      frameHandle = window.requestAnimationFrame(frame)
+      return
+    }
     var frameNow = updateRenderOverload(now)
     var shouldRender = true
     if (renderOverloadActive) {
@@ -1521,6 +1534,10 @@
       )
       lastFrameAt = frameNow
       updateScene(delta, frameNow)
+      if (shield === 0 && !runEnded) {
+        runEnded = true
+        window.GameRuntime.endRun('defeat', {score: Math.round(score), wave: wave})
+      }
       drawScene(frameNow / 1000)
       framesInWindow += 1
       if (renderOverloadActive) {
@@ -1548,13 +1565,21 @@
   }
 
   function togglePause(forcePaused) {
+    if (!window.GameRuntime.authenticated && forcePaused !== true) { window.GameRuntime.requireAuth(); return }
+    var wasPaused = paused
     paused =
       typeof forcePaused === 'boolean' ? forcePaused : !paused
+    if (wasPaused && !paused && !window.GameRuntime.runActive) window.GameRuntime.beginRun()
+    if (wasPaused !== paused) window.GameRuntime.action(paused ? 'game_pause' : 'game_resume')
     diagnostics.paused = paused
     renderDynamicCopy()
   }
 
   function resetGame() {
+    if (!window.GameRuntime.authenticated) { window.GameRuntime.requireAuth(); return }
+    window.GameRuntime.action('game_retry')
+    window.GameRuntime.beginRun()
+    runEnded = false
     score = 0
     shield = 100
     wave = 1
@@ -1863,6 +1888,9 @@
     window.clearInterval(telemetryTimer)
     window.removeEventListener('message', handleParentMessage)
   }
+  window.GameRuntime.onAuth(function (user, previous) { if (!user || (previous && previous !== user.id)) { keys = {}; releasePointerControl(); togglePause(true) } })
+  document.getElementById('game-back').onclick = function (event) { event.preventDefault(); diagnostics.destroy(); window.GameRuntime.returnHome() }
+  window.addEventListener('pagehide', diagnostics.destroy, { once: true })
   renderDynamicCopy()
   postSceneMessage('scene-ready', Object.assign({
     language: language,

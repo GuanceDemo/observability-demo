@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [gateway, order, inventory, payment]
+        service: [gateway, order, inventory, payment, game]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

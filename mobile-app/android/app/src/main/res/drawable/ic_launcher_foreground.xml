@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="256" android:viewportHeight="256">
+    <!-- Keep the robot inside the adaptive icon safe zone. -->
+    <group android:scaleX="0.72" android:scaleY="0.72" android:translateX="36" android:translateY="33">
+        <path android:fillColor="#FFFFFF" android:pathData="M80,104 C81,80 100,60 128,60 C156,60 175,80 176,104 Z M80,110 L176,110 L176,172 Q176,185 163,185 L155,185 L155,204 Q155,215 145,215 Q135,215 135,204 L135,185 L122,185 L122,204 Q122,215 112,215 Q102,215 102,204 L102,185 L93,185 Q80,185 80,172 Z M53,120 Q53,109 63,109 Q74,109 74,120 L74,158 Q74,169 63,169 Q53,169 53,158 Z M183,120 Q183,109 193,109 Q204,109 204,120 L204,158 Q204,169 193,169 Q183,169 183,158 Z" />
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="6" android:strokeLineCap="round" android:pathData="M107,70 L96,53 M150,70 L161,53" />
+        <path android:fillColor="#FF3B30" android:pathData="M112,85 A5,5 0,1 1,102,85 A5,5 0,1 1,112,85 M155,85 A5,5 0,1 1,145,85 A5,5 0,1 1,155,85" />
+    </group>
+</vector>

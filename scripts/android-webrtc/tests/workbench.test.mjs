@@ -59,3 +59,40 @@ test('Android runtime versions control URLs and metadata independently', () => {
   state.demoConfig.mobileDevicePlayerVersion = 'player-42';
   assert.equal(new URL(context.activeFrameSource().embeddedUrl).searchParams.get('v'), 'custom');
 });
+
+test('APK controls disable stale state but preserve real observation links; reject unsafe URLs', () => {
+  const elements = new Map();
+  const element = id => {
+    if (!elements.has(id)) elements.set(id, {value: '', options: [], textContent: '',
+      replaceChildren(...children) { this.options = children; },
+      appendChild(option) { this.options.push(option); if (!this.value) this.value = option.value; },
+      removeAttribute(name) { delete this[name]; },
+    });
+    return elements.get(id);
+  };
+  const context = vm.createContext({URL, Date, clearTimeout, state: {language: 'zh'}, t: key => key, layerGroupLabel: layer => layer, layerGroupForLayer: () => null,
+    document: {getElementById: element, createElement: () => ({setAttribute() {}, addEventListener(type, callback) { this[type] = callback; }})}});
+  vm.runInContext(html.slice(html.indexOf('    let apkControlState = null;'), html.indexOf('    function sendApkCommand(')), context);
+  const rumUrl = 'https://console.guance.com/rum/viewer?query=real-run';
+  context.handleApkControl('apk-state', {sampledAt: Date.now(), state: {
+    faults: [{id: 'mobile_detail_render_error', title: 'Detail fault', layer: 'frontend'},
+      {id: 'order_slow', title: 'Slow order', layer: 'service'},
+      {id: 'native_crash', title: 'Crash', layer: 'runtime', disabled: true}], rumUrl, phase: 'armed',
+  }});
+  assert.equal(element('apkInject').disabled, false);
+  assert.equal(element('apkRumLink').href, rumUrl);
+  element('apkLayerTabs').options[1].click();
+  assert.equal(element('apkFaultSelect').value, 'order_slow');
+  assert.equal(element('apkFaultTitle').textContent, 'Slow order');
+  element('apkLayerTabs').options[2].click();
+  assert.equal(element('apkInject').disabled, true);
+  assert.equal(element('apkScenarioTabs').options[0].disabled, true);
+  element('apkLayerTabs').options[0].click();
+  assert.equal(element('apkInject').disabled, false);
+  context.handleApkControl('apk-state', {sampledAt: Date.now() - 50000, state: {}});
+  assert.equal(element('apkInject').disabled, true);
+  assert.equal(element('apkRumLink').href, rumUrl);
+  for (const url of ['javascript:alert(1)', 'https://console.guance.com.evil.test/', 'https://user:pass@console.guance.com/']) {
+    assert.equal(context.safeApkLink(url), '');
+  }
+});

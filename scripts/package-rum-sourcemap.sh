@@ -49,6 +49,7 @@ mkdir -p "$output_dir/assets/src"
 cp "$assets_dir/checkout-sourcemap-fault.min.js" "$output_dir/assets/"
 cp "$assets_dir/checkout-sourcemap-fault.min.js.map" "$output_dir/assets/"
 cp "$assets_dir/src/checkout-sourcemap-fault.js" "$output_dir/assets/src/"
+python3 "${root_dir}/scripts/package-game-symbols.py" "${root_dir}/game-service/src/main/resources/static/assets" "$output_dir/assets"
 rm -f -- "$archive"
 (cd "$output_dir" && zip -qr "$archive" .)
 

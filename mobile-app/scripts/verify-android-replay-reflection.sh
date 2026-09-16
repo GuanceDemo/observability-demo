@@ -38,6 +38,11 @@ for apk_path in "$@"; do
       --class com.facebook.react.uimanager.drawable.BorderDrawable \
       "${apk_path}"
   )"
+  border_colors_code="$(
+    "${apk_analyzer}" dex code \
+      --class com.facebook.react.uimanager.style.BorderColors \
+      "${apk_path}"
+  )"
   replay_config_code="$(
     "${apk_analyzer}" dex code \
       --class com.ft.sdk.sessionreplay.BuildConfig \
@@ -58,11 +63,12 @@ for apk_path in "$@"; do
     '.class public final Lcom/facebook/react/uimanager/drawable/BackgroundDrawable;' \
     <<<"${background_code}"
   grep -Eq '^\.field .* backgroundColor:I$' <<<"${background_code}"
-  grep -Eq '^\.field .* computedBorderRadius:' <<<"${background_code}"
+  grep -Eq '^\.field .* borderRadius:' <<<"${background_code}"
   grep -Fq '.class public final Lcom/facebook/react/uimanager/drawable/BorderDrawable;' <<<"${border_code}"
-  for field in context borderInsets computedBorderColors computedBorderRadius; do
+  for field in context borderInsets borderColors borderRadius; do
     grep -Eq "^\\.field .* ${field}:" <<<"${border_code}"
   done
+  grep -Fq 'resolve-impl([Ljava/lang/Integer;ILandroid/content/Context;)' <<<"${border_colors_code}"
   grep -Fq \
     '.class public Lcom/facebook/react/views/text/ReactTextView;' \
     <<<"${text_code}"

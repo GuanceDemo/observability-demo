@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>商城 Demo 与故障注入 Demo</title>
   <link rel="icon" href="data:," />
-  <script src="assets/selfheal-i18n.js?v=20260910-android-runtime-versions"></script>
+  <script src="assets/selfheal-i18n.js?v=20260915-game-hub-v1"></script>
   <script>
     (() => {
       try {
@@ -1509,7 +1509,8 @@
     .preview-stage[data-view="web"] .android-nav { display: none; }
     .preview-stage[data-view="web"] .phone-frame-wrap { height: 100%; overflow: hidden; background: #f7f5f2; }
 
-    .preview-stage[data-view="web"][data-scene="bookstore"] .shop-frame-canvas {
+    .preview-stage[data-view="web"][data-scene="bookstore"] .shop-frame-canvas,
+    .preview-stage[data-view="web"][data-scene="webgl-game"] .shop-frame-canvas {
       position: absolute;
       left: 50%;
       top: 0;
@@ -1816,9 +1817,20 @@
 
     .android-debug-panel {
       display: grid;
-      gap: 12px;
-      padding: 12px;
+      gap: 0;
+      padding: 0;
     }
+    .apk-control-actions { margin-top: 12px; }
+    .apk-command-status { font-size: 11px; color: var(--gc-muted); overflow-wrap: anywhere; }
+    .apk-command-status:empty { display: none; }
+    .apk-refresh { margin-top: 8px; padding: 7px 10px; font-size: 11px; }
+    .apk-diagnostics { border-top: 1px solid var(--gc-border); }
+    .apk-diagnostics summary { padding: 16px 12px; color: var(--gc-muted); font-size: 12px; font-weight: 700; cursor: pointer; }
+    .apk-diagnostics summary:focus-visible { outline: 2px solid var(--gc-primary); outline-offset: -2px; }
+    .apk-diagnostics-content { display: grid; gap: 10px; padding: 0 12px 12px; }
+    #apkControlStatus { overflow-wrap: anywhere; }
+    #apkControlPanel .tab-button[aria-pressed="true"] { background: #eaf3ff; color: #1764cf; border-color: #6ea5ff; }
+    #androidDebugPanel a[hidden] { display: none; }
 
     .android-debug-summary,
     .android-debug-section,
@@ -2476,6 +2488,40 @@
             </section>
 
             <section class="android-debug-panel" id="androidDebugPanel" aria-label="真实 APK 调试信息" data-i18n-aria-label="androidDebugPanelTitle" hidden>
+              <section class="panel" id="apkControlPanel">
+                <div class="panel-head"><h2 data-i18n="parentFaultPanel">多层级故障配置</h2></div>
+                <div class="fault-config">
+                  <div class="tab-field"><span class="field-label" id="apkLayerLabel" data-i18n="parentLayerLabel">故障层级</span><div class="tab-list layer-tab-list" id="apkLayerTabs" role="group" aria-labelledby="apkLayerLabel"></div></div>
+                  <div class="tab-field"><span class="field-label" id="apkScenarioLabel" data-i18n="parentScenarioLabel">具体故障</span><div class="tab-list scenario-tab-list" id="apkScenarioTabs" role="group" aria-labelledby="apkScenarioLabel"></div></div>
+                  <select id="apkFaultSelect" hidden aria-hidden="true" tabindex="-1"></select>
+                  <article class="fault-detail">
+                    <div class="fault-detail-head"><strong id="apkFaultTitle"></strong></div>
+                    <span id="apkFaultDescription"></span>
+                    <div class="fault-observation" data-i18n="androidFaultEntryHint">可在右侧选择并注入故障，再到 APK 操作触发。Crash / ANR 仍需在 APK 内确认。</div>
+                  </article>
+                </div>
+                <div class="active-fault-card">
+                  <div class="active-fault-head"><span class="active-fault-title"><span class="dot"></span><span data-i18n="parentActiveFault">当前注入异常</span></span></div>
+                  <div class="active-fault-name" id="apkActiveFaultName"></div>
+                  <div class="active-fault-detail" id="apkControlStatus" role="status"></div>
+                </div>
+                <div class="button-row apk-control-actions">
+                  <button type="button" class="danger" id="apkInject" data-i18n="parentInjectFault" disabled>注入选中故障</button>
+                  <button type="button" class="warn" id="apkRecover" data-i18n="parentRecoverFault" disabled>关闭全部故障</button>
+                </div>
+                <p class="apk-command-status" id="apkCommandStatus" role="status"></p>
+                <button type="button" class="apk-refresh" id="apkRefresh" data-i18n="apkRefresh">连接 / 刷新 APK</button>
+              </section>
+              <section class="trace-link-card">
+                <div><h2 data-i18n="parentTraceLinkPanel">观测详情</h2><p data-i18n="apkObservationHint">触发故障后查看关联数据；会话回放需进入对应 View 后打开。</p></div>
+                <div class="observability-link-actions">
+                  <a class="trace-link rum-view-link" id="apkRumLink" target="_blank" rel="noopener noreferrer" data-i18n="parentRumViewLinkOpen" hidden>打开 RUM View</a>
+                  <a class="trace-link" id="apkTraceLink" target="_blank" rel="noopener noreferrer" data-i18n="parentTraceLinkOpen" hidden>打开链路详情</a>
+                </div>
+              </section>
+              <details class="apk-diagnostics" id="apkDiagnostics">
+                <summary data-i18n="apkDiagnostics">连接与设备参数</summary>
+                <div class="apk-diagnostics-content">
               <article class="android-debug-summary">
                 <div class="android-debug-summary-head">
                   <strong data-i18n="androidConnectionQuality">连接质量</strong>
@@ -2565,8 +2611,10 @@
 
               <article class="android-debug-note">
                 <strong data-i18n="androidFaultEntryTitle">应用内故障注入</strong>
-                <span data-i18n="androidFaultEntryHint">请在 APK 顶部警告入口中选择并触发故障；Web 侧只展示连接、设备与观测调试信息。</span>
+                <span data-i18n="androidFaultEntryHint">可在右侧选择并注入故障，再到 APK 操作触发。Crash / ANR 仍需在 APK 内确认。</span>
               </article>
+                </div>
+              </details>
             </section>
 
             <section class="trace-link-card" id="observabilityPanel" aria-label="观测详情" data-i18n-aria-label="parentTraceLinkPanel">
@@ -2620,7 +2668,7 @@
     const ANDROID_PLAYER_MESSAGE_VERSION = 1;
     const ANDROID_DEBUG_EVENT_LIMIT = 24;
     const SHOP_BUILD_ID = '20260817-bookstore-v44';
-    const GAME_BUILD_ID = '20260901-fault-rum-link-v13';
+    const GAME_BUILD_ID = '20260915-game-hub-v2';
     const USAGE_GUIDE_SLIDES = Object.freeze([
       'assets/guide-carousel/image2-slide-01.png',
       'assets/guide-carousel/image2-slide-02.png?v=20260806-pagination-v2',
@@ -2656,7 +2704,7 @@
         id: 'webgl-game',
         titleKey: 'sceneGameTitle',
         descriptionKey: 'sceneGameDescription',
-        frameUrl: 'webgl-replay-game.html',
+        frameUrl: 'game-hub.html',
         supportedViews: ['web'],
         statusKey: 'sceneRunning',
       },
@@ -2691,6 +2739,7 @@
     const state = {
       busy: false,
       faults: [],
+      faultCatalogs: { mall: [], game: [] },
       selectedFaultLayer: '',
       selectedFaultId: '',
       faultMode: 'none',
@@ -2699,6 +2748,7 @@
       language: I18N.setLanguage(I18N.detectLanguage(), { updateUrl: true }),
       shopReady: false,
       sceneRumReady: false,
+      activeGameId: null,
       sceneRumContext: null,
       lastTraceIds: [],
       lastRumViewContext: null,
@@ -3225,6 +3275,13 @@
     }
 
     function resetAndroidDebugState() {
+      apkControlState = null;
+      apkControlFresh = false;
+      apkObservation = {};
+      apkPendingId = '';
+      clearTimeout(apkCommandTimer);
+      apkElement('apkCommandStatus').textContent = '';
+      renderApkControl();
       state.androidDebug = {
         playerReady: false,
         connectionState: 'waiting',
@@ -3429,10 +3486,10 @@
       const androidMode = usesAndroidDeviceFrame();
       if (els.controlSidebar) {
         els.controlSidebar.dataset.mode = androidMode ? 'android-debug' : 'faults';
-        els.controlSidebar.setAttribute('aria-label', t(androidMode ? 'androidDebugConsoleTitle' : 'faultConsoleTitle'));
+        els.controlSidebar.setAttribute('aria-label', t('faultConsoleTitle'));
       }
       if (els.controlSidebarTitle) {
-        els.controlSidebarTitle.textContent = t(androidMode ? 'androidDebugConsoleTitle' : 'faultConsoleTitle');
+        els.controlSidebarTitle.textContent = t('faultConsoleTitle');
       }
       if (els.faultControlPanel) els.faultControlPanel.hidden = androidMode;
       if (els.observabilityPanel) els.observabilityPanel.hidden = androidMode;
@@ -3459,6 +3516,7 @@
         if (url.pathname === '/android-emulator-webrtc/') {
           const playerVersion = mobileDeviceVersion('mobileDevicePlayerVersion');
           if (playerVersion) url.searchParams.set('v', playerVersion);
+          url.searchParams.set('hostOrigin', window.location.origin);
           if (!url.searchParams.has('latestVideo')) url.searchParams.set('latestVideo', '1');
         }
         if (new URLSearchParams(window.location.search).get('rtcTransport') === 'relay') url.searchParams.set('rtcTransport', 'relay');
@@ -3621,10 +3679,19 @@
       return true;
     }
 
+    let previewScaleFrame = 0;
     function updateWebBookstorePreviewScale() {
+      if (previewScaleFrame) return;
+      previewScaleFrame = requestAnimationFrame(() => {
+        previewScaleFrame = 0;
+        applyWebBookstorePreviewScale();
+      });
+    }
+
+    function applyWebBookstorePreviewScale() {
       if (!els.shopFrameWrap || !els.shopFrameCanvas) return;
       const fixedDesktopPreview = state.previewMode === 'web'
-        && state.selectedSceneId === 'bookstore';
+        && ['bookstore', 'webgl-game'].includes(state.selectedSceneId);
       if (!fixedDesktopPreview) {
         els.shopFrameCanvas.style.removeProperty('--web-bookstore-preview-scale');
         els.shopFrameCanvas.style.removeProperty('--web-bookstore-preview-height');
@@ -3635,6 +3702,8 @@
       if (availableWidth <= 0 || availableHeight <= 0) return;
       const scale = Math.max(.1, availableWidth / WEB_BOOKSTORE_VIEWPORT.width);
       const viewportHeight = availableHeight / scale;
+      if (els.shopFrameCanvas.style.getPropertyValue('--web-bookstore-preview-scale') === String(scale)
+        && els.shopFrameCanvas.style.getPropertyValue('--web-bookstore-preview-height') === `${viewportHeight}px`) return;
       els.shopFrameCanvas.style.setProperty(
         '--web-bookstore-preview-scale',
         String(scale),
@@ -3689,7 +3758,10 @@
       const scene = BUSINESS_SCENARIOS.find((item) => item.id === sceneId);
       if (!scene) return;
       const changed = state.selectedSceneId !== scene.id;
-      if (changed) await resetFaultsForSceneChange();
+      if (changed) {
+        await resetFaultsForSceneChange();
+        state.activeGameId = null;
+      }
       state.selectedSceneId = scene.id;
       if (!scene.supportedViews.includes(state.previewMode)) {
         state.previewMode = scene.supportedViews[0];
@@ -4241,6 +4313,7 @@
       [els.faultBtn, els.recoverBtn, els.refreshBtn].forEach((button) => {
         if (button) button.disabled = state.busy;
       });
+      if (els.faultBtn) els.faultBtn.disabled = state.busy || !selectedFaultScenario();
       [els.faultLayerTabs, els.faultScenarioTabs].forEach((container) => {
         if (!container) return;
         container.querySelectorAll('.tab-button').forEach((button) => {
@@ -4366,6 +4439,7 @@
 
     function faultsForSelectedScene() {
       const scene = selectedBusinessScene();
+      if (scene.id === 'webgl-game' && state.activeGameId !== 'air-battle') return [];
       const androidDeviceActive = usesAndroidDeviceFrame();
       const sceneId = androidDeviceActive ? scene.faultSceneId : scene.id;
       return state.faults.filter((scenario) => {
@@ -4472,13 +4546,14 @@
     function renderFaultDetail(scenario) {
       const item = localizedScenario(scenario);
       if (!item) {
-        els.faultDetailTitle.textContent = t('parentFaultLoadingTitle');
+        const gameHome = state.selectedSceneId === 'webgl-game' && state.activeGameId !== 'air-battle';
+        els.faultDetailTitle.textContent = t(gameHome ? 'parentGameFaultEnterTitle' : 'parentFaultLoadingTitle');
         els.faultDetailKind.textContent = '-';
-        els.faultDetailDesc.textContent = t('parentFaultLoadingDesc');
+        els.faultDetailDesc.textContent = t(gameHome ? 'parentGameFaultEnterDesc' : 'parentFaultLoadingDesc');
         els.faultDetailService.textContent = 'service=-';
         els.faultDetailTarget.textContent = 'target=-';
         els.faultDetailTtl.textContent = 'ttl=-';
-        els.faultObservation.textContent = t('parentObservationLoading');
+        els.faultObservation.textContent = gameHome ? '' : t('parentObservationLoading');
         return;
       }
 
@@ -4526,21 +4601,26 @@
     }
 
     async function loadFaultCatalog() {
-      try {
-        const { response, body } = await requestJson('/api/demo/faults');
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        state.faults = Array.isArray(body.items)
-          ? body.items.filter((scenario) =>
-              !Array.isArray(scenario.platforms)
-              || scenario.platforms.includes('web')
-              || scenario.platforms.includes('android'))
-          : [];
-        renderFaultCatalog();
-        renderActiveFault(state.faultMode);
-      } catch (error) {
-        log(t('parentCatalogFailed', { message: error.message }), { status: 'warn' });
-        renderFaultCatalog();
-      }
+      await Promise.allSettled([
+        ['mall', '/api/demo/faults'], ['game', '/api/games/faults'],
+      ].map(async ([owner, path]) => {
+        try {
+          const { response, body } = await requestJson(path);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          state.faultCatalogs[owner] = Array.isArray(body.items)
+            ? body.items.filter((scenario) =>
+                !Array.isArray(scenario.platforms)
+                || scenario.platforms.includes('web')
+                || scenario.platforms.includes('android'))
+            : [];
+          state.faults = Object.values(state.faultCatalogs).flat();
+          renderFaultCatalog();
+          renderActiveFault(state.faultMode);
+        } catch (error) {
+          log(t('parentCatalogFailed', { message: `${owner}: ${error.message}` }), { status: 'warn' });
+          renderFaultCatalog();
+        }
+      }));
     }
 
     async function refreshStatus() {
@@ -4592,6 +4672,7 @@
     }
 
     async function enableFaultScenario(scenarioId) {
+      if (state.selectedSceneId === 'webgl-game' && state.activeGameId !== 'air-battle') return;
       const scenario = state.faults.find((item) => item.id === scenarioId) || { id: scenarioId, title: scenarioId };
       const item = localizedScenario(scenario);
       const recordId = startFaultRecord(scenario);
@@ -4680,6 +4761,119 @@
       }
     }
 
+    let apkControlState = null;
+    let apkControlFresh = false;
+    let apkObservation = {};
+    let apkPendingId = '';
+    let apkCommandTimer = null;
+    let apkCatalogSignature = '';
+    let apkSelectedLayer = '';
+    let apkTabsSignature = '';
+    const apkElement = (id) => document.getElementById(id);
+    function safeApkLink(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && !url.username && !url.password
+          && /\.guance\.(com|one)$/.test(url.hostname) ? url.href : '';
+      } catch { return ''; }
+    }
+    function renderApkControl() {
+      const current = apkControlState;
+      const select = apkElement('apkFaultSelect');
+      const faults = Array.isArray(current?.faults) ? current.faults.slice(0, 100).filter(item => /^[a-z0-9_-]{1,100}$/.test(item.id)) : [];
+      const signature = JSON.stringify(faults);
+      if (signature !== apkCatalogSignature) {
+        apkCatalogSignature = signature;
+        const previous = select.value;
+        select.replaceChildren();
+        for (const fault of faults) {
+          if (!/^[a-z0-9_-]{1,100}$/.test(fault.id)) continue;
+          const option = document.createElement('option');
+          option.value = fault.id;
+          option.textContent = String(fault.title || fault.id).slice(0, 160) + (fault.disabled ? ' · 请在 APK 确认' : '');
+          option.disabled = Boolean(fault.disabled);
+          select.appendChild(option);
+        }
+        if (faults.some(fault => fault.id === previous && !fault.disabled)) select.value = previous;
+      }
+      const selectedFault = faults.find(item => item.id === select.value);
+      const faultLayer = item => layerGroupForLayer(item?.layer)?.id || item?.layer || 'android';
+      const layers = [...new Set(faults.map(faultLayer))];
+      if (!layers.includes(apkSelectedLayer)) apkSelectedLayer = selectedFault ? faultLayer(selectedFault) : layers[0] || '';
+      const visibleFaults = faults.filter(item => faultLayer(item) === apkSelectedLayer);
+      if (!visibleFaults.some(item => item.id === select.value)) select.value = visibleFaults.find(item => !item.disabled)?.id || '';
+      const tabsSignature = JSON.stringify([faults, apkSelectedLayer, select.value, state.language]);
+      if (tabsSignature !== apkTabsSignature) {
+        apkTabsSignature = tabsSignature;
+        const tabs = (id, items, selected, choose) => {
+          apkElement(id).replaceChildren(...items.map(item => {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'tab-button';
+            button.textContent = item.label;
+            button.disabled = Boolean(item.disabled);
+            button.setAttribute('aria-pressed', String(item.value === selected));
+            button.addEventListener('click', () => { choose(item.value); renderApkControl(); });
+            return button;
+          }));
+        };
+        tabs('apkLayerTabs', layers.map(layer => ({value: layer, label: layerGroupLabel(layer)})), apkSelectedLayer, value => { apkSelectedLayer = value; });
+        tabs('apkScenarioTabs', visibleFaults.map(item => ({value: item.id, label: item.title || item.id, disabled: item.disabled})), select.value, value => { select.value = value; });
+      }
+      const fault = faults.find(item => item.id === select.value);
+      apkElement('apkFaultTitle').textContent = String(fault?.title || t('commonLoading'));
+      apkElement('apkActiveFaultName').textContent = String(faults.find(item => item.id === current?.activeId)?.title || current?.activeId || t('parentNoFault'));
+      apkElement('apkFaultDescription').textContent = String(fault?.description || '').slice(0, 1000);
+      apkElement('apkControlStatus').textContent = current && apkControlFresh
+        ? `${current.phase || 'idle'}${current.runId ? ' · ' + current.runId : ''}`
+        : t('apkDisconnected');
+      apkElement('apkInject').disabled = !current || !apkControlFresh || !fault || fault.disabled || current.busy || Boolean(apkPendingId);
+      apkElement('apkRecover').disabled = !current || !apkControlFresh || current.busy || Boolean(apkPendingId);
+      apkElement('apkRefresh').disabled = Boolean(apkPendingId);
+      for (const [id, value] of [['apkRumLink', apkObservation.rumUrl], ['apkTraceLink', apkObservation.traceUrl]]) {
+        const link = apkElement(id), url = safeApkLink(value);
+        link.hidden = !url;
+        if (url) link.href = url; else link.removeAttribute('href');
+      }
+    }
+    function handleApkControl(type, payload) {
+      if (type === 'apk-state') {
+        apkControlFresh = Boolean(payload?.state && typeof payload.state === 'object'
+          && Number.isFinite(payload.sampledAt) && Date.now() - payload.sampledAt < 45000);
+        if (apkControlFresh) {
+          apkControlState = payload.state;
+          if (safeApkLink(payload.state.rumUrl) || safeApkLink(payload.state.traceUrl)) {
+            apkObservation = {rumUrl: payload.state.rumUrl, traceUrl: payload.state.traceUrl};
+          }
+        }
+      } else if (payload?.id === apkPendingId) {
+        apkPendingId = '';
+        clearTimeout(apkCommandTimer);
+        apkElement('apkCommandStatus').textContent = payload.status === 'completed'
+          ? 'APK 已确认操作完成。'
+          : (payload.status === 'unknown' ? '未确认执行结果，请刷新状态核对，勿重复注入。' : 'APK 未执行成功：' + String(payload.status || 'unknown').slice(0, 160));
+      }
+      renderApkControl();
+    }
+    function sendApkCommand(action) {
+      if (!usesAndroidDeviceFrame() || apkPendingId) return;
+      apkPendingId = crypto.randomUUID().replaceAll('-', '');
+      const payload = {id: apkPendingId, action};
+      if (action === 'inject') payload.faultId = apkElement('apkFaultSelect').value;
+      els.shopFrame.contentWindow.postMessage({source: 'mall-demo-workbench', version: 1, type: 'apk-command', payload}, androidPlayerOrigin());
+      apkElement('apkCommandStatus').textContent = '等待 APK 执行…';
+      apkCommandTimer = setTimeout(() => {
+        apkPendingId = '';
+        apkElement('apkCommandStatus').textContent = '未收到完成确认，请刷新状态核对。';
+        renderApkControl();
+      }, 30000);
+      renderApkControl();
+    }
+    apkElement('apkFaultSelect').addEventListener('change', renderApkControl);
+    apkElement('apkInject').addEventListener('click', () => sendApkCommand('inject'));
+    apkElement('apkRecover').addEventListener('click', () => sendApkCommand('recover'));
+    apkElement('apkRefresh').addEventListener('click', () => sendApkCommand('refresh'));
+
     function handleAndroidPlayerMessage(event) {
       if (!usesAndroidDeviceFrame()
           || event.source !== els.shopFrame.contentWindow
@@ -4692,6 +4886,10 @@
         return false;
       }
 
+      if (data.type === 'apk-state' || data.type === 'apk-command-result') {
+        handleApkControl(data.type, data.payload);
+        return true;
+      }
       if (data.type === 'player-ready') {
         if (!state.androidDebug.playerReady) {
           state.androidDebug.playerReady = true;
@@ -4757,6 +4955,18 @@
         return;
       }
       const payload = data.payload || {};
+
+      if (data.type === 'game-state' && state.selectedSceneId === 'webgl-game') {
+        state.activeGameId = payload.gameId === 'air-battle' ? 'air-battle' : null;
+        if (!state.activeGameId) {
+          finishActiveFaultRecord('closed');
+          state.activeClientFault = null;
+          state.activeClientFaultTriggeredAt = 0;
+          setFaultStatus('none');
+        }
+        renderFaultCatalog();
+        return;
+      }
 
       if (data.type === 'shop-ready') {
         state.shopReady = true;
@@ -4854,6 +5064,10 @@
       : null;
     previewScaleObserver?.observe(els.shopFrameWrap);
     window.addEventListener('resize', updateWebBookstorePreviewScale);
+    window.addEventListener('pagehide', () => {
+      cancelAnimationFrame(previewScaleFrame);
+      previewScaleFrame = 0;
+    });
     document.querySelectorAll('[data-lang]').forEach((button) => {
       button.addEventListener('click', () => setLanguage(button.dataset.lang));
     });

@@ -1,3 +1,17 @@
+{{- if not (has .Values.ddtrace.mode (list "initContainer" "operator" "disabled" "legacy")) -}}
+{{- fail "ddtrace.mode must be initContainer, operator, disabled or legacy" -}}
+{{- end -}}
+{{- if or (has .Values.ddtrace.version (list "latest" "main")) (not (regexMatch "^[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}$" .Values.ddtrace.version)) -}}
+{{- fail "ddtrace.version must be an explicit image tag" -}}
+{{- end -}}
+{{- if regexMatch "^[0-9]+\\.[0-9]+\\.[0-9]+$" .Values.image.tag -}}
+{{- if and (semverCompare "<2.4.0" .Values.image.tag) (ne .Values.ddtrace.mode "legacy") -}}
+{{- fail "pre-2.4 business images contain an Agent; use ddtrace.mode=legacy to avoid double injection" -}}
+{{- end -}}
+{{- if and (semverCompare ">=2.4.0" .Values.image.tag) (eq .Values.ddtrace.mode "legacy") -}}
+{{- fail "business images >=2.4 require external injection or explicit disabled mode" -}}
+{{- end -}}
+{{- end -}}
 {{- if and .Values.rum.mobile.enabled (empty .Values.rum.mobile.androidApplicationId) (empty .Values.rum.mobile.iosApplicationId) -}}
 {{- fail "at least one of rum.mobile.androidApplicationId or rum.mobile.iosApplicationId is required when rum.mobile.enabled=true" -}}
 {{- end -}}
@@ -13,6 +27,9 @@
 {{- $ddTags := printf "project:%s,pod_name:$(POD_NAME),pod_namespace:$(POD_NAMESPACE),host:$(NODE_NAME),container_name:$(CONTAINER_NAME)" .Values.observability.project -}}
 {{- if .Values.observability.clusterName -}}
 {{- $ddTags = printf "%s,cluster_name_k8s:%s" $ddTags .Values.observability.clusterName -}}
+{{- end -}}
+{{- if and .Values.game.enabled (ne .Values.ddtrace.mode "legacy") -}}
+{{- $services = append $services (dict "name" "game-service" "port" 8084) -}}
 {{- end -}}
 {{- range $index, $service := $services }}
 {{- if $index }}
@@ -36,8 +53,15 @@ spec:
       labels:
         {{- include "observability-demo.selectorLabels" $ | nindent 8 }}
         app.kubernetes.io/component: {{ $service.name }}
+        {{- if eq $.Values.ddtrace.mode "operator" }}
+        admission.datakit/ddtrace-language: java
+        {{- end }}
         project: {{ required "observability.project is required" $.Values.observability.project | quote }}
       annotations:
+        admission.datakit/ddtrace.enabled: {{ eq $.Values.ddtrace.mode "operator" | quote }}
+        {{- if eq $.Values.ddtrace.mode "operator" }}
+        admission.datakit/java-lib.version: {{ $.Values.ddtrace.version | quote }}
+        {{- end }}
         datakit/logs: >-
           [{"disable":false,"source":"java_selfheal_demo","service":"{{ $service.name }}","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
     spec:
@@ -54,6 +78,23 @@ spec:
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- if eq $.Values.ddtrace.mode "initContainer" }}
+      initContainers:
+        - name: ddtrace-init
+          image: {{ printf "%s:%s" $.Values.ddtrace.imageRepository $.Values.ddtrace.version | quote }}
+          command: ["sh", "-ec"]
+          args: ["cp /datadog-init/dd-java-agent.jar /datadog-lib/agent.tmp && chmod 0444 /datadog-lib/agent.tmp && mv -f /datadog-lib/agent.tmp /datadog-lib/dd-java-agent.jar"]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            {{- toYaml $.Values.ddtrace.resources | nindent 12 }}
+          volumeMounts:
+            - name: ddtrace-agent
+              mountPath: /datadog-lib
+      {{- end }}
       containers:
         - name: {{ $service.name }}
           image: {{ include "observability-demo.image" (dict "root" $ "service" $service.name) | quote }}
@@ -68,6 +109,10 @@ spec:
               containerPort: {{ $service.port }}
               protocol: TCP
           env:
+            {{- if eq $.Values.ddtrace.mode "initContainer" }}
+            - name: JAVA_TOOL_OPTIONS
+              value: "-javaagent:/datadog-lib/dd-java-agent.jar"
+            {{- end }}
             - name: DD_SERVICE
               value: {{ $service.name | quote }}
             - name: DD_ENV
@@ -117,6 +162,17 @@ spec:
             {{- if eq $service.name "gateway-service" }}
             - name: ORDER_URL
               value: http://{{ include "observability-demo.fullname" $ }}-order-service:8080
+            - name: GAME_URL
+              value: http://{{ include "observability-demo.fullname" $ }}-game-service:8084
+            {{- else if eq $service.name "game-service" }}
+            - name: RUM_ENABLED
+              value: {{ $.Values.rum.enabled | quote }}
+            - name: RUM_GAME_APPLICATION_ID
+              value: {{ $.Values.rum.gameApplicationId | quote }}
+            - name: RUM_GAME_SERVICE
+              value: {{ $.Values.rum.gameService | quote }}
+            - name: DATAKIT_PROVIDER
+              value: {{ $.Values.datakit.provider | quote }}
             {{- else if eq $service.name "order-service" }}
             - name: MYSQL_URL
               value: jdbc:mysql://{{ include "observability-demo.fullname" $ }}-mysql:3306/{{ $.Values.mysql.database }}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&connectTimeout=3000&socketTimeout=5000
@@ -194,9 +250,18 @@ spec:
           resources:
             {{- toYaml $.Values.resources.java | nindent 12 }}
           volumeMounts:
+            {{- if eq $.Values.ddtrace.mode "initContainer" }}
+            - name: ddtrace-agent
+              mountPath: /datadog-lib
+              readOnly: true
+            {{- end }}
             - name: tmp
               mountPath: /tmp
       volumes:
+        {{- if eq $.Values.ddtrace.mode "initContainer" }}
+        - name: ddtrace-agent
+          emptyDir: {}
+        {{- end }}
         - name: tmp
           emptyDir: {}
       {{- with $.Values.nodeSelector }}

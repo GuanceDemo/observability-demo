@@ -1,0 +1,13 @@
+{
+  "name": "observability-demo-java",
+  "language": "java",
+  "namespace_selectors": ["^observability-demo$"],
+  "label_selectors": ["app.kubernetes.io/name=observability-demo,admission.datakit/ddtrace-language=java"],
+  "check_annotation": true,
+  "image": "pubrepo.truewatch.com/datakit-operator/dd-lib-java-init:v1.65.6-ext",
+  "envs": {"DD_TRACE_AGENT_PORT": "9529"},
+  "resources": {
+    "requests": {"cpu": "100m", "memory": "64Mi"},
+    "limits": {"cpu": "500m", "memory": "512Mi"}
+  }
+}

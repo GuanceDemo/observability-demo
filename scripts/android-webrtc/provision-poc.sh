@@ -69,11 +69,15 @@ fi
 if ! git -C "$UPSTREAM_ROOT" apply --reverse --check "$TEMPLATE_ROOT/gateway-interaction-ack.patch" >/dev/null 2>&1; then
   git -C "$UPSTREAM_ROOT" apply --recount "$TEMPLATE_ROOT/gateway-interaction-ack.patch"
 fi
-if ! git -C "$UPSTREAM_ROOT" apply --reverse --check "$TEMPLATE_ROOT/gateway-frame-refresh.patch" >/dev/null 2>&1; then
+if ! git -C "$UPSTREAM_ROOT" apply --reverse --check "$TEMPLATE_ROOT/gateway-home-safe-refresh.patch" >/dev/null 2>&1 && ! git -C "$UPSTREAM_ROOT" apply --reverse --check "$TEMPLATE_ROOT/gateway-frame-refresh.patch" >/dev/null 2>&1; then
   git -C "$UPSTREAM_ROOT" apply --recount "$TEMPLATE_ROOT/gateway-frame-refresh.patch"
 fi
 if ! git -C "$UPSTREAM_ROOT" apply --recount --reverse --check "$TEMPLATE_ROOT/gateway-frame-snapshot.patch" >/dev/null 2>&1; then
   git -C "$UPSTREAM_ROOT" apply --recount "$TEMPLATE_ROOT/gateway-frame-snapshot.patch"
+fi
+
+if ! git -C "$UPSTREAM_ROOT" apply --reverse --check "$TEMPLATE_ROOT/gateway-home-safe-refresh.patch" >/dev/null 2>&1; then
+  git -C "$UPSTREAM_ROOT" apply "$TEMPLATE_ROOT/gateway-home-safe-refresh.patch"
 fi
 
 if [[ ! -d "$TOOLS_BASE_ROOT/.git" ]]; then

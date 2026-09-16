@@ -1,0 +1,82 @@
+.game-auth-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #14241f99;
+  backdrop-filter: blur(6px);
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  font-family: Inter, system-ui, sans-serif;
+}
+.game-auth-dialog {
+  position: relative;
+  background: #fafcf6;
+  color: #1b3428;
+  padding: 30px;
+  border-radius: 22px;
+  width: 390px;
+  max-width: 100%;
+  box-shadow: 0 20px 80px #0003;
+}
+.game-auth-dialog h2 {
+  font-size: 24px;
+  margin: 12px 0;
+}
+.game-auth-dialog p {
+  font-size: 12px;
+  line-height: 1.7;
+  color: #687963;
+}
+.game-auth-dialog button {
+  cursor: pointer;
+}
+.game-persona {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 1px solid #dbe3d2;
+  border-radius: 12px;
+  background: #fff;
+  margin-top: 10px;
+  padding: 11px;
+  text-align: left;
+  color: #254f40;
+}
+.game-persona:hover {
+  background: #eef5e7;
+}
+.game-persona img {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.game-persona:disabled {
+  opacity: 0.5;
+}
+.game-auth-close {
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  border: 0;
+  background: transparent;
+  color: #617157;
+  font-size: 23px;
+}
+.game-auth-refresh {
+  border: 0;
+  background: #254f40;
+  color: white;
+  border-radius: 18px;
+  padding: 10px 15px;
+}
+.game-auth-dialog [role="status"] {
+  color: #a24f2a;
+  min-height: 20px;
+}
+.game-auth-overlay button:focus-visible {
+  outline: 3px solid #82a947;
+  outline-offset: 3px;
+}

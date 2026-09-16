@@ -16,6 +16,8 @@ from aiortc import (RTCConfiguration, RTCIceServer, RTCPeerConnection,
                     RTCSessionDescription, VideoStreamTrack)
 from aiortc.sdp import candidate_from_sdp
 
+from control import install_control
+from idle import IdlePolicy, android_command, run_policy
 from frames import LatestSource
 from playout import PLAYOUT_URI, install
 
@@ -154,10 +156,13 @@ class LatestTrack(VideoStreamTrack):
 
 
 def create_app(source, servers):
+    idle = IdlePolicy(android_command)
+    idle_task = None
     peers = set()
     tracks = set()
     last_peer = {}
     app = web.Application(client_max_size=65536)
+    install_control(app, idle.activity)
 
     async def handler(request):
         if request.query:
@@ -182,6 +187,7 @@ def create_app(source, servers):
                 if time.monotonic() - queued_at > 1.5:
                     raise RuntimeError('input expired')
                 control.send(label, data)
+                idle.activity()
                 source.activity()
 
         def attach(dc):
@@ -271,10 +277,25 @@ def create_app(source, servers):
                 'duplicates': track.duplicates, 'queueMs': track.queue_ms, 'copyMs': track.copy_ms}
                 for track in tracks]}, headers={'Cache-Control': 'no-store'})
 
+    async def activity(request):
+        if request.query or request.content_length not in (None, 0):
+            raise web.HTTPBadRequest()
+        idle.activity()
+        return web.json_response({"status": "accepted"})
+
+    async def startup(_app):
+        nonlocal idle_task
+        idle_task = asyncio.create_task(run_policy(idle))
+
     async def shutdown(_app):
+        if idle_task:
+            idle_task.cancel()
+            await asyncio.gather(idle_task, return_exceptions=True)
         await asyncio.gather(*(peer.close() for peer in tuple(peers)), return_exceptions=True)
 
+    app.on_startup.append(startup)
     app.on_shutdown.append(shutdown)
+    app.router.add_post('/api/v1/emulator/activity', activity)
     app.router.add_get('/api/v1/emulator/ws-jsep-latest', handler)
     app.router.add_get('/api/v1/emulator/latest-video-stats', status)
     return app

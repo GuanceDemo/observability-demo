@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>植物大战僵尸 · 开源版第一关</title>
+    <link rel="stylesheet" href="assets/pvz/pvz.css" />
+    <link rel="stylesheet" href="assets/plants-game.css?v=20260915-pvz-replay-v17" />
+    <link rel="stylesheet" href="assets/game-auth.css" />
+  </head>
+  <body data-game-id="plants-vs-zombies" data-replay-canvas="true">
+    <header class="pvz-header">
+      <div>
+        <small>PLAYROOM / OPEN SOURCE</small>
+        <h1>植物大战僵尸</h1>
+        <p>第一关 · 白天草坪</p>
+      </div>
+      <button id="back">← 返回大厅</button>
+    </header>
+    <main class="pvz-main">
+      <div class="pvz-toolbar">
+        <span id="progress" role="status">正在加载开源游戏资源…</span>
+        <div>
+          <button id="pause" disabled>暂停</button
+          ><button id="retry" disabled>重新开始</button>
+        </div>
+      </div>
+      <div id="viewport">
+        <div id="pvzWorld">
+          <div class="content-box">
+            <img id="sceneBackground" src="assets/pvz/images/background1.jpg" alt="" hidden />
+            <canvas
+              id="canvas"
+              width="1400"
+              height="600"
+              aria-label="植物大战僵尸游戏画面"
+            ></canvas>
+          </div>
+          <button id="js-startGame-btn" class="startGame-btn" disabled>
+            资源加载中…
+          </button>
+          <div id="js-intro-game" class="intro-game">
+            David Yang 开源 JavaScript 版<br />先选左侧植物卡片，再点击草坪种植。<br />阳光会自动收集，守住这一关的
+            9 只僵尸。
+          </div>
+          <div id="js-log-btn" hidden></div>
+          <ul class="cards-list" aria-label="植物卡片">
+            <li
+              class="cards-item"
+              data-section="sunflower"
+              role="button"
+              tabindex="0"
+              aria-label="选择向日葵，50 阳光"
+            ></li>
+            <li
+              class="cards-item"
+              data-section="wallnut"
+              role="button"
+              tabindex="0"
+              aria-label="选择坚果墙，50 阳光"
+            ></li>
+            <li
+              class="cards-item"
+              data-section="peashooter"
+              role="button"
+              tabindex="0"
+              aria-label="选择豌豆射手，100 阳光"
+            ></li>
+            <li
+              class="cards-item"
+              data-section="repeater"
+              role="button"
+              tabindex="0"
+              aria-label="选择双发射手，150 阳光"
+            ></li>
+            <li
+              class="cards-item"
+              data-section="gatlingpea"
+              role="button"
+              tabindex="0"
+              aria-label="选择加特林射手，200 阳光"
+            ></li>
+            <li
+              class="cards-item"
+              data-section="chomper"
+              role="button"
+              tabindex="0"
+              aria-label="选择食人花，200 阳光"
+            ></li>
+            <li
+              class="cards-item"
+              data-section="cherrybomb"
+              role="button"
+              tabindex="0"
+              aria-label="选择樱桃炸弹，250 阳光"
+            ></li>
+          </ul>
+          <div class="menu-box" hidden>
+            <div id="pauseGame"></div>
+            <div id="restartGame"></div>
+          </div>
+          <img
+            class="sun-img systemSun"
+            src="assets/pvz/images/sun.gif"
+            alt="自动收集阳光"
+          />
+        </div>
+      </div>
+      <p id="guide" role="status">
+        保留上游植物、僵尸、除草车、攻击与死亡动画。
+      </p>
+      <div id="result" hidden>
+        <h2 id="resultTitle"></h2>
+        <button id="playAgain">再玩一次</button>
+      </div>
+      <footer>
+        源码：<a
+          href="https://github.com/yangyunhe369/h5-game-plantsVSzombies"
+          target="_blank"
+          rel="noopener"
+          >Yang Yunhe · MIT</a
+        ><span id="rumStatus">RUM 连接中</span>
+      </footer>
+    </main>
+    <script src="assets/game-runtime.js?v=20260915-pvz-replay-v17"></script>
+    <script src="assets/pvz-clock.js?v=20260915-pvz-replay-v17"></script>
+    <script src="assets/plants-engine.js?v=20260915-pvz-replay-v17"></script>
+    <script src="assets/plants-game.js?v=20260915-pvz-replay-v17"></script>
+  </body>
+</html>

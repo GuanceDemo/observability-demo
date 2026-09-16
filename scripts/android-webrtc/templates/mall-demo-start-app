@@ -26,4 +26,4 @@ fi
 "$ADB" -s "$SERIAL" uninstall com.malldemomobile >/dev/null 2>&1 || true
 "$ADB" -s "$SERIAL" uninstall com.malldemomobile.demofaults >/dev/null 2>&1 || true
 "$ADB" -s "$SERIAL" install -r "$APK_PATH"
-"$ADB" -s "$SERIAL" shell monkey -p com.malldemomobile.safe -c android.intent.category.LAUNCHER 1
+"$ADB" -s "$SERIAL" shell input keyevent KEYCODE_HOME

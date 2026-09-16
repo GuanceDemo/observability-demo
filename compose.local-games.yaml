@@ -1,0 +1,31 @@
+# Local game/RUM configuration for the original 18080 Compose stack.
+# Runs the independent game backend in this same local stack.
+services:
+  order-service:
+    image: observability-demo-order-service:2.4.0-candidate
+    environment:
+      DD_VERSION: "2.4.0"
+      DD_ENV: "demo"
+      RUM_APPLICATION_ID: "observability_demo"
+      RUM_GAME_APPLICATION_ID: "observability_game_demo"
+      DATAKIT_RUM_URL: "http://120.79.13.13:31080/rum-proxy"
+      OBSERVABILITY_WORKSPACE_ID: "${OBSERVABILITY_WORKSPACE_ID:-}"
+  gateway-service:
+    image: observability-demo-gateway-service:2.4.0-candidate
+    environment:
+      DD_VERSION: "2.4.0"
+      DD_ENV: "demo"
+  game-service:
+    image: observability-demo-game-service:2.4.0-candidate
+    environment:
+      DD_VERSION: "2.4.0"
+      DD_ENV: "demo"
+      RUM_GAME_APPLICATION_ID: "observability_game_demo"
+  inventory-service:
+    image: observability-demo-inventory-service:2.4.0-candidate
+    environment:
+      DD_VERSION: "2.4.0"
+  payment-service:
+    image: observability-demo-payment-service:2.4.0-candidate
+    environment:
+      DD_VERSION: "2.4.0"

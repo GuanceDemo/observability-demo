@@ -21,3 +21,5 @@ __pycache__/
 *.pyc
 scripts/android-webrtc/*.apk
 scripts/android-webrtc/player-dist/
+
+owl-reports/

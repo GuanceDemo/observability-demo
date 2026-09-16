@@ -21,3 +21,6 @@
 -keep class com.facebook.react.views.text.ReactTextView { *; }
 
 -keepattributes SourceFile,LineNumberTable
+
+# Replay resolves Kotlin value-class colors by their JVM method name.
+-keep class com.facebook.react.uimanager.style.BorderColors { *; }

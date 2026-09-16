@@ -1,6 +1,7 @@
 name: observability-demo
 
 x-java-environment: &java-environment
+  JAVA_TOOL_OPTIONS: -javaagent:/datadog-lib/dd-java-agent.jar
   DD_ENV: ${DD_ENV:-demo}
   DD_VERSION: ${DD_VERSION:-local}
   DD_TAGS: project:${PROJECT_TAG:-mall-demo}
@@ -29,6 +30,18 @@ x-java-service: &java-service
     - host.docker.internal:host-gateway
 
 services:
+  ddtrace-init:
+    # Named volumes start root-owned; only this short-lived copy step writes them.
+    user: "0:0"
+    read_only: true
+    cap_drop: [ALL]
+    image: ${DDTRACE_INIT_REPOSITORY:-pubrepo.truewatch.com/datakit-operator/dd-lib-java-init}:${DDTRACE_VERSION:-v1.65.6-ext}
+    restart: "no"
+    entrypoint: ["sh", "-ec"]
+    command: ["cp /datadog-init/dd-java-agent.jar /datadog-lib/agent.tmp && chmod 0444 /datadog-lib/agent.tmp && mv -f /datadog-lib/agent.tmp /datadog-lib/dd-java-agent.jar"]
+    volumes:
+      - ddtrace-agent:/datadog-lib
+
   mysql:
     image: mysql:8.4
     restart: unless-stopped
@@ -75,10 +88,13 @@ services:
       REDIS_PORT: "6379"
       LOGGING_FILE_NAME: /var/log/observability-demo/inventory-service.log
     depends_on:
+      ddtrace-init:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
     volumes:
       - demo-logs:/var/log/observability-demo
+      - ddtrace-agent:/datadog-lib:ro
 
   payment-service:
     <<: *java-service
@@ -91,8 +107,12 @@ services:
       datakit_logs_config: >-
         [{"disable":false,"source":"java_selfheal_demo","service":"payment-service","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
       LOGGING_FILE_NAME: /var/log/observability-demo/payment-service.log
+    depends_on:
+      ddtrace-init:
+        condition: service_completed_successfully
     volumes:
       - demo-logs:/var/log/observability-demo
+      - ddtrace-agent:/datadog-lib:ro
 
   order-service:
     <<: *java-service
@@ -132,6 +152,8 @@ services:
       MOBILE_DEVICE_APK_MIN_ANDROID_VERSION: ${MOBILE_DEVICE_APK_MIN_ANDROID_VERSION:-7.0}
       LOGGING_FILE_NAME: /var/log/observability-demo/order-service.log
     depends_on:
+      ddtrace-init:
+        condition: service_completed_successfully
       mysql:
         condition: service_healthy
       inventory-service:
@@ -140,6 +162,29 @@ services:
         condition: service_started
     volumes:
       - demo-logs:/var/log/observability-demo
+      - ddtrace-agent:/datadog-lib:ro
+
+  game-service:
+    <<: *java-service
+    build:
+      context: .
+      dockerfile: game-service/Dockerfile
+    environment:
+      <<: *java-environment
+      DD_SERVICE: game-service
+      RUM_ENABLED: ${RUM_ENABLED:-false}
+      RUM_GAME_APPLICATION_ID: ${RUM_GAME_APPLICATION_ID:-}
+      RUM_GAME_SERVICE: ${RUM_GAME_SERVICE:-mall-game-h5}
+      DATAKIT_PROVIDER: ${DATAKIT_PROVIDER:-guance}
+      datakit_logs_config: >-
+        [{"disable":false,"source":"java_selfheal_demo","service":"game-service","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
+      LOGGING_FILE_NAME: /var/log/observability-demo/game-service.log
+    depends_on:
+      ddtrace-init:
+        condition: service_completed_successfully
+    volumes:
+      - demo-logs:/var/log/observability-demo
+      - ddtrace-agent:/datadog-lib:ro
 
   gateway-service:
     <<: *java-service
@@ -151,15 +196,21 @@ services:
       DD_SERVICE: gateway-service
       datakit_logs_config: >-
         [{"disable":false,"source":"java_selfheal_demo","service":"gateway-service","multiline_match":"^\\d{4}-\\d{2}-\\d{2} "}]
+      GAME_URL: http://game-service:8084
       ORDER_URL: http://order-service:8080
       LOGGING_FILE_NAME: /var/log/observability-demo/gateway-service.log
     depends_on:
+      ddtrace-init:
+        condition: service_completed_successfully
       order-service:
         condition: service_started
     ports:
       - ${DEMO_PORT:-8080}:8080
     volumes:
       - demo-logs:/var/log/observability-demo
+      - ddtrace-agent:/datadog-lib:ro
 
 volumes:
+  ddtrace-agent:
+    name: ${COMPOSE_PROJECT_NAME:-observability-demo}-ddtrace-${DDTRACE_VERSION:-v1.65.6-ext}
   demo-logs: {}

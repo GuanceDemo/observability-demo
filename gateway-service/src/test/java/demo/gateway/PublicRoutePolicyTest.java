@@ -9,6 +9,39 @@ class PublicRoutePolicyTest {
   private final PublicRoutePolicy policy = new PublicRoutePolicy();
 
   @Test
+  void everyGameResourceHasAnExplicitGameRoute() throws Exception {
+    var root = java.nio.file.Path.of("../game-service/src/main/resources/static");
+    PublicRoutePolicy policy = new PublicRoutePolicy();
+    try (var files = java.nio.file.Files.walk(root)) {
+      for (var file : files.filter(java.nio.file.Files::isRegularFile).toList()) {
+        String path = "/" + root.relativize(file).toString().replace('\\', '/');
+        var decision = policy.evaluate("GET", path);
+        assertThat(decision.forwardsDownstream()).as(path).isTrue();
+        assertThat(decision.routeId()).as(path).startsWith("game.");
+      }
+    }
+    for (String path : java.util.List.of("/api/games/admin", "/api/games/auth/session", "/assets/pvz/private.js")) {
+      assertThat(policy.evaluate("GET", path).forwardsDownstream()).as(path).isFalse();
+    }
+    assertThat(policy.evaluate("POST", "/api/games/faults").forwardsDownstream()).isFalse();
+  }
+
+  @Test
+  void allowsOnlyManifestListedPvzFiles() throws Exception {
+    try (var input = getClass().getResourceAsStream("/pvz-public-assets.txt")) {
+      var paths = new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8).lines().toList();
+      assertThat(paths).hasSize(347);
+      for (String path : paths) {
+        assertThat(policy.evaluate("GET", path).forwardsDownstream()).isTrue();
+        assertThat(policy.evaluate("HEAD", path).forwardsDownstream()).isTrue();
+        assertThat(policy.evaluate("POST", path).forwardsDownstream()).isFalse();
+        assertThat(policy.evaluate("GET", path + ".bak").forwardsDownstream()).isFalse();
+      }
+      assertThat(policy.evaluate("GET", "/assets/pvz/images/unknown.png").forwardsDownstream()).isFalse();
+    }
+  }
+
+  @Test
   void explicitlyAllowsStorefrontAssetsAndBackendEndpoints() {
     List<RouteExpectation> routes =
         List.of(
@@ -23,7 +56,7 @@ class PublicRoutePolicyTest {
             new RouteExpectation(
                 "GET",
                 "/webgl-replay-game.html",
-                "storefront.webgl-game",
+                "game.webgl-game",
                 "storefront_page"),
             new RouteExpectation(
                 "GET",
@@ -65,24 +98,24 @@ class PublicRoutePolicyTest {
             new RouteExpectation(
                 "GET",
                 "/api/demo/game-assets/orbital-shield-texture.webp",
-                "demo.game-assets.missing-texture",
+                "game.missing-texture",
                 "demo_api"),
             new RouteExpectation(
                 "GET", "/assets/storefront.css", "asset.storefront-css", "static_asset"),
             new RouteExpectation(
                 "GET",
                 "/assets/webgl-replay-game.css",
-                "asset.webgl-game-css",
+                "game.webgl-game-css",
                 "static_asset"),
             new RouteExpectation(
                 "HEAD",
                 "/assets/webgl-replay-game.js",
-                "asset.webgl-game-js",
+                "game.webgl-game-js",
                 "static_asset"),
             new RouteExpectation(
                 "GET",
                 "/assets/webgl-game-scene-icon.png",
-                "asset.webgl-game-icon",
+                "game.webgl-game-icon",
                 "static_asset"),
             new RouteExpectation(
                 "GET",
@@ -206,6 +239,21 @@ class PublicRoutePolicyTest {
       assertThat(decision.routeClass()).isEqualTo("unmatched");
       assertThat(decision.trafficType()).isEqualTo("internet_probe");
     }
+  }
+
+
+  @Test
+  void gameHubUsesExactReadOnlyRoutes() {
+    for (String path : List.of("/game-hub.html", "/plants-game.html",
+        "/assets/game-runtime.js", "/assets/game-hub.js", "/assets/game-auth.css",
+        "/assets/plants-engine.js", "/assets/plants-game.js", "/assets/plants-game.css",
+        "/assets/games/air-battle-cover.png", "/assets/games/plants-zombies-cover.png")) {
+      assertThat(policy.evaluate("GET", path).action()).isEqualTo(PublicRoutePolicy.Action.FORWARD);
+      assertThat(policy.evaluate("HEAD", path).action()).isEqualTo(PublicRoutePolicy.Action.FORWARD);
+      assertThat(policy.evaluate("POST", path).action()).isEqualTo(PublicRoutePolicy.Action.REJECT);
+      assertThat(policy.evaluate("GET", path + ".bak").action()).isEqualTo(PublicRoutePolicy.Action.REJECT);
+    }
+    assertThat(policy.evaluate("GET", "/assets/games/private.js").action()).isEqualTo(PublicRoutePolicy.Action.REJECT);
   }
 
   private record RouteExpectation(

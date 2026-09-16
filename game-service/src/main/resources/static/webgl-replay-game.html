@@ -4,21 +4,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>WebGL Replay Game Lab</title>
+    <title>飞机大战 · PLAYROOM</title>
   <link rel="stylesheet" href="assets/webgl-replay-game.css?v=20260901-fault-rum-link-v13" />
-  </head>
-  <body>
+  <link rel="stylesheet" href="assets/game-auth.css?v=games-v1" /></head>
+  <body data-game-id="air-battle">
     <main class="game-shell">
       <header class="game-header">
         <div>
           <div class="game-kicker">Session Replay · WebGL Lab</div>
-          <h1>ORBITAL DRIFT</h1>
+          <h1>飞机大战</h1>
           <p data-game-copy="intro">
             持续 WebGL 绘制、碰撞粒子和动态负载，用来观察 Replay 的
             draw-driven snapshot 效果。
           </p>
         </div>
-        <a class="back-link" href="business.html?scene=webgl-game&amp;view=web" data-game-copy="back">返回 Demo Workbench</a>
+        <a class="back-link" href="game-hub.html" id="game-back" data-game-copy="back">返回 Demo Workbench</a>
       </header>
 
       <section class="game-layout">
@@ -150,6 +150,7 @@
       </footer>
     </main>
 
-    <script src="assets/webgl-replay-game.js?v=20260901-fault-rum-link-v13"></script>
+    <script src="assets/game-runtime.js?v=20260915-game-hub-v1"></script>
+    <script src="assets/webgl-replay-game.js?v=20260915-game-hub-v1"></script>
   </body>
 </html>

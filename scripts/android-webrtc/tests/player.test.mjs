@@ -289,3 +289,19 @@ test('latest-frame transport never redraws the APK; native fallback restores red
   await f.advance(250);
   assert.equal(redraws().length, 1);
 });
+
+test('idle activity only follows dispatched input and covers native fallback', async () => {
+  const f = fixture();
+  await f.connect();
+  await f.advance(1000);
+  const activity = () => f.requests.filter(r => r.url.endsWith('/emulator/activity'));
+  assert.equal(activity().length, 0);
+  f.press(); await settle();
+  assert.equal(activity().length, 1);
+  assert.equal(activity()[0].options.method, 'POST');
+  f.press(); f.press(); await f.advance(500);
+  assert.equal(activity().length, 2);
+  f.window.__mallDemoJsepDriver.wsUrl = 'https://device.example/api/v1/emulator/ws-jsep-latest';
+  f.press(); await f.advance(600);
+  assert.equal(activity().length, 2);
+});

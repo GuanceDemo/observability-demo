@@ -1,6 +1,11 @@
 # Attach the Java services to an existing Docker-based DataKit instance.
 # The DataKit container must already be connected to DATAKIT_DOCKER_NETWORK.
 services:
+  game-service:
+    networks:
+      - default
+      - datakit
+
   inventory-service:
     networks:
       - default

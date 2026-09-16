@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>PLAYROOM · 小游戏合集</title>
+    <style>
+      :root {
+        --ink: #172422;
+        --muted: #78817d;
+        --line: #e5e9e3;
+        --green: #254f40;
+        --lime: #d9f579;
+        --paper: #f6f7f2;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--paper);
+        color: var(--ink);
+        font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "PingFang SC", sans-serif;
+      }
+      button,
+      input {
+        font: inherit;
+      }
+      button {
+        cursor: pointer;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 3px solid #85ad38;
+        outline-offset: 4px;
+      }
+      button {
+        border: 0;
+      }
+      header {
+        height: 88px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--line);
+        padding: 0 5.4%;
+        background: #fbfcf8;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 21px;
+        font-weight: 900;
+        letter-spacing: -1px;
+      }
+      .logo {
+        height: 38px;
+        width: 38px;
+        border-radius: 12px;
+        background: var(--green);
+        color: var(--lime);
+        display: grid;
+        place-items: center;
+        font-size: 23px;
+        transform: rotate(-7deg);
+      }
+      .brand small {
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        display: block;
+        margin-top: 3px;
+        color: var(--muted);
+      }
+      nav {
+        display: flex;
+        align-items: center;
+        gap: 34px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      nav button {
+        background: none;
+        padding: 32px 0;
+        color: inherit;
+        font-weight: 600;
+        border-bottom: 2px solid transparent;
+      }
+      nav button.active {
+        color: var(--green);
+        border-color: var(--green);
+      }
+      .account {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .avatar {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: #dbe6d4;
+        display: grid;
+        place-items: center;
+        font-size: 12px;
+        color: var(--green);
+      }
+      .login {
+        background: var(--green);
+        color: white;
+        padding: 12px 19px;
+        border-radius: 25px;
+        font-size: 12px;
+      }
+      .preview {
+        position: fixed;
+        bottom: 15px;
+        left: 18px;
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: #6f796b;
+        z-index: 2;
+        background: #fff9;
+        border: 1px solid var(--line);
+        padding: 7px 11px;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+      }
+      main {
+        max-width: 1440px;
+        margin: auto;
+        padding: 35px 5.4% 30px;
+      }
+      .eyebrow {
+        font-size: 10px;
+        letter-spacing: 2px;
+        font-weight: 700;
+        color: #75816f;
+      }
+      .intro {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin: 8px 0 25px;
+      }
+      .intro h1 {
+        font-size: 30px;
+        letter-spacing: -1.5px;
+        margin: 0 0 9px;
+        font-weight: 800;
+      }
+      .intro p {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .clock {
+        font-size: 11px;
+        color: var(--muted);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+      }
+      .dot {
+        height: 6px;
+        width: 6px;
+        background: #76a271;
+        border-radius: 50%;
+      }
+      .hero {
+        border-radius: 23px;
+        min-height: 334px;
+        background: #153b32;
+        position: relative;
+        overflow: hidden;
+        color: white;
+        display: flex;
+      }
+      .hero-copy {
+        padding: 40px;
+        position: relative;
+        z-index: 1;
+        width: 51%;
+      }
+      .pill {
+        display: inline-flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 10px;
+        letter-spacing: 1px;
+        padding: 7px 10px;
+        border: 1px solid #ffffff35;
+        border-radius: 30px;
+        color: #d9efce;
+      }
+      .hero h2 {
+        font-size: 53px;
+        line-height: 0.98;
+        letter-spacing: -2px;
+        margin: 23px 0 13px;
+        font-weight: 900;
+      }
+      .hero p {
+        color: #b5c8ba;
+        font-size: 12px;
+        line-height: 1.8;
+        margin: 0 0 24px;
+      }
+      .primary {
+        background: var(--lime);
+        color: #213e2b;
+        font-weight: 700;
+        font-size: 12px;
+        padding: 13px 20px;
+        border-radius: 25px;
+        display: inline-flex;
+        align-items: center;
+        gap: 30px;
+      }
+      .hint {
+        margin-left: 13px;
+        font-size: 10px;
+        color: #b4c6b7;
+      }
+      .hero-art {
+        position: absolute;
+        right: 0;
+        top: 0;
+        width: 57%;
+        height: 100%;
+        overflow: hidden;
+        background: radial-gradient(
+          ellipse at 60% 65%,
+          #6c8b41 0%,
+          #254d38 38%,
+          #153b32 72%
+        );
+      }
+      .orb {
+        position: absolute;
+        left: 29%;
+        top: 18%;
+        width: 230px;
+        height: 230px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 30% 20%,
+          #e7f6aa,
+          #97b65c 35%,
+          #496c36 67%,
+          #214835 85%
+        );
+        box-shadow: inset -20px -12px 40px #152c2a88, 0 0 70px #b6d77a22;
+      }
+      .orb:after {
+        content: "";
+        position: absolute;
+        width: 380px;
+        height: 100px;
+        border: 15px solid #d8eaaa99;
+        border-top-color: #d8eaaa44;
+        border-radius: 50%;
+        left: -75px;
+        top: 65px;
+        transform: rotate(-29deg);
+        box-shadow: 0 4px 10px #051f1c44;
+      }
+      .orbit {
+        position: absolute;
+        border: 1px solid #c9dc9440;
+        border-radius: 50%;
+        width: 520px;
+        height: 260px;
+        transform: rotate(-29deg);
+        left: 0;
+        top: 20px;
+      }
+      .stars {
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(#f0ffce 1px, transparent 1px);
+        background-size: 63px 77px;
+        opacity: 0.4;
+      }
+      .moon {
+        position: absolute;
+        right: 12%;
+        top: 15%;
+        height: 25px;
+        width: 25px;
+        border-radius: 50%;
+        background: #cce1a1;
+        box-shadow: inset -8px -3px 8px #617e43;
+      }
+      .artlabel {
+        position: absolute;
+        bottom: 24px;
+        right: 25px;
+        font-size: 9px;
+        letter-spacing: 2px;
+        color: #d4e1bd;
+      }
+      .hero-number {
+        position: absolute;
+        right: 22px;
+        top: 23px;
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: #d4e1bd;
+      }
+      .library {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 31px 0 20px;
+        gap: 15px;
+      }
+      .filters {
+        display: flex;
+        gap: 7px;
+        flex-wrap: wrap;
+      }
+      .filter {
+        font-size: 11px;
+        color: #737b72;
+        border: 1px solid transparent;
+        background: transparent;
+        padding: 9px 15px;
+        border-radius: 20px;
+      }
+      .filter.active {
+        background: var(--green);
+        color: white;
+      }
+      .search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #9ba397;
+        border: 1px solid #e0e5dc;
+        border-radius: 20px;
+        padding: 9px 13px;
+        background: #fff9;
+        font-size: 13px;
+      }
+      .search input {
+        border: 0;
+        background: none;
+        outline: 0;
+        width: 125px;
+        font-size: 11px;
+        color: var(--ink);
+      }
+      .section-label {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 15px;
+      }
+      .section-label h3 {
+        font-size: 17px;
+        letter-spacing: -0.5px;
+        margin: 0;
+      }
+      .section-label span {
+        font-size: 10px;
+        color: var(--muted);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 19px;
+      }
+      .card {
+        min-width: 0;
+      }
+      .cover {
+        height: 169px;
+        border-radius: 16px;
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        transition: transform 0.2s;
+      }
+      .card:hover .cover {
+        transform: translateY(-4px);
+      }
+      .card button {
+        width: 100%;
+        text-align: left;
+        background: none;
+        padding: 0;
+        color: inherit;
+      }
+      .badge {
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        font-size: 8px;
+        letter-spacing: 1px;
+        background: #fff9;
+        border: 1px solid #ffffff30;
+        border-radius: 20px;
+        padding: 5px 8px;
+        z-index: 1;
+      }
+      .fav {
+        position: absolute;
+        right: 12px;
+        top: 12px;
+        color: #3339;
+        font-size: 16px;
+      }
+      .cover.space {
+        background: #dce8d5;
+      }
+      .mini-planet {
+        width: 94px;
+        height: 94px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 25% 20%,
+          #f7ffc8,
+          #a4bd69 55%,
+          #46643d
+        );
+        box-shadow: 10px 13px 17px #51693622;
+        position: relative;
+        transform: rotate(-25deg);
+      }
+      .mini-planet:after {
+        content: "";
+        position: absolute;
+        width: 157px;
+        height: 36px;
+        border: 8px solid #6d8757bb;
+        border-top-color: #bbcf9577;
+        border-radius: 50%;
+        left: -32px;
+        top: 27px;
+      }
+      .cover.blocks {
+        background: #eadfcc;
+      }
+      .tiles {
+        display: grid;
+        grid-template-columns: repeat(2, 54px);
+        gap: 6px;
+        transform: rotate(-12deg);
+        filter: drop-shadow(8px 12px 5px #79613922);
+      }
+      .tile {
+        height: 54px;
+        border-radius: 9px;
+        background: #f8edd7;
+        display: grid;
+        place-items: center;
+        font-size: 23px;
+        font-weight: 800;
+        color: #ad9062;
+      }
+      .tile:nth-child(2) {
+        background: #e6ba78;
+        color: #fff;
+      }
+      .tile:nth-child(3) {
+        background: #d59456;
+        color: #fff;
+      }
+      .tile:nth-child(4) {
+        background: #bf7654;
+        color: #fff;
+      }
+      .cover.snake {
+        background: #dce5e9;
+      }
+      .snake-art {
+        position: relative;
+        width: 146px;
+        height: 114px;
+        background-image: radial-gradient(#788f9d44 1px, transparent 1px);
+        background-size: 14px 14px;
+      }
+      .snake-body {
+        position: absolute;
+        left: 21px;
+        top: 26px;
+        width: 96px;
+        height: 62px;
+        border: 20px solid #5c8a78;
+        border-right: 0;
+        border-radius: 15px 0 0 15px;
+      }
+      .snake-body:after {
+        content: "••";
+        position: absolute;
+        right: -7px;
+        top: -24px;
+        letter-spacing: 5px;
+        color: #244a3a;
+        font-size: 17px;
+        transform: rotate(90deg);
+      }
+      .food {
+        position: absolute;
+        right: 7px;
+        bottom: 19px;
+        width: 16px;
+        height: 16px;
+        border-radius: 5px;
+        background: #e4ab73;
+      }
+      .cover.puzzle {
+        background: #e5dfee;
+      }
+      .puzzle-art {
+        display: grid;
+        grid-template-columns: repeat(3, 29px);
+        gap: 5px;
+        transform: rotate(13deg);
+        filter: drop-shadow(9px 9px 5px #6d548522);
+      }
+      .puzzle-art i {
+        height: 29px;
+        background: #8e81a3;
+        border-radius: 5px;
+        box-shadow: inset -4px -4px 0 #55486620;
+      }
+      .puzzle-art i:nth-child(3n) {
+        background: #b4a5c9;
+      }
+      .puzzle-art i:nth-child(2) {
+        background: #cfbade;
+      }
+      .card-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 14px 0 7px;
+      }
+      .card h4 {
+        font-size: 13px;
+        margin: 0;
+        letter-spacing: -0.3px;
+      }
+      .arrow {
+        font-size: 15px;
+        color: #7a8976;
+      }
+      .meta {
+        font-size: 10px;
+        color: #85907f;
+        display: flex;
+        gap: 7px;
+        align-items: center;
+      }
+      .soon {
+        font-size: 9px;
+        color: #9b9384;
+      }
+      .bottom {
+        margin-top: 28px;
+        border: 1px solid #dfe6d8;
+        border-radius: 15px;
+        padding: 18px 22px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        background: #edf1e7;
+      }
+      .bottom-icon {
+        font-size: 22px;
+        color: #5c7950;
+      }
+      .bottom strong {
+        font-size: 12px;
+      }
+      .bottom p {
+        font-size: 10px;
+        color: #809074;
+        margin: 5px 0 0;
+      }
+      .bottom button {
+        margin-left: auto;
+        white-space: nowrap;
+        background: none;
+        color: var(--green);
+        font-size: 11px;
+        font-weight: 700;
+      }
+      footer {
+        display: flex;
+        justify-content: space-between;
+        padding-top: 25px;
+        color: #9ca592;
+        font-size: 9px;
+        letter-spacing: 1px;
+      }
+      .empty {
+        padding: 50px;
+        text-align: center;
+        color: var(--muted);
+        grid-column: 1/-1;
+        font-size: 13px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        background: #14241f66;
+        backdrop-filter: blur(7px);
+        display: grid;
+        place-items: center;
+        padding: 20px;
+      }
+      .dialog {
+        background: #fbfcf8;
+        border: 1px solid white;
+        border-radius: 25px;
+        width: 410px;
+        max-width: 100%;
+        padding: 30px;
+        box-shadow: 0 25px 100px #14241f33;
+        position: relative;
+      }
+      .close {
+        position: absolute;
+        right: 16px;
+        top: 16px;
+        background: #edf0e7;
+        border-radius: 50%;
+        height: 27px;
+        width: 27px;
+        font-size: 18px;
+        color: #7d8874;
+      }
+      .dialog h2 {
+        font-size: 24px;
+        letter-spacing: -1px;
+        margin: 22px 0 9px;
+      }
+      .dialog p {
+        font-size: 12px;
+        color: var(--muted);
+        line-height: 1.8;
+      }
+      .persona {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: white;
+        border: 1px solid var(--line);
+        padding: 13px;
+        border-radius: 13px;
+        margin: 9px 0;
+        text-align: left;
+      }
+      .persona:hover {
+        border-color: #749b57;
+        background: #f2f7e9;
+      }
+      .persona strong {
+        font-size: 12px;
+      }
+      .persona small {
+        display: block;
+        color: #98a090;
+        font-size: 9px;
+        margin-top: 5px;
+      }
+      .persona em {
+        font-size: 8px;
+        margin-left: auto;
+        background: #eef2e6;
+        padding: 5px 7px;
+        border-radius: 15px;
+        color: #718a54;
+        font-style: normal;
+      }
+      .dialog-note {
+        font-size: 10px !important;
+        border-top: 1px solid var(--line);
+        padding-top: 15px;
+        margin: 19px 0 0;
+      }
+      .toast {
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: var(--green);
+        color: white;
+        padding: 13px 22px;
+        border-radius: 30px;
+        font-size: 12px;
+        z-index: 9;
+        box-shadow: 0 8px 30px #14312122;
+      }
+      .play-preview {
+        height: 175px;
+        border-radius: 15px;
+        background: #153b32;
+        display: grid;
+        place-items: center;
+        margin-top: 20px;
+        color: #d9f579;
+        position: relative;
+        overflow: hidden;
+      }
+      .play-preview .mini-planet {
+        transform: scale(1.1) rotate(-25deg);
+      }
+      .dialog .primary {
+        margin-top: 14px;
+        width: 100%;
+        justify-content: center;
+      }
+      .dialog .secondary {
+        margin-top: 10px;
+        width: 100%;
+        padding: 10px;
+        background: none;
+        color: var(--muted);
+        font-size: 11px;
+      }
+      @media (min-width: 1500px) {
+        main {
+          padding-top: 45px;
+        }
+        .hero {
+          min-height: 375px;
+        }
+        .hero-copy {
+          padding: 45px;
+        }
+        .hero h2 {
+          font-size: 61px;
+        }
+        .orb {
+          width: 260px;
+          height: 260px;
+        }
+        .cover {
+          height: 195px;
+        }
+      }
+      @media (max-width: 850px) {
+        nav {
+          display: none;
+        }
+        .hero-copy {
+          width: 65%;
+          padding: 28px;
+        }
+        .hero h2 {
+          font-size: 43px;
+        }
+        .hero-art {
+          opacity: 0.75;
+          right: -50px;
+        }
+        .grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .clock {
+          display: none;
+        }
+        .hint {
+          display: block;
+          margin: 13px 0 0;
+        }
+        .hero p {
+          max-width: 220px;
+        }
+        .orb {
+          left: 15%;
+        }
+        .intro h1 {
+          font-size: 27px;
+        }
+        .cover {
+          height: 180px;
+        }
+      }
+      @media (max-width: 500px) {
+        header {
+          height: 75px;
+        }
+        .brand {
+          font-size: 18px;
+        }
+        .intro h1 {
+          font-size: 25px;
+        }
+        .intro p {
+          font-size: 10px;
+        }
+        .hero-copy {
+          width: 100%;
+          padding: 27px;
+        }
+        .hero-art {
+          right: -125px;
+          width: 80%;
+          opacity: 0.5;
+        }
+        .hero h2 {
+          font-size: 42px;
+        }
+        .hero p {
+          max-width: 200px;
+        }
+        .hero {
+          min-height: 335px;
+        }
+        .library {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+        .search {
+          width: 100%;
+        }
+        .search input {
+          width: 100%;
+        }
+        .filter {
+          padding: 8px 12px;
+        }
+        .grid {
+          gap: 18px 12px;
+        }
+        .cover {
+          height: 150px;
+        }
+        .bottom {
+          padding: 15px;
+          gap: 10px;
+        }
+        .bottom p {
+          max-width: 160px;
+          line-height: 1.6;
+        }
+        .bottom-icon {
+          display: none;
+        }
+        .bottom button {
+          font-size: 10px;
+        }
+        .card h4 {
+          font-size: 12px;
+        }
+        footer span:last-child {
+          display: none;
+        }
+        .login {
+          padding: 10px 13px;
+          font-size: 10px;
+        }
+      }
+
+      /* Compact game-library preview. */
+      main {
+        padding-top: 28px;
+        max-width: 1340px;
+      }
+      .intro {
+        margin-bottom: 10px;
+      }
+      .intro h1 {
+        font-size: 27px;
+      }
+      .library {
+        margin: 24px 0 20px;
+      }
+      .grid {
+        gap: 16px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+      .card {
+        padding: 10px;
+        background: #fff;
+        border: 1px solid var(--line);
+        border-radius: 17px;
+      }
+      .cover {
+        height: 140px;
+        border-radius: 11px;
+      }
+      .card-info {
+        padding: 12px 3px 7px;
+      }
+      .meta {
+        padding: 0 3px 5px;
+      }
+      .bottom {
+        margin-top: 24px;
+      }
+      .plane-art {
+        font-family: Arial, sans-serif;
+        font-size: 102px;
+        color: #f1f8ee;
+        transform: rotate(-35deg);
+        text-shadow: -4px 5px 0 #71918c, 6px 15px 18px #1e454955;
+        line-height: 1;
+      }
+      .cover.space {
+        background: radial-gradient(ellipse at 70% 30%, #85aaa8, #3d6c72);
+        background-image: linear-gradient(135deg, #9fc4b3, #3c7276);
+      }
+      .cover.space:after {
+        content: "";
+        position: absolute;
+        width: 2px;
+        height: 43px;
+        background: #ffffff60;
+        bottom: 9px;
+        left: 43%;
+        transform: rotate(12deg);
+        box-shadow: 18px 13px 0 #ffffff30, -18px -10px 0 #ffffff30;
+      }
+      .cover.blocks {
+        background: linear-gradient(160deg, #e4edbb, #aac879);
+      }
+      .garden-art {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        background: repeating-linear-gradient(
+            0deg,
+            transparent 0 28px,
+            #547c2512 28px 29px
+          ),
+          repeating-linear-gradient(
+            90deg,
+            transparent 0 37px,
+            #547c2512 37px 38px
+          );
+      }
+      .plant {
+        position: absolute;
+        font-size: 69px;
+        left: 22%;
+        bottom: 15px;
+        filter: drop-shadow(2px 6px 3px #53722133);
+      }
+      .zombie {
+        position: absolute;
+        font-size: 57px;
+        right: 12%;
+        bottom: 16px;
+        transform: rotate(8deg);
+      }
+      .sun {
+        position: absolute;
+        right: 21%;
+        top: 13px;
+        font-size: 29px;
+        color: #f6d451;
+      }
+      .play-preview .plane-art {
+        font-size: 110px;
+      }
+      .cover.snake .snake-art {
+        transform: scale(0.86);
+      }
+      .cover.puzzle .puzzle-art {
+        transform: scale(0.86) rotate(13deg);
+      }
+      @media (min-width: 1500px) {
+        main {
+          padding-top: 35px;
+        }
+        .cover {
+          height: 160px;
+        }
+      }
+      @media (max-width: 850px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .cover {
+          height: 145px;
+        }
+      }
+      @media (max-width: 500px) {
+        .grid {
+          gap: 12px;
+        }
+        .card {
+          padding: 8px;
+          border-radius: 14px;
+        }
+        .cover {
+          height: 120px;
+        }
+        .plane-art {
+          font-size: 84px;
+        }
+        .plant {
+          font-size: 52px;
+          left: 12%;
+        }
+        .zombie {
+          font-size: 43px;
+          right: 7%;
+        }
+        .sun {
+          top: 13px;
+          right: 18%;
+          font-size: 24px;
+        }
+        .library {
+          margin-top: 20px;
+        }
+        .intro h1 {
+          font-size: 25px;
+        }
+      }
+
+      .game-cover {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .cover.space:after {
+        display: none;
+      }
+      .cover {
+        height: auto;
+        aspect-ratio: 3/2;
+      }
+      .grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .placeholder-card {
+        background: transparent;
+        border: 1px dashed #cbd5c4;
+        display: grid;
+        place-items: center;
+        min-height: 210px;
+      }
+      .placeholder-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        color: #99a58e;
+      }
+      .placeholder-inner span {
+        font-size: 28px;
+        font-weight: 400;
+      }
+      .placeholder-inner strong {
+        font-size: 12px;
+        font-weight: 500;
+        letter-spacing: 2px;
+      }
+      .play-preview .game-cover {
+        object-position: center;
+      }
+      .badge {
+        backdrop-filter: blur(6px);
+        background: #ffffffe0;
+      }
+      @media (max-width: 850px) {
+        .grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .placeholder-card {
+          min-height: 210px;
+        }
+      }
+      @media (max-width: 500px) {
+        .placeholder-card {
+          min-height: 185px;
+        }
+      }
+
+      #gameStage {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .stage-header {
+        height: 54px;
+        flex-shrink: 0;
+        padding: 0 20px;
+        gap: 20px;
+        justify-content: flex-start;
+      }
+      .stage-header button {
+        background: none;
+        color: var(--green);
+        font-size: 13px;
+      }
+      #gameFrame {
+        border: 0;
+        width: 100%;
+        flex: 1;
+        min-height: 0;
+        background: #f6f7f2;
+      }
+      body.playing > header,
+      body.playing > main {
+        display: none;
+      }
+      .account .logout {
+        border: 1px solid var(--line);
+        border-radius: 20px;
+        background: none;
+        color: #63765a;
+        font-size: 11px;
+        padding: 9px;
+      }
+      nav button:focus-visible {
+        outline: 2px solid var(--green);
+      }
+
+      @media (max-width: 800px) {
+        body > header {
+          height: auto;
+          min-height: 88px;
+          flex-wrap: wrap;
+          padding-top: 16px;
+          padding-bottom: 8px;
+          gap: 8px;
+        }
+        body > header nav {
+          display: flex;
+          order: 3;
+          width: 100%;
+          justify-content: center;
+          gap: 28px;
+        }
+        body > header nav button {
+          padding: 10px 0;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="assets/game-auth.css?v=games-v1" />
+  </head>
+  <body data-game-id="home">
+    <header>
+      <div class="brand">
+        <span class="logo">✳</span>
+        <div>PLAYROOM<small>小游戏，大快乐</small></div>
+      </div>
+      <nav aria-label="主导航">
+        <button class="active" data-nav="all">发现游戏</button
+        ><button data-nav="recent">最近玩过</button>
+      </nav>
+      <div class="account">
+        <button class="login" id="accountButton">登录，开始玩 ↗</button>
+      </div>
+    </header>
+    <main>
+      <div class="eyebrow">PICK A GAME. TAKE A BREAK.</div>
+      <div class="intro">
+        <div>
+          <h1>小游戏合集</h1>
+          <p>选一款喜欢的，登录即刻开玩。</p>
+        </div>
+        <span class="clock"><i class="dot"></i> 你的快乐补给站，全天开放</span>
+      </div>
+      <div class="library">
+        <div class="filters" aria-label="游戏分类">
+          <button class="filter active" data-filter="全部">全部游戏</button
+          ><button class="filter" data-filter="街机">街机冒险</button
+          ><button class="filter" data-filter="益智">益智烧脑</button
+          ><button class="filter" data-filter="休闲">轻松休闲</button>
+        </div>
+        <label class="search"
+          ><span>⌕</span
+          ><input
+            id="search"
+            placeholder="找一款喜欢的游戏"
+            aria-label="搜索游戏"
+        /></label>
+      </div>
+      <div class="section-label">
+        <h3 id="listTitle">发现游戏</h3>
+        <span id="count">2 款游戏 · 持续上新</span>
+      </div>
+      <div class="grid" id="games">
+        <article
+          class="card"
+          data-category="街机"
+          data-name="飞机大战 经典空战"
+          data-id="air-battle"
+        >
+          <button data-play="air-battle">
+            <div class="cover space">
+              <span class="badge">可体验</span
+              ><img
+                class="game-cover"
+                src="assets/games/air-battle-cover.png"
+                alt="薄荷绿色战机穿越云层"
+                width="1536"
+                height="1024"
+              />
+            </div>
+            <div class="card-info">
+              <h4>飞机大战</h4>
+              <span class="arrow">↗</span>
+            </div>
+            <div class="meta">街机冒险 <span>·</span> 经典空战</div>
+          </button>
+        </article>
+        <article
+          class="card"
+          data-category="益智"
+          data-name="植物大战僵尸 塔防"
+          data-id="plants-vs-zombies"
+        >
+          <button data-play="plants-vs-zombies">
+            <div class="cover blocks">
+              <span class="badge">可体验</span
+              ><img
+                class="game-cover"
+                src="assets/games/plants-zombies-cover.png"
+                alt="豌豆射手和向日葵守护花园，迎战僵尸"
+                width="1536"
+                height="1024"
+              />
+            </div>
+            <div class="card-info">
+              <h4>植物大战僵尸</h4>
+              <span class="arrow">↗</span>
+            </div>
+            <div class="meta">益智烧脑 <span>·</span> 守护你的花园</div>
+          </button>
+        </article>
+        <article
+          class="card placeholder-card"
+          id="comingSoonCard"
+          aria-label="待上线"
+        >
+          <div class="placeholder-inner">
+            <span aria-hidden="true">＋</span><strong>待上线</strong>
+          </div>
+        </article>
+        <div class="empty" id="empty" hidden>
+          没有找到游戏，换个关键词试试。
+        </div>
+      </div>
+      <div class="bottom">
+        <span class="bottom-icon">⌘</span>
+        <div>
+          <strong id="bannerTitle">一个账号，逛商城，也玩游戏。</strong>
+          <p id="bannerText">使用商城 Demo 账号登录，开启你的游戏时光。</p>
+        </div>
+        <button id="bannerButton">登录体验 ↗</button>
+      </div>
+      <footer>
+        <span>PLAYROOM / 让快乐简单一点。</span
+        ><span>TAKE A BREAK. PLAY SOMETHING.</span>
+      </footer>
+    </main>
+    <section id="gameStage" hidden>
+      <header class="stage-header">
+        <button id="returnHub">← 返回游戏大厅</button
+        ><strong id="activeGameTitle"></strong>
+      </header>
+      <iframe id="gameFrame" title="游戏" allow="autoplay"></iframe>
+    </section>
+    <div class="toast" id="toast" role="status" hidden></div>
+    <script src="assets/game-runtime.js?v=20260915-game-hub-v1"></script>
+    <script src="assets/game-hub.js?v=20260915-game-hub-v1"></script>
+  </body>
+</html>

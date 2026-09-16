@@ -1,6 +1,11 @@
 package demo.gateway;
 
 import java.util.List;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.stream.Collectors;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -31,6 +36,69 @@ final class PublicRoutePolicy {
    */
   private static final List<RouteRule> ROUTES =
       List.of(
+          RouteRule.exact(READ_METHODS, "/api/games/rum-config", Action.FORWARD, "game.rum-config", "public_demo"),
+          RouteRule.exact(READ_METHODS, "/api/games/faults", Action.FORWARD, "game.faults", "public_demo"),
+          RouteRule.exact(READ_METHODS, "/api/games/assets/orbital-shield-texture.webp", Action.FORWARD, "game.missing-texture", "public_demo"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/game-hub.html",
+              Action.FORWARD,
+              "game.game-hub-html",
+              "storefront_page"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/plants-game.html",
+              Action.FORWARD,
+              "game.plants-game-html",
+              "storefront_page"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/game-runtime.js",
+              Action.FORWARD,
+              "game.game-runtime-js",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/game-hub.js",
+              Action.FORWARD,
+              "game.game-hub-js",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/game-auth.css",
+              Action.FORWARD,
+              "game.game-auth-css",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/plants-engine.js",
+              Action.FORWARD,
+              "game.plants-engine-js",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/plants-game.js",
+              Action.FORWARD,
+              "game.plants-game-js",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/plants-game.css",
+              Action.FORWARD,
+              "game.plants-game-css",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/games/air-battle-cover.png",
+              Action.FORWARD,
+              "game.games-air-battle-cover-png",
+              "static_asset"),
+          RouteRule.exact(
+              READ_METHODS,
+              "/assets/games/plants-zombies-cover.png",
+              Action.FORWARD,
+              "game.games-plants-zombies-cover-png",
+              "static_asset"),
           RouteRule.exact(
               READ_METHODS, "/", Action.FORWARD, "storefront.root", "storefront_page"),
           RouteRule.exact(
@@ -61,7 +129,7 @@ final class PublicRoutePolicy {
               READ_METHODS,
               "/webgl-replay-game.html",
               Action.FORWARD,
-              "storefront.webgl-game",
+              "game.webgl-game",
               "storefront_page"),
           RouteRule.exact(
               READ_METHODS,
@@ -121,19 +189,19 @@ final class PublicRoutePolicy {
               READ_METHODS,
               "/assets/webgl-replay-game.css",
               Action.FORWARD,
-              "asset.webgl-game-css",
+              "game.webgl-game-css",
               "static_asset"),
           RouteRule.exact(
               READ_METHODS,
               "/assets/webgl-replay-game.js",
               Action.FORWARD,
-              "asset.webgl-game-js",
+              "game.webgl-game-js",
               "static_asset"),
           RouteRule.exact(
               READ_METHODS,
               "/assets/webgl-game-scene-icon.png",
               Action.FORWARD,
-              "asset.webgl-game-icon",
+              "game.webgl-game-icon",
               "static_asset"),
           RouteRule.exact(
               READ_METHODS,
@@ -249,7 +317,7 @@ final class PublicRoutePolicy {
               Set.of("GET"),
               "/api/demo/game-assets/orbital-shield-texture.webp",
               Action.FORWARD,
-              "demo.game-assets.missing-texture",
+              "game.missing-texture",
               "demo_api"),
           RouteRule.exact(
               Set.of("GET"),
@@ -300,11 +368,26 @@ final class PublicRoutePolicy {
               "rum.filters.pull",
               "rum_intake"));
 
+  private static final Set<String> PVZ_ASSETS = loadPvzAssets();
+
+  private static Set<String> loadPvzAssets() {
+    var stream = PublicRoutePolicy.class.getResourceAsStream("/pvz-public-assets.txt");
+    if (stream == null) throw new IllegalStateException("Missing pinned PvZ public asset manifest");
+    try (var reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8))) {
+      return reader.lines().filter(line -> !line.isBlank()).collect(Collectors.toUnmodifiableSet());
+    } catch (IOException error) {
+      throw new IllegalStateException("Cannot read pinned PvZ public asset manifest", error);
+    }
+  }
+
   Decision evaluate(String method, String requestPath) {
     if (!isSafePath(requestPath)) {
       return UNMATCHED;
     }
     String normalizedMethod = method == null ? "" : method.toUpperCase(Locale.ROOT);
+    if (READ_METHODS.contains(normalizedMethod) && PVZ_ASSETS.contains(requestPath)) {
+      return new Decision(Action.FORWARD, "game.pvz-pinned-asset", "static_asset", "public_demo");
+    }
     for (RouteRule route : ROUTES) {
       if (route.matches(normalizedMethod, requestPath)) {
         return route.decision();

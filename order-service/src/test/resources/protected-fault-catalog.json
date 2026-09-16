@@ -234,45 +234,5 @@
       "bookstore",
       "mobile-storefront"
     ]
-  },
-  {
-    "id": "game_render_overload",
-    "title": "游戏渲染过载",
-    "layer": "frontend",
-    "kind": "render_overload",
-    "service": "mall-game-h5",
-    "target": "webgl-main-thread",
-    "mode": "client",
-    "description": "粒子风暴与密集场景负载持续约十秒，并通过间歇性主线程压力制造稳定可见的持续掉帧。",
-    "expectedObservation": "同一 RUM View 中出现开始/恢复 Action、多段 Long Task、FPS 与掉帧统计，以及持续卡顿的 WebGL Replay。",
-    "ttlSeconds": 0,
-    "clientSide": true,
-    "execution": "client",
-    "platforms": [
-      "web"
-    ],
-    "scenes": [
-      "webgl-game"
-    ]
-  },
-  {
-    "id": "game_asset_load_failure",
-    "title": "资源加载失败",
-    "layer": "frontend",
-    "kind": "resource_error",
-    "service": "mall-game-h5",
-    "target": "/api/demo/game-assets/orbital-shield-texture.webp",
-    "mode": "client",
-    "description": "飞船护盾纹理请求返回 404，游戏持续显示降级材质并在约十秒后切换到内置备用材质。",
-    "expectedObservation": "同一 RUM View 中出现 404 Resource、handled Error、失败/重试/恢复 Action，以及 Replay 中持续可见的降级材质。",
-    "ttlSeconds": 0,
-    "clientSide": true,
-    "execution": "client",
-    "platforms": [
-      "web"
-    ],
-    "scenes": [
-      "webgl-game"
-    ]
   }
 ]

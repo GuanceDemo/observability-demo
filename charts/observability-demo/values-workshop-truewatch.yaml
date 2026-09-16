@@ -22,3 +22,10 @@ gateway:
 
 rum:
   enabled: true
+
+# Workshop remains pinned to its already-published embedded-Agent images.
+ddtrace:
+  mode: legacy
+
+game:
+  enabled: false

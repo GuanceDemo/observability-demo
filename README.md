@@ -28,6 +28,17 @@ flowchart LR
 
 ## 本地预览（Docker Compose）
 
+当前带小游戏大厅的本地实例统一使用 `http://127.0.0.1:18080`，
+游戏入口为 `/business.html?lang=zh&scene=webgl-game&view=web`。
+保留已验证的游戏 RUM 配置时，用以下命令更新原有服务栈（包含独立 game-service）：
+
+```bash
+docker compose -p observability-demo -f compose.yaml -f compose.datakit.yaml -f compose.local-games.yaml up -d --build
+```
+
+原有项目统一运行 Gateway、Order、Game、Inventory、Payment 五个 Java 服务；游戏页面、资源和专属接口由 Game 提供，商城登录和 RUM 接收代理继续共用。该覆盖文件沿用现有 Demo RUM 接收端，不修改正式部署。详见 [游戏服务拆分记录](docs/deployments/game-service-split-2.4.0.md)。
+
+
 要求：Docker Engine、Docker Compose v2、`curl`。
 
 ```bash
@@ -163,7 +174,7 @@ kubectl -n datakit logs daemonset/datakit --tail=500 | grep -i ebpf
 
 ### 3. 使用公开镜像部署应用
 
-观测云 EKS profile 只把 Gateway 暴露为 `LoadBalancer`；order、inventory、payment、MySQL 和 Redis 仍然是集群内部服务。
+观测云 EKS profile 只把 Gateway 暴露为 `LoadBalancer`；order、game、inventory、payment、MySQL 和 Redis 仍然是集群内部服务。
 
 ```bash
 helm upgrade --install demo charts/observability-demo \
@@ -277,3 +288,13 @@ Harbor 发布使用 `demo` 项目中具备 Repository Pull/Push 权限的机器�
 [Apache License 2.0](LICENSE)
 
 Android 播放器与 APK 支持独立运行时版本：`mobileDevice.playerVersion`、`mobileDevice.apkVersion`、`mobileDevice.apkMinAndroidVersion`。首次升级支持该配置的 order-service 后，后续 Android 发布无需重建 Java 镜像，详见 [Android 独立版本配置](docs/android-emulator-webrtc.md#android-独立版本配置)。
+
+### Java Agent 外部注入（2.4.0 发布候选）
+
+2.4.0 起业务镜像不再内置 dd-java-agent。Compose 通过一次性 Agent 复制服务
+挂载，Helm 默认使用 initContainer；已配置 DataKit Operator 的集群使用
+`charts/observability-demo/values-operator.yaml`。固定 2.3.6 Workshop profile
+继续使用 legacy 模式，避免重复注入。
+
+迁移顺序、正式发布清单及回滚见
+[2.4.0 Operator 迁移说明](docs/deployments/ddtrace-operator-migration-2.4.0.md)。

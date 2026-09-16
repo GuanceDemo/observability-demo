@@ -67,6 +67,8 @@ def diagnosticDisableReplay = providers.gradleProperty("MALL_DEMO_DISABLE_REPLAY
 if (diagnosticDisableReplay && !diagnosticProfileable) {
     throw new GradleException("MALL_DEMO_DISABLE_REPLAY requires MALL_DEMO_PROFILEABLE=true")
 }
+def remoteControlEnabled = providers.gradleProperty("MALL_DEMO_REMOTE_CONTROL")
+        .map { it.toBoolean() }.getOrElse(false)
 def configuredGatewayUrl = project.findProperty("MALL_DEMO_GATEWAY_URL")
         ?: System.getenv("MALL_DEMO_GATEWAY_URL")
         ?: "http://120.79.13.13:31080"
@@ -117,9 +119,10 @@ android {
         applicationId "com.malldemomobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 9
-        versionName "2.3.16"
+        versionCode 10
+        versionName "2.3.17"
         manifestPlaceholders["profileableByShell"] = diagnosticProfileable.toString()
+        buildConfigField "boolean", "REMOTE_CONTROL_ENABLED", remoteControlEnabled.toString()
         buildConfigField "boolean", "DIAGNOSTIC_DISABLE_REPLAY", diagnosticDisableReplay.toString()
         buildConfigField "String", "GATEWAY_URL", buildConfigString(configuredGatewayUrl)
         buildConfigField "String", "RUM_DATAWAY_URL", buildConfigString(configuredRumDatawayUrl)

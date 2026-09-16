@@ -1,5 +1,5 @@
 [Unit]
-Description=Install and launch the latest Mall Demo APK
+Description=Install the latest Mall Demo APK and show Android Home
 After=mall-demo-emulator.service
 Requires=mall-demo-emulator.service
 

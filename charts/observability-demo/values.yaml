@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   registry: pubrepo.jiagouyun.com
   owner: demo
-  tag: "2.3.12"
+  tag: "2.4.0"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -113,3 +113,21 @@ resources:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+# Business images >= 2.4.0 contain no Agent. Use operator only after its webhook
+# and the dedicated Demo rule have been validated. legacy is for old images only.
+ddtrace:
+  mode: initContainer # initContainer | operator | disabled | legacy
+  version: v1.65.6-ext
+  imageRepository: pubrepo.truewatch.com/datakit-operator/dd-lib-java-init
+  resources:
+    requests:
+      cpu: 100m
+      memory: 64Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Independent stateless game backend (2.4.0+ images).
+game:
+  enabled: true

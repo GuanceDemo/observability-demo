@@ -5,9 +5,9 @@
 The following demo resources are derived from
 [`GuanceCloud/datakit-js`](https://github.com/GuanceCloud/datakit-js/tree/f4369924d75375aa8322e95975b4938f10e16461):
 
-- `order-service/src/main/resources/static/webgl-replay-game.html`
-- `order-service/src/main/resources/static/assets/webgl-replay-game.css`
-- `order-service/src/main/resources/static/assets/webgl-replay-game.js`
+- `game-service/src/main/resources/static/webgl-replay-game.html`
+- `game-service/src/main/resources/static/assets/webgl-replay-game.css`
+- `game-service/src/main/resources/static/assets/webgl-replay-game.js`
 
 The source was pinned at commit `f4369924d75375aa8322e95975b4938f10e16461`
 and adapted for runtime RUM configuration, same-origin embedding, localization, and
@@ -37,3 +37,20 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+## H5 Plants vs Zombies — upstream engine and sprites
+
+Source: https://github.com/yangyunhe369/h5-game-plantsVSzombies
+Pinned commit: `79fb2aeeffe7358100af01cee01c3813495bea85`.
+Copyright (c) 2018 Yang Yunhe. MIT license: `third-party/pvz/LICENSE`.
+
+The original four JavaScript source files, HTML, CSS and README are retained
+under `third-party/pvz/`. `scripts/build-pvz-vendor.py` reproducibly builds the
+served engine with explicit path/cache, managed-timer, listener cleanup and
+upstream cooldown/random-row fixes. All combat and sprite animation classes
+come from these sources. The integration adds an entry-level nine-zombie preset.
+The 344 shipped images are byte-identical to that commit; hashes are recorded in
+`third-party/pvz/provenance.json`. The repository's MIT declaration is retained;
+this notice does not claim ownership of PopCap/EA characters or artwork.
+
+The previous separately implemented Emoji teaching level has been removed.

@@ -25,6 +25,35 @@ import org.springframework.web.client.RestTemplate;
 
 class GatewayProxyFilterTest {
   @Test
+  void gameRoutesUseIndependentBackendAndAuthRemainsShared() throws Exception {
+    for (String path : java.util.List.of("/game-hub.html", "/plants-game.html", "/webgl-replay-game.html",
+        "/assets/game-runtime.js", "/assets/pvz/pvz.css", "/assets/pvz-clock.js",
+        "/api/games/rum-config", "/api/games/faults", "/api/demo/game-assets/orbital-shield-texture.webp")) {
+      RestTemplate rest = new RestTemplate();
+      MockRestServiceServer server = MockRestServiceServer.bindTo(rest).build();
+      server.expect(requestTo("http://game-service.test" + path + "?v=2.4.0"))
+          .andRespond(withSuccess("game", MediaType.TEXT_PLAIN));
+      MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
+      request.setQueryString("v=2.4.0");
+      MockHttpServletResponse response = new MockHttpServletResponse();
+      new GatewayProxyFilter(rest, "http://order-service.test", "http://game-service.test")
+          .doFilter(request, response, new MockFilterChain());
+      assertThat(response.getContentAsString()).isEqualTo("game");
+      server.verify();
+    }
+    RestTemplate rest = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(rest).build();
+    server.expect(requestTo("http://order-service.test/api/demo/auth/session"))
+        .andExpect(header("Cookie", "demo_session=test-session"))
+        .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+    MockHttpServletRequest auth = new MockHttpServletRequest("GET", "/api/demo/auth/session");
+    auth.addHeader("Cookie", "demo_session=test-session");
+    new GatewayProxyFilter(rest, "http://order-service.test", "http://game-service.test")
+        .doFilter(auth, new MockHttpServletResponse(), new MockFilterChain());
+    server.verify();
+  }
+
+  @Test
   void rejectsUnknownPublicRoutesWithStableFallbackIdentity() throws Exception {
     RestTemplate restTemplate = new RestTemplate();
     MockHttpServletRequest request = new MockHttpServletRequest("GET", "/wp-admin/index.php");
@@ -41,7 +70,7 @@ class GatewayProxyFilterTest {
     logger.addAppender(appender);
 
     try {
-      new GatewayProxyFilter(restTemplate, "http://order-service.test")
+      new GatewayProxyFilter(restTemplate, "http://order-service.test", "http://game-service.test")
           .doFilter(request, response, new MockFilterChain());
     } finally {
       logger.detachAppender(appender);
@@ -82,7 +111,7 @@ class GatewayProxyFilterTest {
   @Test
   void resolvesClientIpFromRealIpThenFallsBackToPeerIp() throws Exception {
     GatewayProxyFilter filter =
-        new GatewayProxyFilter(new RestTemplate(), "http://order-service.test");
+        new GatewayProxyFilter(new RestTemplate(), "http://order-service.test", "http://game-service.test");
     Logger logger = (Logger) LoggerFactory.getLogger(GatewayProxyFilter.class);
     ListAppender<ILoggingEvent> appender = new ListAppender<>();
     appender.start();
@@ -113,7 +142,7 @@ class GatewayProxyFilterTest {
   @Test
   void servesRobotsAndFaviconWithoutCallingDownstream() throws Exception {
     GatewayProxyFilter filter =
-        new GatewayProxyFilter(new RestTemplate(), "http://order-service.test");
+        new GatewayProxyFilter(new RestTemplate(), "http://order-service.test", "http://game-service.test");
 
     MockHttpServletResponse robotsResponse = new MockHttpServletResponse();
     filter.doFilter(
@@ -182,7 +211,7 @@ class GatewayProxyFilterTest {
     logger.addAppender(appender);
 
     try {
-      new GatewayProxyFilter(restTemplate, "http://order-service.test/")
+      new GatewayProxyFilter(restTemplate, "http://order-service.test/", "http://game-service.test/")
           .doFilter(request, response, new MockFilterChain());
     } finally {
       logger.detachAppender(appender);
@@ -252,7 +281,7 @@ class GatewayProxyFilterTest {
     logger.addAppender(appender);
 
     try {
-      new GatewayProxyFilter(restTemplate, "http://order-service.test")
+      new GatewayProxyFilter(restTemplate, "http://order-service.test", "http://game-service.test")
           .doFilter(request, response, new MockFilterChain());
     } finally {
       logger.detachAppender(appender);

@@ -8,3 +8,9 @@ charts
 observability
 mobile-app
 *.log
+
+.trellis
+.agents
+.codex
+owl-reports
+previews

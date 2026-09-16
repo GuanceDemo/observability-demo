@@ -41,6 +41,7 @@ import {
   isBusinessFault,
   localizeBusinessFault,
 } from './src/businessFaults';
+import {useRemoteDemoControl} from './src/useRemoteDemoControl';
 import {useBusinessFaults} from './src/useBusinessFaults';
 import {useBookContent} from './src/useBookContent';
 import {
@@ -665,7 +666,7 @@ function Storefront() {
 
   const activateFault = useCallback(
     async (scenario: FaultScenario) => {
-      if (faultTransition.current) return;
+      if (faultTransition.current) throw new Error('busy');
       faultTransition.current = true;
       setFaultBusy(true);
       try {
@@ -708,6 +709,7 @@ function Storefront() {
           title: nativeText(state.language, 'faultFailed'),
           detail: errorMessage(error),
         });
+        throw error;
       } finally {
         faultTransition.current = false;
         setFaultBusy(false);
@@ -778,6 +780,7 @@ function Storefront() {
         title: nativeText(state.language, 'recoverFailed'),
         detail: errorMessage(error),
       });
+      throw error;
     } finally {
       dispatch({type: 'setLoading', loading: false});
     }
@@ -786,6 +789,15 @@ function Storefront() {
   const traceUrl = buildTraceUrl(traceId, publicConfig);
   const rumAppId = Platform.OS === 'android' ? androidRumBuildConfig?.appId || rumConfig.applicationIds.android : rumConfig.applicationIds.ios;
   const rumUrl = buildRumUrl(businessFault.run, rumAppId, publicConfig);
+  useRemoteDemoControl({
+    faults, busy: faultBusy, activeId: state.activeFault?.id || '',
+    phase: businessFault.run?.phase || (state.activeFault ? 'active' : 'idle'),
+    runId: businessFault.run?.id || '', rumUrl, traceUrl,
+    inject: async fault => {
+      rumAction('mobile_inject_fault', {fault_id: fault.id, control_source: 'web'});
+      await activateFault(fault);
+    }, recover: recoverFaults,
+  });
   const detailFaulted = businessFault.run?.scenarioId === BUSINESS_FAULT_IDS.detail && businessFault.run.phase === 'triggered';
   const traceHint = traceId
     ? `trace_id=${shortId(traceId)}`
