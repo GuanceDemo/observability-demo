@@ -4,7 +4,7 @@
     $ = (id) => document.getElementById(id),
     frame = $("gameFrame");
   const games = {
-    "air-battle": { url: "webgl-replay-game.html", title: "飞机大战" },
+    "air-battle": { url: "webgl-replay-game.html?v=20260916-controls-v2", title: "飞机大战" },
     "plants-vs-zombies": { url: "plants-game.html", title: "植物大战僵尸" },
   };
   let filter = "全部",
