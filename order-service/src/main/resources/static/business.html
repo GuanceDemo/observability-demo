@@ -4374,8 +4374,9 @@
     }
 
     function focusActiveSceneControls() {
-      if (state.selectedSceneId !== 'webgl-game' || !els.shopFrame.contentWindow) return;
+      if (state.selectedSceneId !== 'webgl-game' || state.activeGameId !== 'air-battle' || !els.shopFrame.contentWindow) return;
       window.requestAnimationFrame(() => {
+        if (state.selectedSceneId !== 'webgl-game' || state.activeGameId !== 'air-battle') return;
         els.shopFrame.focus({ preventScroll: true });
         sendShopMessage('focus-scene-controls');
       });
@@ -5130,6 +5131,11 @@
     document.addEventListener('keydown', handleUsageGuideKeydown);
     if (els.drawerBackdrop) els.drawerBackdrop.addEventListener('click', closeDrawers);
     compactViewport.addEventListener('change', closeDrawers);
+    els.controlSidebar.addEventListener('click', (event) => {
+      // Pointer clicks hand controls back to the running aircraft. Keyboard
+      // activation retains normal Tab/radio navigation in the console.
+      if (event.detail > 0 && event.target.closest('button')) focusActiveSceneControls();
+    });
     els.faultLayerTabs.addEventListener('click', (event) => {
       const button = event.target.closest('button[data-value]');
       if (!button || button.disabled) return;

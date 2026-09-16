@@ -201,6 +201,12 @@
         ].includes(d.type)
       ) {
         if (d.type === "set-client-fault" && active !== "air-battle") return;
+        if (d.type === "focus-scene-controls") {
+          if (active !== "air-battle") return;
+          // Restore the intermediate iframe as well as the inner canvas: the
+          // canvas can still be its document's activeElement after host clicks.
+          frame.focus({ preventScroll: true });
+        }
         frame.contentWindow?.postMessage(d, location.origin);
       }
       if (d.type === "set-preview-context") state();
