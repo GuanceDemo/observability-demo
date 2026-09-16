@@ -1817,9 +1817,23 @@
     }
     window.location.search = nextQuery.toString()
   })
+  function isGameKey(code) {
+    return /^(Arrow(Up|Down|Left|Right)|Key[WASDP]|Space)$/.test(code)
+  }
+
+  function isEditing(target) {
+    return target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))
+  }
+
+  function clearGameInput() {
+    keys = {}
+    releasePointerControl()
+  }
+
   window.addEventListener('keydown', function (event) {
+    if (destroyed || isEditing(event.target) || !isGameKey(event.code)) return
     keys[event.code] = true
-    if (event.code === 'Space') {
+    if (event.code === 'Space' || event.code.indexOf('Arrow') === 0) {
       event.preventDefault()
     }
     if (event.code === 'KeyP' && !event.repeat) {
@@ -1829,8 +1843,11 @@
   window.addEventListener('keyup', function (event) {
     keys[event.code] = false
   })
+  window.addEventListener('blur', clearGameInput)
+  canvas.addEventListener('pointerenter', focusGameCanvas)
   canvas.addEventListener('pointermove', updatePointer)
   canvas.addEventListener('pointerdown', function (event) {
+    focusGameCanvas()
     pointerDown = updatePointer(event)
     if (pointerDown) {
       canvas.setPointerCapture(event.pointerId)
@@ -1887,6 +1904,8 @@
     window.cancelAnimationFrame(frameHandle)
     window.clearInterval(telemetryTimer)
     window.removeEventListener('message', handleParentMessage)
+    window.removeEventListener('blur', clearGameInput)
+    clearGameInput()
   }
   window.GameRuntime.onAuth(function (user, previous) { if (!user || (previous && previous !== user.id)) { keys = {}; releasePointerControl(); togglePause(true) } })
   document.getElementById('game-back').onclick = function (event) { event.preventDefault(); diagnostics.destroy(); window.GameRuntime.returnHome() }
