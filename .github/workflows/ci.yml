@@ -74,7 +74,15 @@ jobs:
             --set-string observabilityConsole.url=https://console.guance.com/ \
             --set-string observabilityConsole.workspaceId=test-workspace \
             >/tmp/workshop-rendered.yaml
-          grep -q 'pubrepo.jiagouyun.com/demo/observability-demo-gateway-service:2.3.6' /tmp/workshop-rendered.yaml
+          app_version=$(awk '/^appVersion:/ {gsub(/"/, "", $2); print $2}' charts/observability-demo/Chart.yaml)
+          test -n "$app_version"
+          for service in gateway order inventory payment game; do
+            expected_image="pubrepo.jiagouyun.com/demo/observability-demo-${service}-service:${app_version}"
+            if ! grep -Fq "image: \"${expected_image}\"" /tmp/workshop-rendered.yaml; then
+              echo "::error::Rendered deployment is missing expected image ${expected_image}"
+              exit 1
+            fi
+          done
           grep -q 'cluster_name_k8s:test-cluster' /tmp/workshop-rendered.yaml
           grep -A20 'name: DATAKIT_PROVIDER' /tmp/workshop-rendered.yaml | grep -q 'guance'
           grep -A20 'name: OBSERVABILITY_CONSOLE_URL' /tmp/workshop-rendered.yaml | grep -q 'https://console.guance.com/'
@@ -95,8 +103,12 @@ jobs:
           docker run --rm -i ghcr.io/yannh/kubeconform:v0.6.7 -strict -summary </tmp/datakit-rendered.yaml
       - name: Verify workshop release contract
         run: |
-          grep -q '^version: 2.4.0$' charts/observability-demo/Chart.yaml
-          grep -q '^appVersion: "2.4.0"$' charts/observability-demo/Chart.yaml
+          chart_version=$(awk '/^version:/ {print $2}' charts/observability-demo/Chart.yaml)
+          app_version=$(awk '/^appVersion:/ {gsub(/"/, "", $2); print $2}' charts/observability-demo/Chart.yaml)
+          if [[ -z "$app_version" || "$chart_version" != "$app_version" ]]; then
+            echo "::error::Chart version (${chart_version}) must match appVersion (${app_version})"
+            exit 1
+          fi
           grep -q "if: github.repository == 'cherrycove/observability-demo'" .github/workflows/release-images.yml
           if rg 'values-workshop-truewatch\.yaml|TRUEWATCH_WORKSPACE_ID|pubrepo\.truewatch\.com/chartrepo/datakit|export AWS_REGION|--region "\$AWS_REGION"' README.md; then
             echo 'obsolete Workshop platform or Region reference found in README' >&2
