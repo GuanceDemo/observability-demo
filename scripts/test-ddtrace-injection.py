@@ -39,7 +39,7 @@ class InjectionContracts(unittest.TestCase):
             self.assertIn('runAsUser: 10001', text)
             for key in ['DD_SERVICE', 'DD_VERSION', 'DD_ENV', 'DD_AGENT_HOST', 'DD_TAGS', 'DD_JMXFETCH_ENABLED', 'DD_PROFILING_ENABLED']:
                 self.assertIn('name: ' + key, text)
-            self.assertIn('value: "2.4.0"', text)
+            self.assertIn('value: "2.4.1"', text)
 
     def test_operator_exclusive_and_version_rollout(self):
         for text in render('ddtrace.mode=operator', 'ddtrace.version=v1.65.6-ext'):
