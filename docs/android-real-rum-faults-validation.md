@@ -1,3 +1,5 @@
+> 文档中的 `WORKSPACE_ID` 为占位符，打开回放链接前请替换为当前演示空间 ID。
+
 # Android异常：GCP 实施与验收
 
 首次验证：2026-09-16 11:27–12:02；对齐修复复验：14:47–15:00（Asia/Shanghai，UTC+08:00）。
@@ -29,7 +31,7 @@ GCP 显式开启此单独能力，旧 `DEMO_FAULTS_ENABLED` 仍 false。
 
 ## 最终 APK 的真实 RUM 数据
 
-工作空间 `wksp_919ed917d5d747ffb0172e159c449950`，应用 `mall_app_android`。
+工作空间 `WORKSPACE_ID`，应用 `mall_app_android`。
 使用 Owl 的 `owl.data.check_dql` / `owl.data.query` 读取 RUM error/resource/action/view/session；
 检查返回文件内部 success 和实际记录，并使用已登录 Chrome 播放平台回放。
 原始结果保存在忽略目录 `owl-reports/android-real-rum-faults-20260916/`。
@@ -53,10 +55,10 @@ GCP 显式开启此单独能力，旧 `DEMO_FAULTS_ENABLED` 仍 false。
 
 ## 回放实测及边界
 
-- [结算崩溃会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&view_id=ed429fa5e78445abbc7c251f6f1e9bd7&session_id=efd1b0bdb36a41fcb53e7bd91b720f67&ts=1789530481206&w=wksp_919ed917d5d747ffb0172e159c449950)：
+- [结算崩溃会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&view_id=ed429fa5e78445abbc7c251f6f1e9bd7&session_id=efd1b0bdb36a41fcb53e7bd91b720f67&ts=1789530481206&w=WORKSPACE_ID)：
   已打开并播放，购物车画面可见；时间线包含去结算、取消、再次结算、确认闪退和 java_crash。
   这次记录的画面未完整呈现购物车滚动和确认弹层，不应声称逐帧完整。
-- [持续加载及恢复会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&view_id=d682411f27f444ec86976b9504a83df4&session_id=ea2373472f4b47669ea71ce57b39b229&ts=1789530666321&w=wksp_919ed917d5d747ffb0172e159c449950)：
+- [持续加载及恢复会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&view_id=d682411f27f444ec86976b9504a83df4&session_id=ea2373472f4b47669ea71ce57b39b229&ts=1789530666321&w=WORKSPACE_ID)：
   已播放，明确看到“正在加载图书内容…”及缺失描述，恢复片段显示正常描述。
 - 白屏先在 2.3.18 的会话 `9e2b2aaf3f2d4158a31c2fede1d672fd` 播放并看到空白详情；
   最终 2.3.19 的设备白屏、恢复和真实 Error 已验证，同会话回放时间线也包含该错误，
@@ -164,7 +166,7 @@ GCP 已覆盖安装，保留原数据；安装 APK、服务源 APK、公开下�
 本地符号包 `mobile-app/build/releases/2.3.21/android-errors-sourcemap.zip`，未上传。
 20 suites / 97 tests、TypeScript、lint、Release 构建及最终 Replay ABI 检查通过。
 
-[复验会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=2d5385238a414f849542fd807ab12b80&ts=1789541248988&w=wksp_919ed917d5d747ffb0172e159c449950&lak=Rum)
+[复验会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=2d5385238a414f849542fd807ab12b80&ts=1789541248988&w=WORKSPACE_ID&lak=Rum)
 包含以下三个真实错误，均归属正确业务 View：
 
 | 场景 | run | View | Error 时间戳 ms |
@@ -251,7 +253,7 @@ SYNC_FLUSH 后在同一条流 finish，finally 释放 deflater；不改 index_in
 - 97 个应用测试、类型检查、lint、11178 项 resolver 断言、Release 构建和 Replay ABI 通过。
 - GCP 真机 15:43:53.809（UTC+08）发生结算 `IllegalStateException`；重启后 RUM 收到同一 run 的
   `java_crash`，不是空闲退出。确认层在设备上真实显示，重启恢复正常。
-- [新版闪退回放](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=b06ec3260caf4d4ea7a46f168462fc73&ts=1789544490109&w=wksp_919ed917d5d747ffb0172e159c449950&lak=Rum)：
+- [新版闪退回放](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=b06ec3260caf4d4ea7a46f168462fc73&ts=1789544490109&w=WORKSPACE_ID&lak=Rum)：
   **00:02:05 已实播看到“触发结算闪退？”、“确认闪退”和“取消”**，底层购物车也是滚动后的画面。
   00:01:58 为结算操作，00:02:21 为确认与真实 Crash；确认后弹层关闭，结束帧回到购物车属于实际行为。
   run `fault-mu3sl3jx-8n5jo4ah`，View `25511ab986fb472aa2d25b45dd4dfdf6`。
@@ -308,7 +310,7 @@ cart View `5e0782d59be64d53afc53d7761b8e44a`。抓包确认
 
 第二轮云端最终实播通过：**00:01:00 清晰显示“触发结算闪退？”、确认闪退、取消**，
 00:00:53为结算，00:01:13为确认与真实Crash。
-[2.3.23 alpha03 确认层回放](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=f15e19698d114a7ebd869f8a785f7923&ts=1789546746345&w=wksp_919ed917d5d747ffb0172e159c449950&lak=Rum)。
+[2.3.23 alpha03 确认层回放](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=f15e19698d114a7ebd869f8a785f7923&ts=1789546746345&w=WORKSPACE_ID&lak=Rum)。
 
 首轮后续查询也已查到1789546379825确认层批次与1789546396667触摸尾段，
 因此此前17条分段的查询结果不是最终数据。首轮提前打开的播放器仍有旧画面，
@@ -344,5 +346,5 @@ cart View `5e0782d59be64d53afc53d7761b8e44a`。抓包确认
 - 新会话 `c513bf241d1348de98232a5488c39ed2`，run `fault-mu4z7u9c-25jk5q21`，详情 View `f4cf8d22cbfd46279cd784829a536fd8`。
 - 实际设备触发持续加载后关闭故障；云端关闭“跳过不活跃”连续播放并独立定位：00:30 加载蒙版及粉色圆点可见，00:41 恢复事件，00:42 同一详情页蒙版消失并出现“已恢复基线”。恢复不再依赖切换 View。
 - RUM 恢复时间 1789616123138，ready 时间 1789616123234；该详情的后续 Replay 批次覆盖至 1789616126854，实际播放器已呈现恢复画面。
-- [验收会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=c513bf241d1348de98232a5488c39ed2&ts=1789616079300&w=wksp_919ed917d5d747ffb0172e159c449950&lak=Rum)。查询证据保存在 `owl-reports/replay-2326/`。
+- [验收会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=c513bf241d1348de98232a5488c39ed2&ts=1789616079300&w=WORKSPACE_ID&lak=Rum)。查询证据保存在 `owl-reports/replay-2326/`。
 - 本次实播验收覆盖持续加载及恢复；没有重新完整验收白屏和崩溃。新版不会修复旧 APK 已录制的数据；符号包尚未上传，未宣称云端符号化通过。
