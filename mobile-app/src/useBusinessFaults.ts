@@ -42,6 +42,10 @@ export function useBusinessFaults() {
     return next;
   }, [publish]);
 
+  const restore = useCallback(async (previous: BusinessFaultRun) => {
+    await publish({...previous, phase: 'recovered', recoveredAt: Date.now()}, {recovery_reason: 'app_restart'});
+  }, [publish]);
+
   const clearContext = useCallback(async () => {
     await recover('switch_scenario');
     current.current = null;
@@ -57,6 +61,6 @@ export function useBusinessFaults() {
     };
   }, []);
 
-  return useMemo(() => ({run, arm, enabled, trigger, recover, clearContext, current}),
-    [run, arm, enabled, trigger, recover, clearContext]);
+  return useMemo(() => ({run, arm, enabled, trigger, recover, restore, clearContext, current}),
+    [run, arm, enabled, trigger, recover, restore, clearContext]);
 }

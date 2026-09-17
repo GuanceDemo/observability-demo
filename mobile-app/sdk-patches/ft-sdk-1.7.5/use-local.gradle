@@ -1,7 +1,7 @@
 // Paired SDK/Replay experiment; default builds retain official dependencies.
 def sdkPatchRepo = new File(initscript.sourceFile.parentFile, '../../build/sdk-patch/maven').canonicalFile
 def sdkPatchGroup = 'com.cloudcare.ft.mobile.sdk.tracker.agent'
-def versions = ['ft-sdk': '1.7.5-jankfix02', 'ft-session-replay': '0.1.8-jankfix02']
+def versions = ['ft-sdk': '1.7.5-jankfix02', 'ft-session-replay': '0.1.9-alpha03-jankfix01']
 versions.each { module, version ->
     if (!new File(sdkPatchRepo, "${sdkPatchGroup.replace('.', '/')}/${module}/${version}/${module}-${version}.aar").isFile()) {
         throw new GradleException('Run python3 scripts/build-ft-sdk-patch.py from mobile-app first')

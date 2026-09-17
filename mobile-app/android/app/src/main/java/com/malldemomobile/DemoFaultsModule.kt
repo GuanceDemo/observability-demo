@@ -23,6 +23,7 @@ class DemoFaultsModule(
   override fun getConstants(): Map<String, Any> =
     mapOf(
       "dangerousFaultsEnabled" to BuildConfig.DEMO_FAULTS_ENABLED,
+      "checkoutCrashEnabled" to BuildConfig.CHECKOUT_CRASH_ENABLED,
       "replayDisabledForDiagnostics" to BuildConfig.DIAGNOSTIC_DISABLE_REPLAY,
       "gatewayUrl" to BuildConfig.GATEWAY_URL,
       "rumDirectEnabled" to BuildConfig.RUM_DIRECT_ENABLED,
@@ -41,6 +42,22 @@ class DemoFaultsModule(
 
   @ReactMethod
   fun finishRemoteCommand(id: String, status: String) { RemoteDemoControl.finish(id, status) }
+
+  @ReactMethod
+  fun crashCheckout(promise: Promise) {
+    if (!BuildConfig.CHECKOUT_CRASH_ENABLED) {
+      promise.reject("CHECKOUT_CRASH_DISABLED", "Checkout crash requires the demonstration build")
+      return
+    }
+    Handler(Looper.getMainLooper()).post {
+      // Reproduce a checkout model invariant violation on the real UI thread.
+      prepareCheckout(null)
+    }
+  }
+
+  private fun prepareCheckout(checkoutToken: String?) {
+    checkNotNull(checkoutToken) { "Checkout token missing while preparing checkout" }.trim()
+  }
 
   @ReactMethod
   fun crash(message: String, promise: Promise) {

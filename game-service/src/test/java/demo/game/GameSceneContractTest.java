@@ -223,7 +223,7 @@ class GameSceneContractTest {
         .contains("androidJitterBufferAverage: 'Interval jitter buffer'")
         .contains("androidFreezes: '冻结次数 / 总时长'")
         .contains("androidFreezes: 'Freezes / total duration'")
-        .contains("androidFaultEntryHint: '可在右侧选择并注入故障，再到 APK 操作触发。Crash / ANR 仍需在 APK 内确认。'")
+        .contains("androidFaultEntryHint: '选择 Android异常并启用场景，再到 App 操作触发；结算闪退会在 App 内确认。'")
         .contains("faultKindLongTask: '长任务'")
         .contains("faultKindLongTask: 'Long task'")
         .contains("faultKindRenderOverload: '渲染过载'")

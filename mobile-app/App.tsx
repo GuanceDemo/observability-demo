@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import {
   Alert,
+  AppState,
   BackHandler,
   PanResponder,
   Platform,
@@ -31,11 +32,13 @@ import {FaultDrawer, FaultToolbarButton} from './src/components/FaultDrawer';
 import {ResultToast} from './src/components/ResultToast';
 import {DetailFaultBoundary, withMissingDetailDescription} from './src/components/DetailFaultBoundary';
 import {CheckoutPreview} from './src/components/CheckoutPreview';
+import {CheckoutCrashConfirmation} from './src/components/CheckoutCrashConfirmation';
 import {StoreBottomNav, StoreHeader} from './src/components/StoreHeader';
 import {androidRumBuildConfig, gatewayUrl} from './src/config';
 import {
   BUSINESS_FAULT_IDS,
-  blockCheckoutPreview,
+  androidFaultCatalog,
+  crashCheckout,
   faultContext,
   faultRequestMetadata,
   isBusinessFault,
@@ -80,9 +83,8 @@ import {
   totalCartQuantity,
   visibleProducts,
   type ToastState,
-  type StoreAction,
 } from './src/store';
-import {loadPersistedStore, persistStore} from './src/storage';
+import {consumeCrashMarker, loadPersistedStore, persistStore, writeCrashMarker} from './src/storage';
 import {buildRumUrl, buildTraceUrl} from './src/traceLink';
 import {useStableCallback} from './src/useStableCallback';
 import type {
@@ -144,14 +146,20 @@ function Storefront() {
     project: 'mall-demo',
   });
   const [traceId, setTraceId] = useState('');
-  const [frozenAmountCent, setFrozenAmountCent] = useState<number | null>(null);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [faultBusy, setFaultBusy] = useState(false);
   const faultTransition = useRef(false);
+  const checkoutConfirmation = useRef(false);
+  const [confirmCheckoutCrash, setConfirmCheckoutCrash] = useState<(() => void) | null>(null);
+  const cancelCheckoutCrash = useCallback(() => {
+    checkoutConfirmation.current = false;
+    setConfirmCheckoutCrash(null);
+  }, []);
   const bookNavigation = useRef(0);
   const homeScrollPosition = useRef<HomeScrollPosition>({key: '', y: 0});
   const api = useMemo(() => new DemoApi(gatewayUrl), []);
   const businessFault = useBusinessFaults();
+  const restoreFault = businessFault.restore;
   const bookContent = useBookContent(api, rumConfig.project);
   const tokens = storefrontTokens;
 
@@ -169,6 +177,16 @@ function Storefront() {
   const cartQuantity = useMemo(() => totalCartQuantity({cart: state.cart}), [state.cart]);
   const currentProduct = getProduct(state.currentBookId);
 
+  const beginScreenView = useStableCallback((screen: StoreScreen = state.screen, bookId = state.currentBookId) =>
+    startView(VIEW_NAMES[screen], {
+      screen,
+      language: state.language,
+      book_id: screen === 'detail' ? bookId : undefined,
+      visitor_id: state.visitorId,
+      auth_state: state.auth.user ? 'authenticated' : 'anonymous',
+      user_tier: state.auth.user?.tier,
+    }));
+
   const showToast = useCallback((toast: ToastState) => {
     dispatch({type: 'showToast', toast});
   }, []);
@@ -176,8 +194,9 @@ function Storefront() {
 
   const applyFaultCatalog = useCallback((catalog: Awaited<ReturnType<DemoApi['getFaultCatalog']>>, language: StoreLanguage = 'zh') => {
     const platform = Platform.OS === 'ios' ? 'ios' : 'android';
-    const platformFaults = filterFaultsForPlatform(catalog.items, platform)
-      .map(scenario => localizeBusinessFault(scenario, language));
+    const available = filterFaultsForPlatform(catalog.items, platform);
+    const platformFaults = platform === 'android' ? androidFaultCatalog(available, language)
+      : available.map(scenario => localizeBusinessFault(scenario, language));
     setFaults(platformFaults);
     const activeServerFault = findActiveServerFault(platformFaults, catalog.active);
     if (activeServerFault) {
@@ -241,17 +260,22 @@ function Storefront() {
       } else {
         dispatch({type: 'setAuthSession', user: null, personas: [], restored: true});
       }
-      startView(VIEW_NAMES.home, {
-        screen: 'home',
-        language: persisted.language,
-        visitor_id: persisted.visitorId,
+      const marker = await consumeCrashMarker();
+      if (cancelled) return;
+      if (marker?.run) await restoreFault(marker.run);
+      if (marker) recordFaultEvent('native_crash_restart_observed', {
+        ...(marker.run ? faultContext(marker.run) : {}), fault_phase: 'recovered', recovery_reason: 'app_restart',
+        marker_created_at: marker.createdAt,
       });
+      // Bootstrap establishes only the current route, even if the user navigated
+      // while configuration/auth requests were in flight.
+      await beginScreenView();
     }
     runSilently(bootstrap());
     return () => {
       cancelled = true;
     };
-  }, [api, applyFaultCatalog, showToast]);
+  }, [api, applyFaultCatalog, beginScreenView, restoreFault, showToast]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -278,29 +302,37 @@ function Storefront() {
   ]);
 
   useEffect(() => {
-    if (!hydrated) return;
-    stopView({reason: 'navigation'});
-    startView(VIEW_NAMES[state.screen], {
-      screen: state.screen,
-      language: state.language,
-      book_id: state.screen === 'detail' ? state.currentBookId : undefined,
-      visitor_id: state.visitorId,
-      auth_state: state.auth.user ? 'authenticated' : 'anonymous',
-      user_tier: state.auth.user?.tier,
+    if (Platform.OS !== 'android') return;
+    let backgroundTimer: ReturnType<typeof setTimeout> | undefined;
+    let suspended = false;
+    const subscription = AppState.addEventListener('change', next => {
+      if (next === 'active') {
+        clearTimeout(backgroundTimer);
+        backgroundTimer = undefined;
+        if (suspended) {
+          suspended = false;
+          runSilently(beginScreenView());
+        }
+      } else if (!backgroundTimer && !suspended) {
+        // Android onNewIntent can briefly pause/resume ReactActivity without
+        // leaving the screen (remote control / frame refresh). Keep that View.
+        backgroundTimer = setTimeout(() => {
+          backgroundTimer = undefined;
+          suspended = true;
+          stopView({reason: 'background'});
+        }, 500);
+      }
     });
-  }, [
-    hydrated,
-    state.auth.user,
-    state.currentBookId,
-    state.language,
-    state.screen,
-    state.visitorId,
-  ]);
+    return () => {
+      clearTimeout(backgroundTimer);
+      subscription.remove();
+    };
+  }, [beginScreenView]);
 
   const navigate = useCallback(
-    (screen: StoreScreen) => {
+    async (screen: StoreScreen) => {
       if (screen === state.screen) return;
-      bookNavigation.current += 1;
+      const navigation = ++bookNavigation.current;
       bookContent.cancel();
       setPreviewOpen(false);
       rumAction('business_navigate_bookstore', {
@@ -308,23 +340,33 @@ function Storefront() {
         to_page: screen,
         language: state.language,
       });
+      await beginScreenView(screen);
+      if (navigation !== bookNavigation.current) return;
       dispatch({type: 'navigate', screen});
     },
-    [bookContent, state.language, state.screen],
+    [beginScreenView, bookContent, state.language, state.screen],
   );
 
-  const goBack = useCallback(() => {
-    bookNavigation.current += 1;
+  const goBack = useCallback(async () => {
+    const screen = state.history.at(-2);
+    if (!screen) return;
+    const navigation = ++bookNavigation.current;
     bookContent.cancel();
-    if (state.history.at(-2) === 'detail') {
-      runSilently(bookContent.load(state.currentBookId, faultRequestMetadata(metadata, businessFault.current.current)));
-    }
     rumAction('mobile_swipe_back', {from_page: state.screen});
+    await beginScreenView(screen);
+    if (navigation !== bookNavigation.current) return;
     dispatch({type: 'goBack'});
-  }, [bookContent, businessFault, metadata, state.currentBookId, state.history, state.screen]);
+    if (screen === 'detail') {
+      runSilently(bookContent.load(state.currentBookId, faultRequestMetadata(metadata, businessFault.current.current), 'normal', businessFault.enabled(BUSINESS_FAULT_IDS.loading)));
+    }
+  }, [beginScreenView, bookContent, businessFault, metadata, state.currentBookId, state.history, state.screen]);
 
   useEffect(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (confirmCheckoutCrash) {
+        cancelCheckoutCrash();
+        return true;
+      }
       if (previewOpen) {
         setPreviewOpen(false);
         return true;
@@ -344,12 +386,13 @@ function Storefront() {
       return false;
     });
     return () => subscription.remove();
-  }, [goBack, previewOpen, state.auth.overlayOpen, state.drawerOpen, state.history.length]);
+  }, [cancelCheckoutCrash, confirmCheckoutCrash, goBack, previewOpen, state.auth.overlayOpen, state.drawerOpen, state.history.length]);
 
   const swipeBack = useMemo(
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponder: (event, gesture) =>
+          !confirmCheckoutCrash &&
           !state.drawerOpen &&
           !state.auth.overlayOpen &&
           !previewOpen &&
@@ -361,7 +404,7 @@ function Storefront() {
           if (gesture.dx > 72 || gesture.vx > 0.7) goBack();
         },
       }),
-    [goBack, previewOpen, state.auth.overlayOpen, state.drawerOpen, state.history.length],
+    [confirmCheckoutCrash, goBack, previewOpen, state.auth.overlayOpen, state.drawerOpen, state.history.length],
   );
 
   const changeLanguage = useCallback(() => {
@@ -371,7 +414,7 @@ function Storefront() {
     bookNavigation.current += 1;
     bookContent.cancel();
     if (state.screen === 'detail') {
-      runSilently(bookContent.load(state.currentBookId, faultRequestMetadata({...metadata, language}, businessFault.current.current)));
+      runSilently(bookContent.load(state.currentBookId, faultRequestMetadata({...metadata, language}, businessFault.current.current), 'normal', businessFault.enabled(BUSINESS_FAULT_IDS.loading)));
     }
     runSilently(
       api
@@ -385,8 +428,10 @@ function Storefront() {
       const navigation = ++bookNavigation.current;
       const product = getProduct(bookId);
       bookContent.cancel();
-      const triggerId = [BUSINESS_FAULT_IDS.detail, BUSINESS_FAULT_IDS.slow, BUSINESS_FAULT_IDS.timeout]
+      const triggerId = [BUSINESS_FAULT_IDS.detail, BUSINESS_FAULT_IDS.loading]
         .find(id => businessFault.enabled(id));
+      await beginScreenView('detail', product.id);
+      if (navigation !== bookNavigation.current) return;
       if (triggerId) await businessFault.trigger(triggerId, {book_id: product.id});
       if (navigation !== bookNavigation.current) return;
       rumAction('business_view_book_detail', {
@@ -394,11 +439,10 @@ function Storefront() {
         book_title: getProductText(product, state.language).title,
       });
       dispatch({type: 'openBook', bookId});
-      const mode = businessFault.enabled(BUSINESS_FAULT_IDS.slow) ? 'slow'
-        : businessFault.enabled(BUSINESS_FAULT_IDS.timeout) ? 'timeout' : 'normal';
-      runSilently(bookContent.load(product.id, faultRequestMetadata(metadata, businessFault.current.current), mode));
+      runSilently(bookContent.load(product.id, faultRequestMetadata(metadata, businessFault.current.current), 'normal',
+        businessFault.enabled(BUSINESS_FAULT_IDS.loading)));
     },
-    [bookContent, businessFault, metadata, state.language],
+    [beginScreenView, bookContent, businessFault, metadata, state.language],
   );
 
   const addBook = useCallback(
@@ -406,16 +450,6 @@ function Storefront() {
       const product = getProduct(bookId);
       const text = getProductText(product, state.language);
       const nextQuantity = Math.max(Number(state.cart[bookId] ?? 0), quantity);
-      if (nextQuantity > Number(state.cart[bookId] ?? 0) && businessFault.enabled(BUSINESS_FAULT_IDS.addCart)) {
-        const run = await businessFault.trigger(BUSINESS_FAULT_IDS.addCart, {book_id: bookId});
-        if (run) {
-          rumAction('business_add_book_to_bag', {book_id: bookId, quantity: nextQuantity});
-          recordFaultEvent('cart_update_missing', {...faultContext(run), book_id: bookId,
-            previous_quantity: Number(state.cart[bookId] ?? 0), expected_quantity: nextQuantity,
-            actual_quantity: Number(state.cart[bookId] ?? 0), validation: 'state_update_missing'});
-          return false;
-        }
-      }
       dispatch({type: 'setCartQuantity', bookId, quantity: nextQuantity});
       rumAction('business_add_book_to_bag', {
         product: text.title,
@@ -430,30 +464,13 @@ function Storefront() {
       recordFaultEvent('cart_update_succeeded', {book_id: bookId, actual_quantity: nextQuantity});
       return true;
     },
-    [businessFault, showToast, state.cart, state.language],
+    [showToast, state.cart, state.language],
   );
-
-  const applyCartChange = useCallback(async (change: StoreAction) => {
-    const next = storeReducer(state, change);
-    const nextCheckout = checkoutSnapshot(next);
-    if (businessFault.enabled(BUSINESS_FAULT_IDS.cartTotal)
-      && checkout.amountCent !== nextCheckout.amountCent && nextCheckout.totalCopies > 0) {
-      const run = await businessFault.trigger(BUSINESS_FAULT_IDS.cartTotal);
-      if (run) {
-        const shown = frozenAmountCent ?? checkout.amountCent;
-        setFrozenAmountCent(shown);
-        recordFaultEvent('cart_total_mismatch', {...faultContext(run),
-          expected_amount_cent: nextCheckout.amountCent, displayed_amount_cent: shown,
-          selected_copies: nextCheckout.totalCopies, validation: 'stale_derived_state'});
-      }
-    }
-    dispatch(change);
-  }, [businessFault, checkout.amountCent, frozenAmountCent, state]);
 
   const updateCartQuantity = useCallback(
     (bookId: string, quantity: number) => {
       const previous = Number(state.cart[bookId] ?? 0);
-      runSilently(applyCartChange({type: 'setCartQuantity', bookId, quantity}));
+      dispatch({type: 'setCartQuantity', bookId, quantity});
       const product = getProduct(bookId);
       rumAction(
         quantity > previous
@@ -462,7 +479,7 @@ function Storefront() {
         {book_id: product.id, previous_quantity: previous, quantity},
       );
     },
-    [applyCartChange, state.cart],
+    [state.cart],
   );
 
   const lookupTrace = useCallback(
@@ -490,14 +507,40 @@ function Storefront() {
   const executeCheckout = useCallback(
     async (mode: CheckoutMode, authenticated = Boolean(state.auth.user)) => {
       if (checkout.totalCopies < 1 || checkout.amountCent < 1) return;
-      if (frozenAmountCent !== null && frozenAmountCent !== checkout.amountCent) {
-        showToast({tone: 'error', title: state.language === 'en' ? 'Review your cart total' : '请先核对购物车金额',
-          detail: state.language === 'en' ? 'Reload the total before placing an order.' : '重新计算合计后再提交订单。'});
-        return;
-      }
       if (!authenticated) {
         rumAction('auth_login_prompt', {trigger: mode, visitor_id: state.visitorId});
         dispatch({type: 'setAuthOverlay', open: true, pending: mode});
+        return;
+      }
+      if (businessFault.enabled(BUSINESS_FAULT_IDS.crash)) {
+        const armed = businessFault.current.current;
+        if (!armed || checkoutConfirmation.current) return;
+        checkoutConfirmation.current = true;
+        setConfirmCheckoutCrash(() => () => {
+              setConfirmCheckoutCrash(null);
+              runSilently((async () => {
+                try {
+                  if (businessFault.current.current?.id !== armed.id || !businessFault.enabled(BUSINESS_FAULT_IDS.crash)) return;
+                  const run = await businessFault.trigger(BUSINESS_FAULT_IDS.crash, {book_ids: checkout.bookIds, selected_copies: checkout.totalCopies});
+                  if (!run) return;
+                  await writeCrashMarker(run.scenarioId, run);
+                  if (businessFault.current.current?.id !== run.id || !businessFault.enabled(BUSINESS_FAULT_IDS.crash)) {
+                    await consumeCrashMarker();
+                    return;
+                  }
+                  rumAction('business_checkout_prepare', {...faultContext(run), book_ids: checkout.bookIds});
+                  await crashCheckout();
+                } catch (error) {
+                  await consumeCrashMarker();
+                  if (businessFault.current.current?.id === armed.id) {
+                    await businessFault.recover('checkout_crash_unavailable');
+                    dispatch({type: 'faultRecovered', history: {id: armed.id, scenarioId: armed.scenarioId,
+                      title: '结算闪退', status: 'failed', timestamp: new Date().toISOString()}});
+                  }
+                  showToast({tone: 'error', title: nativeText(state.language, 'faultFailed'), detail: errorMessage(error)});
+                } finally { checkoutConfirmation.current = false; }
+              })());
+        });
         return;
       }
       const order = {
@@ -568,7 +611,7 @@ function Storefront() {
     [
       api,
       checkout,
-      frozenAmountCent,
+      businessFault,
       lookupTrace,
       metadata,
       rumConfig.project,
@@ -633,46 +676,33 @@ function Storefront() {
     if (!active || (expectedRunId && active.id !== expectedRunId)) return;
     bookNavigation.current += 1;
     bookContent.cancel();
-    setFrozenAmountCent(null);
+    cancelCheckoutCrash();
     await businessFault.recover(reason, properties);
     if (businessFault.current.current?.id !== active.id) return;
     const scenario = faults.find(item => item.id === active.scenarioId);
     if (scenario) dispatch({type: 'faultRecovered', history: historyItem(scenario, 'recovered')});
-  }, [bookContent, businessFault, faults]);
+  }, [bookContent, businessFault, cancelCheckoutCrash, faults]);
 
   const retryBookContent = useCallback(async () => {
     await recoverLocalFault('content_retry');
     runSilently(bookContent.load(state.currentBookId, faultRequestMetadata(metadata, businessFault.current.current)));
   }, [bookContent, businessFault, metadata, recoverLocalFault, state.currentBookId]);
 
-  const openCheckoutPreview = useCallback(async () => {
+  const openCheckoutPreview = useCallback(() => {
     if (checkout.totalCopies < 1 || previewOpen) return;
     setPreviewOpen(true);
-    const run = await businessFault.trigger(BUSINESS_FAULT_IDS.uiBlock);
     rumAction('business_preview_checkout', {selected_copies: checkout.totalCopies});
-    if (!run) return;
-    // Commit a normal, replayable native view before occupying the UI thread.
-    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
-    if (businessFault.current.current?.id !== run.id || businessFault.current.current.phase !== 'triggered') return;
-    try {
-      const durationMs = await blockCheckoutPreview();
-      recordFaultEvent('checkout_preview_resumed', {...faultContext(run), blocked_duration_ms: durationMs});
-      await recoverLocalFault('native_block_finished', run.id, {blocked_duration_ms: durationMs});
-    } catch (error) {
-      await recoverLocalFault('native_block_unavailable', run.id);
-      showToast({tone: 'error', title: state.language === 'en' ? 'Preview demonstration unavailable' : '暂时无法演示卡顿', detail: errorMessage(error)});
-    }
-  }, [businessFault, checkout.totalCopies, previewOpen, recoverLocalFault, showToast, state.language]);
+  }, [checkout.totalCopies, previewOpen]);
 
   const activateFault = useCallback(
     async (scenario: FaultScenario) => {
-      if (faultTransition.current) throw new Error('busy');
+      if (scenario.disabled) throw new Error('scenario_unavailable');
+      if (faultTransition.current || checkoutConfirmation.current) throw new Error('busy');
       faultTransition.current = true;
       setFaultBusy(true);
       try {
         bookNavigation.current += 1;
         bookContent.cancel();
-        setFrozenAmountCent(null);
         setPreviewOpen(false);
         if (isBusinessFault(scenario.id)) {
           if (state.activeFault?.execution === 'server') await api.recoverFaults(metadata);
@@ -954,10 +984,10 @@ function Storefront() {
             language={state.language}
             lines={lines}
             selectedCopies={checkout.totalCopies}
-            amountCent={frozenAmountCent ?? checkout.amountCent}
-            checkoutBlocked={frozenAmountCent !== null && frozenAmountCent !== checkout.amountCent}
+            amountCent={checkout.amountCent}
+            checkoutBlocked={false}
             onRefreshTotal={() => runSilently(recoverLocalFault('cart_recalculate'))}
-            onPreview={() => confirmPress('checkout_preview', () => runSilently(openCheckoutPreview()))}
+            onPreview={() => confirmPress('checkout_preview', () => openCheckoutPreview())}
             busy={state.loading}
             onBrowse={() =>
               confirmPress('cart_browse', () => navigate('home'))
@@ -967,17 +997,17 @@ function Storefront() {
             }
             onToggleSelection={bookId =>
               confirmPress(`cart_toggle:${bookId}`, () =>
-                runSilently(applyCartChange({type: 'toggleCartSelection', bookId})),
+                dispatch({type: 'toggleCartSelection', bookId}),
               )
             }
             onSelectAll={selected =>
               confirmPress('cart_select_all', () =>
-                runSilently(applyCartChange({type: 'selectAllCart', selected})),
+                dispatch({type: 'selectAllCart', selected}),
               )
             }
             onRemoveSelected={() =>
               confirmPress('cart_remove_selected', () =>
-                runSilently(applyCartChange({type: 'removeSelectedCart'})),
+                dispatch({type: 'removeSelectedCart'}),
               )
             }
             onQuantityChange={(bookId, quantity) =>
@@ -1053,6 +1083,10 @@ function Storefront() {
         amountCent={checkout.amountCent}
         onClose={() => setPreviewOpen(false)}
       />
+
+      <CheckoutCrashConfirmation visible={Boolean(confirmCheckoutCrash)} tokens={tokens} language={state.language}
+        onCancel={() => confirmPress('checkout_crash_cancel', cancelCheckoutCrash)}
+        onConfirm={() => confirmPress('checkout_crash_confirm', () => confirmCheckoutCrash?.())} />
 
       <AuthOverlay
         visible={state.auth.overlayOpen}

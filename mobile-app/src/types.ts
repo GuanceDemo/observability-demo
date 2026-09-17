@@ -31,6 +31,7 @@ export interface FaultScenario {
   expectedObservation: string;
   ttlSeconds: number;
   clientSide: boolean;
+  disabled?: boolean;
   execution: 'client' | 'server';
   platforms: FaultPlatform[];
 }

@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {DEFAULT_PRODUCT_ID, PRODUCTS} from './data';
 import type {HydratedStoreState} from './store';
+import {BUSINESS_FAULT_IDS, type BusinessFaultRun} from './businessFaults';
 import type {StoreLanguage, StoreSort} from './types';
 
 const LEGACY_STORE_KEY = 'mall-demo-mobile:store:v1';
@@ -19,6 +20,7 @@ interface LegacyPersistedStore {
 export interface CrashMarker {
   scenarioId: string;
   createdAt: string;
+  run?: BusinessFaultRun;
 }
 
 function createVisitorId(random = Math.random): string {
@@ -124,8 +126,8 @@ export async function persistStore(store: HydratedStoreState): Promise<void> {
   await AsyncStorage.setItem(STORE_KEY, JSON.stringify(persisted));
 }
 
-export async function writeCrashMarker(scenarioId: string): Promise<void> {
-  const marker: CrashMarker = {scenarioId, createdAt: new Date().toISOString()};
+export async function writeCrashMarker(scenarioId: string, run?: BusinessFaultRun): Promise<void> {
+  const marker: CrashMarker = {scenarioId, createdAt: new Date().toISOString(), ...(run ? {run} : {})};
   await AsyncStorage.setItem(CRASH_MARKER_KEY, JSON.stringify(marker));
 }
 
@@ -135,7 +137,12 @@ export async function consumeCrashMarker(): Promise<CrashMarker | null> {
   await AsyncStorage.removeItem(CRASH_MARKER_KEY);
   try {
     const marker = JSON.parse(raw) as CrashMarker;
-    return typeof marker.scenarioId === 'string' ? marker : null;
+    if (typeof marker.scenarioId !== 'string') return null;
+    const run = marker.run;
+    if (run && (run.scenarioId !== BUSINESS_FAULT_IDS.crash || run.scenarioId !== marker.scenarioId
+      || typeof run.id !== 'string' || !/^fault-[a-z0-9-]+$/.test(run.id)
+      || !Number.isFinite(run.startedAt) || run.phase !== 'triggered')) delete marker.run;
+    return marker;
   } catch {
     return null;
   }

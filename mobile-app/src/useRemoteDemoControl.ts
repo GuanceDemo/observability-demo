@@ -20,6 +20,7 @@ export async function executeRemoteCommand(
   // Destructive native scenarios retain the APK's explicit confirmation UI.
   if (!options.faults.length) throw new Error('catalog_not_ready');
   if (!fault) throw new Error('unknown_fault');
+  if (fault.disabled) throw new Error('scenario_unavailable');
   if (dangerousScenarioIds.has(fault.id)) throw new Error('use_apk_confirmation');
   await options.inject(fault);
 }
@@ -33,7 +34,7 @@ export function useRemoteDemoControl(options: {
   latest.current = options;
   const native = NativeModules.DemoFaults as RemoteModule | undefined;
   const state = JSON.stringify({
-    faults: options.faults.map(({id, title, layer, description}) => ({id, title, layer, description, disabled: dangerousScenarioIds.has(id)})),
+    faults: options.faults.map(({id, title, layer, description, disabled}) => ({id, title, layer, description, disabled: Boolean(disabled) || dangerousScenarioIds.has(id)})),
     busy: options.busy, activeId: options.activeId, phase: options.phase,
     runId: options.runId, rumUrl: options.rumUrl, traceUrl: options.traceUrl,
   });

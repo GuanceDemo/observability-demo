@@ -25,7 +25,7 @@ describe('trace deep link', () => {
 
   it('opens views for the configured application and exact fault run using the console query format', () => {
     for (const id of ['fault-a', 'fault-ab', 'fault-abc']) {
-      const run: BusinessFaultRun = {id, scenarioId: 'mobile_content_slow', layer: 'network', phase: 'triggered', startedAt: 1};
+      const run: BusinessFaultRun = {id, scenarioId: 'android_content_loading', layer: 'network', phase: 'triggered', startedAt: 1};
       const config = {observabilityConsoleUrl: 'https://console.guance.com/', workspaceId: 'wksp-demo'};
       const url = buildRumUrl(run, 'android-app', config);
       expect(url).toContain('/rum/viewer?');

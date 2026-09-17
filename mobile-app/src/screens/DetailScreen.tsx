@@ -12,6 +12,7 @@ import type {BookContentState, DetailTab, StoreLanguage} from '../types';
 import {AppButton} from '../components/AppButton';
 import {BookCover} from '../components/BookCover';
 import {QuantityStepper} from '../components/Commerce';
+import {ReplayLoadingIndicator} from '../components/ReplayLoadingIndicator';
 import {StoreIcon} from '../components/StoreIcon';
 
 interface Props {
@@ -58,13 +59,10 @@ export function DetailScreen({
   const description = text.description.trim();
   const loaded = content?.status === 'ready' && content.bookId === product.id ? content.data : null;
   const waiting = content && (content.status === 'loading' || content.status === 'error') && content.bookId === product.id;
+  const loading = content?.status === 'loading' && content.bookId === product.id;
+  const loadingLabel = language === 'en' ? 'Loading book content…' : '正在加载图书内容…';
   return (
-    <ScrollView
-      testID="detail-screen"
-      style={{backgroundColor: tokens.colors.background}}
-      contentContainerStyle={styles.content}
-      overScrollMode="never"
-      showsVerticalScrollIndicator={false}>
+    <View testID="detail-container" style={[styles.screen, {backgroundColor: tokens.colors.background}]}>
       <Pressable
         accessibilityRole="button"
         onPress={onBack}
@@ -75,177 +73,201 @@ export function DetailScreen({
         </Text>
       </Pressable>
 
-      {waiting && (
-        <View testID={`book-content-${content.status}`} style={[styles.panel, {backgroundColor: tokens.colors.surfaceSoft}]}>
-          <Text style={[styles.panelLead, {color: tokens.colors.text}]}>
-            {content.status === 'loading'
-              ? (language === 'en' ? 'Loading book content…' : '正在加载图书内容…')
-              : (language === 'en' ? 'Content could not be loaded. Please try again.' : '图书内容加载失败，请重新加载。')}
-          </Text>
-          {content.status === 'error' && <AppButton tokens={tokens} label={language === 'en' ? 'Reload content' : '重新加载内容'} onPress={onContentRetry ?? onBack} />}
-        </View>
-      )}
-
-      <View
-        style={[
-          styles.product,
-          {backgroundColor: tokens.colors.surface, borderColor: tokens.colors.line},
-        ]}>
-        <View style={styles.productTop}>
-          <View style={styles.coverWrap}>
-            <BookCover
-              tokens={tokens}
-              product={product}
-              language={language}
-              width={118}
-            />
+      <View style={styles.viewport}>
+        <ScrollView
+          testID="detail-screen"
+          scrollEnabled={!loading}
+          accessibilityElementsHidden={loading}
+          importantForAccessibility={loading ? 'no-hide-descendants' : 'auto'}
+          contentContainerStyle={styles.content}
+          overScrollMode="never"
+          showsVerticalScrollIndicator={false}>
+        {waiting && content.status === 'error' && (
+          <View testID={`book-content-${content.status}`} style={[styles.panel, {backgroundColor: tokens.colors.surfaceSoft}]}>
+            <Text style={[styles.panelLead, {color: tokens.colors.text}]}>
+              {language === 'en' ? 'Content could not be loaded. Please try again.' : '图书内容加载失败，请重新加载。'}
+            </Text>
+            {content.status === 'error' && <AppButton tokens={tokens} label={language === 'en' ? 'Reload content' : '重新加载内容'} onPress={onContentRetry ?? onBack} />}
           </View>
-          <View style={styles.detailCopy}>
-            <Text
-              style={[
-                styles.badge,
-                {color: tokens.colors.accent, backgroundColor: tokens.colors.accentSoft},
-              ]}>
-              {text.badge}
-            </Text>
-            <Text style={[styles.title, {color: tokens.colors.text}]}>{text.title}</Text>
-            <Text style={[styles.englishTitle, {color: tokens.colors.muted}]}>
-              {text.englishTitle}
-            </Text>
-            <View style={styles.ratingRow}>
-              <Text style={[styles.stars, {color: tokens.colors.orange}]}>★★★★★</Text>
-              <Text style={[styles.rating, {color: tokens.colors.orange}]}>
-                {storeText(language, 'rating', {rating: product.rating})}
-              </Text>
-              <Text style={[styles.pick, {color: tokens.colors.muted}]}>
-                {storeText(language, 'editorPick')}
-              </Text>
+        )}
+
+        <View
+          style={[
+            styles.product,
+            {backgroundColor: tokens.colors.surface, borderColor: tokens.colors.line},
+          ]}>
+          <View style={styles.productTop}>
+            <View style={styles.coverWrap}>
+              <BookCover
+                tokens={tokens}
+                product={product}
+                language={language}
+                width={118}
+              />
             </View>
-            <Text style={[styles.description, {color: tokens.colors.muted}]}>
-              {waiting ? '…' : loaded?.description ?? description}
+            <View style={styles.detailCopy}>
+              <Text
+                style={[
+                  styles.badge,
+                  {color: tokens.colors.accent, backgroundColor: tokens.colors.accentSoft},
+                ]}>
+                {text.badge}
+              </Text>
+              <Text style={[styles.title, {color: tokens.colors.text}]}>{text.title}</Text>
+              <Text style={[styles.englishTitle, {color: tokens.colors.muted}]}>
+                {text.englishTitle}
+              </Text>
+              <View style={styles.ratingRow}>
+                <Text style={[styles.stars, {color: tokens.colors.orange}]}>★★★★★</Text>
+                <Text style={[styles.rating, {color: tokens.colors.orange}]}>
+                  {storeText(language, 'rating', {rating: product.rating})}
+                </Text>
+                <Text style={[styles.pick, {color: tokens.colors.muted}]}>
+                  {storeText(language, 'editorPick')}
+                </Text>
+              </View>
+              <Text style={[styles.description, {color: tokens.colors.muted}]}>
+                {waiting ? '…' : loaded?.description ?? description}
+              </Text>
+              <Text style={[styles.author, {color: tokens.colors.text}]}>
+                {storeText(language, 'authorPrefix')}: {text.author}
+              </Text>
+              <View style={[styles.metaGrid, {borderTopColor: tokens.colors.line}]}>
+                {[
+                  [storeText(language, 'published'), text.published],
+                  [storeText(language, 'pages'), text.pages],
+                  [storeText(language, 'level'), text.level],
+                  [storeText(language, 'publisher'), text.publisher],
+                  [storeText(language, 'isbn'), text.isbn],
+                  ['SKU', `obs-${product.id}`],
+                ].map(([label, value]) => (
+                  <View key={label} style={styles.meta}>
+                    <Text style={[styles.metaLabel, {color: tokens.colors.muted}]}>{label}</Text>
+                    <Text numberOfLines={1} style={[styles.metaValue, {color: tokens.colors.text}]}>
+                      {value}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.purchasePanel,
+              {backgroundColor: tokens.colors.surfaceSoft, borderColor: tokens.colors.line},
+            ]}>
+            <Text style={[styles.format, {color: tokens.colors.muted}]}>
+              {storeText(language, 'format')} · {storeText(language, 'commerceProduct')}
             </Text>
-            <Text style={[styles.author, {color: tokens.colors.text}]}>
-              {storeText(language, 'authorPrefix')}: {text.author}
+            <Text style={[styles.price, {color: tokens.colors.danger}]}>
+              {formatPrice(product.amountCent, language)}
             </Text>
-            <View style={[styles.metaGrid, {borderTopColor: tokens.colors.line}]}>
-              {[
-                [storeText(language, 'published'), text.published],
-                [storeText(language, 'pages'), text.pages],
-                [storeText(language, 'level'), text.level],
-                [storeText(language, 'publisher'), text.publisher],
-                [storeText(language, 'isbn'), text.isbn],
-                ['SKU', `obs-${product.id}`],
-              ].map(([label, value]) => (
-                <View key={label} style={styles.meta}>
-                  <Text style={[styles.metaLabel, {color: tokens.colors.muted}]}>{label}</Text>
-                  <Text numberOfLines={1} style={[styles.metaValue, {color: tokens.colors.text}]}>
-                    {value}
-                  </Text>
+            <View style={styles.benefits}>
+              {[storeText(language, 'inStock'), storeText(language, 'authenticity')].map(item => (
+                <View key={item} style={styles.benefit}>
+                  <View
+                    style={[
+                      styles.benefitIcon,
+                      {backgroundColor: `${tokens.colors.success}12`},
+                    ]}>
+                    <StoreIcon name="check" color={tokens.colors.success} size={12} />
+                  </View>
+                  <Text style={[styles.benefitText, {color: tokens.colors.muted}]}>{item}</Text>
                 </View>
               ))}
+            </View>
+            <View style={[styles.quantityRow, {borderTopColor: tokens.colors.line}]}>
+              <Text style={[styles.quantityLabel, {color: tokens.colors.text}]}>
+                {storeText(language, 'quantityHeader')}
+              </Text>
+              <QuantityStepper
+                quantity={quantity}
+                tokens={tokens}
+                decreaseLabel={storeText(language, 'decrease')}
+                increaseLabel={storeText(language, 'increase')}
+                onChange={onQuantityChange}
+              />
+            </View>
+            <View style={styles.actions}>
+              <AppButton
+                label={inCart ? storeText(language, 'inCart') : storeText(language, 'addCart')}
+                tokens={tokens}
+                onPress={onAdd}
+                style={styles.action}
+              />
+              <AppButton
+                label={storeText(language, 'buyNow')}
+                tokens={tokens}
+                variant="secondary"
+                onPress={onBuy}
+                style={styles.action}
+              />
             </View>
           </View>
         </View>
 
         <View
           style={[
-            styles.purchasePanel,
-            {backgroundColor: tokens.colors.surfaceSoft, borderColor: tokens.colors.line},
+            styles.tabCard,
+            {backgroundColor: tokens.colors.surface, borderColor: tokens.colors.line},
           ]}>
-          <Text style={[styles.format, {color: tokens.colors.muted}]}>
-            {storeText(language, 'format')} · {storeText(language, 'commerceProduct')}
-          </Text>
-          <Text style={[styles.price, {color: tokens.colors.danger}]}>
-            {formatPrice(product.amountCent, language)}
-          </Text>
-          <View style={styles.benefits}>
-            {[storeText(language, 'inStock'), storeText(language, 'authenticity')].map(item => (
-              <View key={item} style={styles.benefit}>
-                <View
-                  style={[
-                    styles.benefitIcon,
-                    {backgroundColor: `${tokens.colors.success}12`},
+          <View style={[styles.tabs, {borderBottomColor: tokens.colors.line}]} accessibilityRole="tablist">
+            {TABS.map(item => {
+              const active = item.tab === tab;
+              return (
+                <Pressable
+                  key={item.tab}
+                  accessibilityRole="tab"
+                  accessibilityState={{selected: active}}
+                  onPress={() => onTabChange(item.tab)}
+                  style={({pressed}) => [
+                    styles.tab,
+                    active && {borderBottomColor: tokens.colors.accent},
+                    pressed && styles.pressed,
                   ]}>
-                  <StoreIcon name="check" color={tokens.colors.success} size={12} />
-                </View>
-                <Text style={[styles.benefitText, {color: tokens.colors.muted}]}>{item}</Text>
-              </View>
+                  <Text style={[styles.tabText, {color: active ? tokens.colors.accent : tokens.colors.muted}]}>
+                    {storeText(language, item.key)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <View testID={`detail-tab-${tab}`} accessibilityRole="summary" style={styles.panel}>
+            {!waiting && tab === 'overview' && (
+              <>
+                <Text style={[styles.panelLead, {color: tokens.colors.muted}]}>{loaded?.description ?? description}</Text>
+                {text.learn.map((item, index) => (
+                  <PanelRow key={item[0]} index={`0${index + 1}`} title={item[0]} detail={item[1]} tokens={tokens} />
+                ))}
+              </>
+            )}
+            {!waiting && tab === 'chapters' && (loaded?.parts ?? text.parts).map(item => (
+              <PanelRow key={item[0]} index={item[0]} title={item[1]} detail={item[2]} tokens={tokens} />
+            ))}
+            {tab === 'audience' && text.audience.map((item, index) => (
+              <PanelRow key={item[0]} index={`◎${index + 1}`} title={item[0]} detail={item[1]} tokens={tokens} />
             ))}
           </View>
-          <View style={[styles.quantityRow, {borderTopColor: tokens.colors.line}]}>
-            <Text style={[styles.quantityLabel, {color: tokens.colors.text}]}>
-              {storeText(language, 'quantityHeader')}
-            </Text>
-            <QuantityStepper
-              quantity={quantity}
-              tokens={tokens}
-              decreaseLabel={storeText(language, 'decrease')}
-              increaseLabel={storeText(language, 'increase')}
-              onChange={onQuantityChange}
-            />
+        </View>
+        </ScrollView>
+        {loading && (
+          <View
+            testID="book-content-loading"
+            collapsable={false}
+            style={[styles.loadingOverlay, {backgroundColor: tokens.colors.overlay}]}
+            accessibilityRole="progressbar"
+            accessibilityLabel={loadingLabel}
+            accessibilityState={{busy: true}}
+            accessibilityLiveRegion="polite">
+            <View collapsable={false} style={[styles.loadingCard, {backgroundColor: tokens.colors.surface, borderColor: tokens.colors.line}]}>
+              <ReplayLoadingIndicator color={tokens.colors.accent} trackColor={tokens.colors.accentSoft} />
+              <Text style={[styles.loadingText, {color: tokens.colors.text}]}>{loadingLabel}</Text>
+            </View>
           </View>
-          <View style={styles.actions}>
-            <AppButton
-              label={inCart ? storeText(language, 'inCart') : storeText(language, 'addCart')}
-              tokens={tokens}
-              onPress={onAdd}
-              style={styles.action}
-            />
-            <AppButton
-              label={storeText(language, 'buyNow')}
-              tokens={tokens}
-              variant="secondary"
-              onPress={onBuy}
-              style={styles.action}
-            />
-          </View>
-        </View>
+        )}
       </View>
-
-      <View
-        style={[
-          styles.tabCard,
-          {backgroundColor: tokens.colors.surface, borderColor: tokens.colors.line},
-        ]}>
-        <View style={[styles.tabs, {borderBottomColor: tokens.colors.line}]} accessibilityRole="tablist">
-          {TABS.map(item => {
-            const active = item.tab === tab;
-            return (
-              <Pressable
-                key={item.tab}
-                accessibilityRole="tab"
-                accessibilityState={{selected: active}}
-                onPress={() => onTabChange(item.tab)}
-                style={({pressed}) => [
-                  styles.tab,
-                  active && {borderBottomColor: tokens.colors.accent},
-                  pressed && styles.pressed,
-                ]}>
-                <Text style={[styles.tabText, {color: active ? tokens.colors.accent : tokens.colors.muted}]}>
-                  {storeText(language, item.key)}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <View testID={`detail-tab-${tab}`} accessibilityRole="summary" style={styles.panel}>
-          {!waiting && tab === 'overview' && (
-            <>
-              <Text style={[styles.panelLead, {color: tokens.colors.muted}]}>{loaded?.description ?? description}</Text>
-              {text.learn.map((item, index) => (
-                <PanelRow key={item[0]} index={`0${index + 1}`} title={item[0]} detail={item[1]} tokens={tokens} />
-              ))}
-            </>
-          )}
-          {!waiting && tab === 'chapters' && (loaded?.parts ?? text.parts).map(item => (
-            <PanelRow key={item[0]} index={item[0]} title={item[1]} detail={item[2]} tokens={tokens} />
-          ))}
-          {tab === 'audience' && text.audience.map((item, index) => (
-            <PanelRow key={item[0]} index={`◎${index + 1}`} title={item[0]} detail={item[1]} tokens={tokens} />
-          ))}
-        </View>
-      </View>
-    </ScrollView>
+    </View>
   );
 }
 
@@ -272,6 +294,11 @@ function PanelRow({
 }
 
 const styles = StyleSheet.create({
+  screen: {flex: 1},
+  viewport: {flex: 1},
+  loadingOverlay: {position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, alignItems: 'center', justifyContent: 'center', zIndex: 1},
+  loadingCard: {alignItems: 'center', paddingHorizontal: 28, paddingVertical: 24, borderRadius: 16, borderWidth: 1, maxWidth: '90%'},
+  loadingText: {marginTop: 16, fontSize: 14, lineHeight: 21, fontWeight: '700', textAlign: 'center'},
   content: {paddingHorizontal: 10, paddingTop: 8, paddingBottom: 18},
   back: {height: MIN_TOUCH_TARGET_SIZE, minWidth: MIN_TOUCH_TARGET_SIZE, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', gap: 3, alignSelf: 'flex-start'},
   backText: {fontSize: 9, fontWeight: '800'},

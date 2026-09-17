@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+require_patched=false
+if [[ "${1:-}" == "--patched" ]]; then
+  require_patched=true
+  shift
+fi
+
 if command -v apkanalyzer >/dev/null 2>&1; then
   apk_analyzer="$(command -v apkanalyzer)"
 else
@@ -73,9 +79,14 @@ for apk_path in "$@"; do
     '.class public Lcom/facebook/react/views/text/ReactTextView;' \
     <<<"${text_code}"
   grep -Eq '^\.field .* mSpanned:Landroid/text/Spannable;$' <<<"${text_code}"
-  grep -Fq \
-    '.field public static final VERSION_NAME:Ljava/lang/String; = "0.1.8"' \
-    <<<"${replay_config_code}"
+  expected_replay_version=0.1.8
+  if [[ "${require_patched}" == true ]]; then
+    expected_replay_version=0.1.9-alpha03
+  fi
+  if ! grep -Fq "VERSION_NAME:Ljava/lang/String; = \"${expected_replay_version}\"" <<<"${replay_config_code}"; then
+    echo "Unexpected Replay version in final APK; expected ${expected_replay_version}: ${apk_path}" >&2
+    exit 1
+  fi
   grep -Fq \
     '.method public abstract onCheckFilesExist(Ljava/lang/String;Ljava/util/List;Ljava/util/Map;)Lcom/ft/sdk/sessionreplay/internal/storage/UploadResult;' \
     <<<"${replay_resource_callback_code}"
@@ -83,5 +94,16 @@ for apk_path in "$@"; do
     '.method public onCheckFilesExist(Ljava/lang/String;Ljava/util/List;Ljava/util/Map;)Lcom/ft/sdk/sessionreplay/internal/storage/UploadResult;' \
     <<<"${replay_sdk_callback_code}"
 
+  if [[ "${require_patched}" == true ]]; then
+    compressor_code="$("${apk_analyzer}" dex code --class com.ft.sdk.sessionreplay.internal.net.BytesCompressor "${apk_path}")"
+    if grep -Fq -- '->reset()V' <<<"${compressor_code}"; then
+      echo "Rejected legacy Replay compressor in final APK: ${apk_path}" >&2
+      exit 1
+    fi
+    grep -Fq -- '->deflate([BIII)I' <<<"${compressor_code}"
+    resolver_code="$("${apk_analyzer}" dex code --class com.ft.sdk.sessionreplay.internal.recorder.PermanentIdResolver "${apk_path}")"
+    grep -Fq 'Lcom/ft/sdk/FTViewPermanentIdResolver$Snapshot;' <<<"${resolver_code}"
+    echo "Final APK Replay compression and paired traversal patches verified: ${apk_path}"
+  fi
   echo "Session Replay reflection and resource-upload ABI verified: ${apk_path}"
 done

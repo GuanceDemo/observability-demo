@@ -44,6 +44,9 @@ it.each([
   expect(rum).toHaveBeenCalledTimes(1);
   expect(logs).toHaveBeenCalledTimes(1);
   expect(trace).toHaveBeenCalledTimes(1);
-  expect(rum).toHaveBeenCalledWith(expect.objectContaining({sampleRate: 1, sessionOnErrorSampleRate: 1}));
+  expect(rum).toHaveBeenCalledWith(expect.objectContaining({sampleRate: 1, sessionOnErrorSampleRate: 1,
+    enableNativeUserView: os !== 'android', enableNativeUserViewInFragment: os !== 'android',
+    enableTrackNativeCrash: true, enableNativeUserResource: true,
+  }));
   expect(replay).toHaveBeenCalledTimes(recordsReplay ? 1 : 0);
 });

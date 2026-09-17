@@ -35,7 +35,6 @@ jest.mock('../src/screens/BagScreen', () => ({BagScreen: () => null}));
 import {ResultToast} from '../src/components/ResultToast';
 import {BUSINESS_FAULT_IDS} from '../src/businessFaults';
 import {recordFaultEvent} from '../src/observability';
-import {PRODUCTS} from '../src/data';
 
 jest.mock('../src/components/Commerce', () => {
   const actual = jest.requireActual('../src/components/Commerce');
@@ -84,16 +83,16 @@ it('isolates catalog renders, retains fresh business handlers, and restores home
     expect(tree.root.findByType(ResultToast).props.toast.title).toBe('“Distributed Systems Observability” was added to your cart');
     await act(async () => { tree.root.findByType(StoreHeader).props.onToggleLanguage(); });
     await act(async () => {
-      tree.root.findByType(FaultDrawer).props.onInject({id: BUSINESS_FAULT_IDS.addCart, title: 'Ignored add', layer: 'frontend', kind: 'business', clientSide: true, mode: 'client', target: 'business', execution: 'client', ttlSeconds: 0});
+      tree.root.findByType(FaultDrawer).props.onInject({id: BUSINESS_FAULT_IDS.loading, title: 'Ignored add', layer: 'frontend', kind: 'business', clientSide: true, mode: 'client', target: 'business', execution: 'client', ttlSeconds: 0});
     });
     cards.mockClear();
     jest.mocked(recordFaultEvent).mockClear();
     await act(async () => { add(); });
     expect(recordFaultEvent).not.toHaveBeenCalledWith('cart_update_missing', expect.anything());
-    await act(async () => { add(PRODUCTS[2].id); });
-    expect(cards).not.toHaveBeenCalled();
-    expect(recordFaultEvent).toHaveBeenCalledWith('mobile_fault_triggered', expect.objectContaining({fault_id: BUSINESS_FAULT_IDS.addCart}));
+    await act(async () => { open(); });
+    expect(recordFaultEvent).toHaveBeenCalledWith('mobile_fault_triggered', expect.objectContaining({fault_id: BUSINESS_FAULT_IDS.loading}));
     await act(async () => { tree.root.findByType(FaultDrawer).props.onRecover(); });
+    await act(async () => { tree.root.findByType(DetailScreen).props.onBack(); });
 
     act(() => {
       home().props.onScrollEndDrag({nativeEvent: {contentOffset: {y: 220}}});

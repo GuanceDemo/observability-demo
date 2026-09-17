@@ -29,3 +29,14 @@ test('reports execution failure rather than confirming a sent command', async ()
 test('cold-start catalog absence is distinguishable from dangerous fault confirmation', async () => {
   await expect(executeRemoteCommand({action: 'inject', faultId: fault.id}, {...options(), faults: []})).rejects.toThrow('catalog_not_ready');
 });
+
+test('rejects unavailable build capabilities but allows arming the checkout business scenario', async () => {
+  const value = options();
+  const crash = {id: 'android_checkout_crash', disabled: true} as FaultScenario;
+  value.faults = [crash];
+  await expect(executeRemoteCommand({action: 'inject', faultId: crash.id}, value)).rejects.toThrow('scenario_unavailable');
+  expect(value.inject).not.toHaveBeenCalled();
+  crash.disabled = false;
+  await executeRemoteCommand({action: 'inject', faultId: crash.id}, value);
+  expect(value.inject).toHaveBeenCalledWith(crash);
+});

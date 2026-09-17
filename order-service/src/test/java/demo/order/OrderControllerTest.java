@@ -741,7 +741,7 @@ class OrderControllerTest {
         .contains("const SHOP_BUILD_ID = '20260817-bookstore-v44'")
         .contains("const GAME_BUILD_ID = '20260915-game-hub-v2'")
         .contains("scene.id === 'webgl-game' ? GAME_BUILD_ID : SHOP_BUILD_ID")
-        .contains("assets/selfheal-i18n.js?v=20260915-game-hub-v1")
+        .contains("assets/selfheal-i18n.js?v=20260916-android-errors-v1")
         .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
         .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
         .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")

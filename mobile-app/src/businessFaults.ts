@@ -3,12 +3,9 @@ import type {DemoRequestMetadata} from './api';
 import type {FaultScenario, StoreLanguage} from './types';
 
 export const BUSINESS_FAULT_IDS = {
-  detail: 'mobile_detail_render_error',
-  addCart: 'mobile_add_cart_no_feedback',
-  cartTotal: 'mobile_cart_total_stale',
-  uiBlock: 'mobile_checkout_ui_block',
-  slow: 'mobile_content_slow',
-  timeout: 'mobile_content_timeout',
+  detail: 'android_detail_white_screen',
+  crash: 'android_checkout_crash',
+  loading: 'android_content_loading',
 } as const;
 export type BusinessFaultId = typeof BUSINESS_FAULT_IDS[keyof typeof BUSINESS_FAULT_IDS];
 export type FaultPhase = 'armed' | 'triggered' | 'recovered';
@@ -45,38 +42,55 @@ export function createBusinessFaultRun(scenario: FaultScenario): BusinessFaultRu
     scenarioId: scenario.id, layer: scenario.layer, phase: 'armed', startedAt};
 }
 
-export async function blockCheckoutPreview(): Promise<number> {
-  const module = NativeModules.DemoFaults as {blockCheckoutPreview?: () => Promise<number>} | undefined;
-  if (!module?.blockCheckoutPreview) throw new Error('Checkout preview requires the updated Android APK');
-  return module.blockCheckoutPreview();
+export function checkoutCrashEnabled(): boolean {
+  return NativeModules.DemoFaults?.checkoutCrashEnabled === true;
+}
+
+export async function crashCheckout(): Promise<void> {
+  const module = NativeModules.DemoFaults;
+  if (!checkoutCrashEnabled() || !module?.crashCheckout) {
+    throw new Error('Checkout crash requires the Android demonstration build');
+  }
+  await module.crashCheckout();
 }
 
 const COPY: Record<BusinessFaultId, Record<StoreLanguage, {title: string; trigger: string; observation: string}>> = {
-  mobile_detail_render_error: {
-    zh: {title: '商品详情渲染失败', trigger: '收起面板，打开任意一本图书。', observation: '查看详情错误区域、真实 JS 堆栈与打开商品前后的回放。'},
-    en: {title: 'Book detail render failure', trigger: 'Close this panel and open any book.', observation: 'Inspect the error area, real JS stack and the replay around opening the book.'},
+  android_detail_white_screen: {
+    zh: {title: '商品详情白屏', trigger: '收起面板，打开任意图书，详情内容将因渲染异常变为空白。', observation: '回放确认打开的商品，结合真实 TypeError 和 JS 堆栈定位缺失字段；恢复基线后重新加载。'},
+    en: {title: 'Blank book details', trigger: 'Close this panel and open a book. A render error leaves its content blank.', observation: 'Use replay, the real TypeError and JS stack to locate the missing field. Restore baseline to reload.'},
   },
-  mobile_add_cart_no_feedback: {
-    zh: {title: '加购无反馈', trigger: '收起面板，给尚未加入购物车的图书点击加购。', observation: '回放查看连续尝试；业务校验日志对照加购前、预期和实际数量。'},
-    en: {title: 'Add to cart has no effect', trigger: 'Close this panel and add a book that is not in your cart.', observation: 'Replay the attempts and compare prior, expected and actual quantities in the business log.'},
+  android_checkout_crash: {
+    zh: {title: '结算闪退', trigger: '进入购物车，点击结算，在 App 内确认后触发真实闪退；不会提交订单。', observation: '重启 App，关联崩溃前回放、原生 Crash 堆栈与本轮标识，定位结算数据异常。'},
+    en: {title: 'Checkout crash', trigger: 'Open the cart, check out and confirm in the app. The app crashes before submitting an order.', observation: 'Restart and correlate the preceding replay, native Crash stack and run ID to locate invalid checkout data.'},
   },
-  mobile_cart_total_stale: {
-    zh: {title: '购物车金额未更新', trigger: '进入购物车，增加一本已选图书的数量。', observation: '对照回放中更新的数量与旧合计；业务校验记录预期和实际金额。'},
-    en: {title: 'Cart total does not update', trigger: 'Open your cart and increase a selected book quantity.', observation: 'Compare the changed quantity and stale total in replay, with expected and actual totals in the validation log.'},
-  },
-  mobile_checkout_ui_block: {
-    zh: {title: '结算预览卡顿', trigger: '进入购物车，点击“查看结算明细”。', observation: '查看约 1.8 秒的原生 Long Task、主线程堆栈和结算前后的回放。'},
-    en: {title: 'Checkout preview freezes briefly', trigger: 'Open your cart and tap “Review checkout”.', observation: 'Inspect the approximately 1.8-second native Long Task, main-thread stack and replay.'},
-  },
-  mobile_content_slow: {
-    zh: {title: '图书内容加载慢', trigger: '收起面板，打开任意一本图书。', observation: '内容等待约 3.5 秒；对照 Replay、Resource 和服务端 Trace 的实际耗时。'},
-    en: {title: 'Book content loads slowly', trigger: 'Close this panel and open any book.', observation: 'Content takes about 3.5 seconds. Compare replay, Resource and server Trace timings.'},
-  },
-  mobile_content_timeout: {
-    zh: {title: '请求超时与重试', trigger: '打开任意图书，等待加载超时，再点击重新加载。', observation: '对照实际请求截止时间、Resource 取消记录，以及回放中的失败和恢复。'},
-    en: {title: 'Request timeout and retry', trigger: 'Open any book, wait for the timeout, then reload the content.', observation: 'Compare the real deadline, Resource cancellation and the failure/recovery replay.'},
+  android_content_loading: {
+    zh: {title: '请求成功但持续加载', trigger: '收起面板，打开任意图书；接口成功后，详情仍停在加载中。', observation: '对照 HTTP 200 Resource、内容就绪检测和状态转换记录，定位前端未进入 ready 的原因。'},
+    en: {title: 'Loading after a successful request', trigger: 'Close this panel and open a book. Loading continues after the request succeeds.', observation: 'Compare the HTTP 200 Resource, content readiness check and state transition to locate the missing ready state.'},
   },
 };
+
+// The APK owns its versioned client catalog; the server still owns server faults.
+export function androidFaultCatalog(serverScenarios: FaultScenario[], language: StoreLanguage): FaultScenario[] {
+  const clients = Object.values(BUSINESS_FAULT_IDS).map(id => {
+    const copy = COPY[id][language];
+    const disabled = id === BUSINESS_FAULT_IDS.crash && !checkoutCrashEnabled();
+    return {
+      id, title: copy.title, layer: 'android', kind: id, service: 'mall-mobile',
+      target: id === BUSINESS_FAULT_IDS.crash ? 'checkout' : 'book-detail',
+      mode: 'client', ttlSeconds: 0, clientSide: true, execution: 'client' as const,
+      platforms: ['android' as const], disabled,
+      description: disabled ? (language === 'en' ? 'Requires a checkout-crash demonstration build.' : '当前安装包未启用结算闪退，请使用演练构建。') : copy.trigger,
+      expectedObservation: copy.observation,
+    };
+  });
+  return [...clients, ...serverScenarios.filter(item => item.execution === 'server')];
+}
+
+export function faultLayerGroup(layer: string): string {
+  if (['service', 'backend'].includes(layer)) return 'backend';
+  if (['dependency', 'jvm', 'infrastructure'].includes(layer)) return 'infrastructure';
+  return layer;
+}
 
 export function businessFaultCopy(id: string, language: StoreLanguage) {
   return isBusinessFault(id) ? COPY[id][language] : null;

@@ -19,7 +19,7 @@ import {
 import type {DesignTokens} from '../designTokens';
 import type {FaultHistoryItem, FaultScenario, StoreLanguage} from '../types';
 import {openTraceUrl} from '../traceLink';
-import {businessFaultCopy, faultPhaseLabel, isBusinessFault, type BusinessFaultRun} from '../businessFaults';
+import {businessFaultCopy, faultLayerGroup, faultPhaseLabel, isBusinessFault, type BusinessFaultRun} from '../businessFaults';
 import {AppButton} from './AppButton';
 import {StoreIcon} from './StoreIcon';
 
@@ -139,10 +139,10 @@ export function FaultDrawer({
     scenarios[0] ??
     null;
   const layers = useMemo(
-    () => [...new Set(scenarios.map(item => item.layer))],
+    () => [...new Set(scenarios.map(item => faultLayerGroup(item.layer)))],
     [scenarios],
   );
-  const selectedLayer = selected?.layer ?? layers[0];
+  const selectedLayer = selected ? faultLayerGroup(selected.layer) : layers[0];
 
   const stopCurrentAnimation = useCallback(() => {
     activeAnimation.current?.stop();
@@ -403,7 +403,7 @@ export function FaultDrawer({
               contentContainerStyle={styles.tabs}>
               {layers.map(layer => {
                 const active = layer === selectedLayer;
-                const first = scenarios.find(item => item.layer === layer);
+                const first = scenarios.find(item => faultLayerGroup(item.layer) === layer);
                 return (
                   <Pressable
                     key={layer}
@@ -439,7 +439,7 @@ export function FaultDrawer({
             <SectionTitle title={faultCopy(language, 'scenarios')} tokens={tokens} />
             <View style={styles.scenarioGrid}>
               {scenarios
-                .filter(item => item.layer === selectedLayer)
+                .filter(item => faultLayerGroup(item.layer) === selectedLayer)
                 .map(item => {
                   const active = item.id === selected?.id;
                   return (
@@ -544,7 +544,7 @@ export function FaultDrawer({
                 label={selected && isBusinessFault(selected.id) ? (language === 'en' ? 'Enable scenario' : '启用场景') : faultCopy(language, 'inject')}
                 tokens={tokens}
                 busy={busy}
-                disabled={!selected}
+                disabled={!selected || selected.disabled}
                 onPress={() => selected && onInject(selected)}
                 style={styles.actionButton}
               />
@@ -744,6 +744,7 @@ function faultStatus(
 
 function layerLabel(language: StoreLanguage, layer: string): string {
   const labels: Record<string, [string, string]> = {
+    android: ['Android异常', 'Android Errors'],
     frontend: ['前端体验', 'Frontend'],
     runtime: ['运行时', 'Runtime'],
     network: ['网络请求', 'Network'],

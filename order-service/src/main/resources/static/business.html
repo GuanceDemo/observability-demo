@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>商城 Demo 与故障注入 Demo</title>
   <link rel="icon" href="data:," />
-  <script src="assets/selfheal-i18n.js?v=20260915-game-hub-v1"></script>
+  <script src="assets/selfheal-i18n.js?v=20260916-android-errors-v1"></script>
   <script>
     (() => {
       try {
@@ -2497,7 +2497,7 @@
                   <article class="fault-detail">
                     <div class="fault-detail-head"><strong id="apkFaultTitle"></strong></div>
                     <span id="apkFaultDescription"></span>
-                    <div class="fault-observation" data-i18n="androidFaultEntryHint">可在右侧选择并注入故障，再到 APK 操作触发。Crash / ANR 仍需在 APK 内确认。</div>
+                    <div class="fault-observation" data-i18n="androidFaultEntryHint">选择 Android异常并启用场景，再到 App 操作触发；结算闪退会在 App 内确认。</div>
                   </article>
                 </div>
                 <div class="active-fault-card">
@@ -2611,7 +2611,7 @@
 
               <article class="android-debug-note">
                 <strong data-i18n="androidFaultEntryTitle">应用内故障注入</strong>
-                <span data-i18n="androidFaultEntryHint">可在右侧选择并注入故障，再到 APK 操作触发。Crash / ANR 仍需在 APK 内确认。</span>
+                <span data-i18n="androidFaultEntryHint">选择 Android异常并启用场景，再到 App 操作触发；结算闪退会在 App 内确认。</span>
               </article>
                 </div>
               </details>
@@ -4791,7 +4791,7 @@
           if (!/^[a-z0-9_-]{1,100}$/.test(fault.id)) continue;
           const option = document.createElement('option');
           option.value = fault.id;
-          option.textContent = String(fault.title || fault.id).slice(0, 160) + (fault.disabled ? ' · 请在 APK 确认' : '');
+          option.textContent = String(fault.title || fault.id).slice(0, 160) + (fault.disabled ? (state.language === 'en' ? ' · Unavailable in this build' : ' · 当前构建不可用') : '');
           option.disabled = Boolean(fault.disabled);
           select.appendChild(option);
         }
@@ -4818,7 +4818,7 @@
             return button;
           }));
         };
-        tabs('apkLayerTabs', layers.map(layer => ({value: layer, label: layerGroupLabel(layer)})), apkSelectedLayer, value => { apkSelectedLayer = value; });
+        tabs('apkLayerTabs', layers.map(layer => ({value: layer, label: layer === 'android' ? (state.language === 'en' ? 'Android Errors' : 'Android异常') : layerGroupLabel(layer)})), apkSelectedLayer, value => { apkSelectedLayer = value; });
         tabs('apkScenarioTabs', visibleFaults.map(item => ({value: item.id, label: item.title || item.id, disabled: item.disabled})), select.value, value => { select.value = value; });
       }
       const fault = faults.find(item => item.id === select.value);

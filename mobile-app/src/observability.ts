@@ -20,7 +20,6 @@ import {
   nativeAppVersion,
   replayDisabledForDiagnostics,
 } from './config';
-import {consumeCrashMarker} from './storage';
 import {
   isMobileRumConfigured,
   logFeatureConfig,
@@ -101,6 +100,12 @@ export async function initializeObservability(
       sampleRate: effectiveConfig.sampleRates.session,
       sessionOnErrorSampleRate: effectiveConfig.sampleRates.sessionOnError,
       ...nativeRumFeatureConfig,
+      // React Native business routes own Android Views; Activity resumes (including
+      // remote control intents) must not replace them with MainActivity.
+      ...(Platform.OS === 'android' ? {
+        enableNativeUserView: false,
+        enableNativeUserViewInFragment: false,
+      } : {}),
       globalContext: {
         project: effectiveConfig.project,
         app_version: effectiveConfig.version,
@@ -126,19 +131,6 @@ export async function initializeObservability(
     }
     initialized = true;
 
-    const crashMarker = await consumeCrashMarker();
-    if (crashMarker) {
-      await log(
-        'App restarted after injected native crash',
-        FTLogStatus.warning,
-        crashMarker,
-      );
-      await addError(
-        'InjectedNativeCrashRecovery',
-        `Recovered on restart from ${crashMarker.scenarioId}`,
-        crashMarker,
-      );
-    }
     return true;
   })();
   try {
@@ -186,9 +178,11 @@ export async function getTraceHeaders(
   }
 }
 
-export function startView(name: string, context?: object): void {
+export async function startView(name: string, context?: object): Promise<void> {
   if (initialized) {
-    runSafely(() => FTReactNativeRUM.startView(name, context));
+    // Native startView closes the previous View and establishes the new context
+    // before resolving. Callers can wait before rendering or starting requests.
+    await safely(() => FTReactNativeRUM.startView(name, {...faultContext, ...context}));
   }
 }
 

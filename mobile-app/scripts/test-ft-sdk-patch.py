@@ -196,7 +196,7 @@ def main():
         files = dict(STUBS)
         files[ENTRY] = fixed
         replay_entry = 'com/ft/sdk/sessionreplay/internal/recorder/PermanentIdResolver.java'
-        replay_sources = WORK / 'maven/com/cloudcare/ft/mobile/sdk/tracker/agent/ft-session-replay/0.1.8-jankfix02/ft-session-replay-0.1.8-jankfix02-sources.jar'
+        replay_sources = WORK / 'maven/com/cloudcare/ft/mobile/sdk/tracker/agent/ft-session-replay/0.1.9-alpha03-jankfix01/ft-session-replay-0.1.9-alpha03-jankfix01-sources.jar'
         with zipfile.ZipFile(replay_sources) as z:
             files[replay_entry] = z.read(replay_entry).decode()
         files['com/ft/sdk/BaselineResolver.java'] = original.replace('FTViewPermanentIdResolver', 'BaselineResolver')

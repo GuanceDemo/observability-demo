@@ -75,11 +75,12 @@ test('APK controls disable stale state but preserve real observation links; reje
   vm.runInContext(html.slice(html.indexOf('    let apkControlState = null;'), html.indexOf('    function sendApkCommand(')), context);
   const rumUrl = 'https://console.guance.com/rum/viewer?query=real-run';
   context.handleApkControl('apk-state', {sampledAt: Date.now(), state: {
-    faults: [{id: 'mobile_detail_render_error', title: 'Detail fault', layer: 'frontend'},
+    faults: [{id: 'android_detail_white_screen', title: 'Detail fault', layer: 'android'},
       {id: 'order_slow', title: 'Slow order', layer: 'service'},
       {id: 'native_crash', title: 'Crash', layer: 'runtime', disabled: true}], rumUrl, phase: 'armed',
   }});
   assert.equal(element('apkInject').disabled, false);
+  assert.equal(element('apkLayerTabs').options[0].textContent, 'Android异常');
   assert.equal(element('apkRumLink').href, rumUrl);
   element('apkLayerTabs').options[1].click();
   assert.equal(element('apkFaultSelect').value, 'order_slow');

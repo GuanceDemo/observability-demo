@@ -16,10 +16,14 @@ ROOT = Path(__file__).resolve().parents[1]
 WORK = ROOT / 'build/sdk-patch'
 GROUP = 'com/cloudcare/ft/mobile/sdk/tracker/agent'
 SDK_VERSION = '1.7.5-jankfix02'
-REPLAY_VERSION = '0.1.8-jankfix02'
+REPLAY_BASE_VERSION = '0.1.9-alpha03'
+REPLAY_VERSION = REPLAY_BASE_VERSION + '-jankfix01'
 SDK_SOURCE = 'com/ft/sdk/FTViewPermanentIdResolver.java'
 REPLAY_PREFIX = 'com/ft/sdk/sessionreplay/internal/recorder/'
 HASHES = {
+    'ft-session-replay-0.1.9-alpha03.aar': '28b4f7c3c64a3852d4f7a2871a77cbc9d95082afab281e4324a0d07a1b20a2b6',
+    'ft-session-replay-0.1.9-alpha03-sources.jar': '55302bfcb4a018a9e0024701dbc405ce38b57433c8025a1123395b16b1a7ad6b',
+    'ft-session-replay-0.1.9-alpha03.pom': 'c5308cfa8a7435d8f997e6230b5dfbed48af9613d4695285b4562e90237f09e5',
     'ft-sdk-1.7.5.aar': '9a15ed97e6ca9c0b0b5934964540a73ab58535b399a27cbe90af3204c959de3f',
     'ft-sdk-1.7.5-sources.jar': '394e2c432035cf31b81ae57c0d956bdc39cbae294e038a962fd8b0fe3e297f5b',
     'ft-session-replay-0.1.8.aar': '0f8ca91382b2006bbbaf02c3d481adae76d89769513f757b078f7e9227c7faa7',
@@ -61,7 +65,8 @@ def build(module, version, patched_version, sources_list, expected_classes, patc
             target = work / name
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(z.read(name))
-    subprocess.run(['patch', '--batch', '-p1', '-i', str(ROOT / 'sdk-patches/ft-sdk-1.7.5' / patch)], cwd=work, check=True)
+    for patch_name in ([patch] if isinstance(patch, str) else patch):
+        subprocess.run(['patch', '--batch', '-p1', '-i', str(ROOT / 'sdk-patches/ft-sdk-1.7.5' / patch_name)], cwd=work, check=True)
     with zipfile.ZipFile(aar) as z:
         original = z.read('classes.jar')
     original_jar = work / 'original.jar'
@@ -112,7 +117,7 @@ def main():
         jar, sdk_manifest = build('ft-sdk', '1.7.5', SDK_VERSION, [SDK_SOURCE],
             [SDK_SOURCE.replace('.java', '.class'), SDK_SOURCE.replace('.java', '$Snapshot.class')],
             'permanent-id.patch', javac, [str(android_jar)], temp)
-        _, replay_manifest = build('ft-session-replay', '0.1.8', REPLAY_VERSION,
+        _, replay_manifest = build('ft-session-replay', REPLAY_BASE_VERSION, REPLAY_VERSION,
             [REPLAY_PREFIX + n + '.java' for n in ['PermanentIdResolver', 'SnapshotProducer']],
             [REPLAY_PREFIX + n + '.class' for n in ['PermanentIdResolver', 'SnapshotProducer']],
             'replay-traversal.patch', javac, [str(android_jar), str(jar), str(stub)], temp)
