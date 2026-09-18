@@ -348,3 +348,33 @@ cart View `5e0782d59be64d53afc53d7761b8e44a`。抓包确认
 - RUM 恢复时间 1789616123138，ready 时间 1789616123234；该详情的后续 Replay 批次覆盖至 1789616126854，实际播放器已呈现恢复画面。
 - [验收会话](https://console.guance.com/rum/sessionReplay?app_id=mall_app_android&session_id=c513bf241d1348de98232a5488c39ed2&ts=1789616079300&w=WORKSPACE_ID&lak=Rum)。查询证据保存在 `owl-reports/replay-2326/`。
 - 本次实播验收覆盖持续加载及恢复；没有重新完整验收白屏和崩溃。新版不会修复旧 APK 已录制的数据；符号包尚未上传，未宣称云端符号化通过。
+
+
+## Native ANR and freeze demonstrations (implementation, pending runtime acceptance)
+
+The Android catalog now retains blank details, checkout Java crash and content
+loading, and adds `android_detail_anr` and `android_detail_freeze`. The Web
+workbench reads these entries from the connected APK; no copied Web catalog is
+needed. A new APK must be installed before these entries appear.
+
+Build with `-PMALL_DEMO_NATIVE_PERFORMANCE=true` (included in the demo build
+wrapper). Ordinary builds disable both entries and reject native calls. After
+arming, open a book: the native UI thread blocks for 20 seconds (ANR) or 2 seconds
+(freeze), following a 500 ms rendering opportunity. Tap during the ANR stall;
+choose Wait if Android offers an ANR dialog. System ANR presentation is device
+and OS dependent. The operation is bounded, rejects overlapping native calls,
+and supports cancellation when restoring baseline or switching scenarios.
+
+The SDK already enables native crash, ANR and freeze collection, with a 1000 ms
+freeze threshold. The demo records only trigger/completion Actions, never a
+synthetic standard Error or LongTask. Completion duration proves the injected
+stall, not SDK collection. Inspect real Error `anr_error`/`anr_crash` or LongTask
+`long_task`, matching View/session and fault_run_id, before marking acceptance.
+ANR may also generate LongTask. Replay can pause during main-thread blocking.
+
+Acceptance still required on a newly installed APK: actual SDK event type,
+blocking stack, duration, device/OS/version filters, and preceding/recovered
+Replay frames. Existing checkout crash demonstrates `java_crash`; C/C++ and JS
+fatal crash types are not newly implemented here. Dynamic sampling live changes,
+carrier availability and server-side symbolication remain separate unverified
+requirements. No runtime deployment or cloud acceptance is implied by tests.

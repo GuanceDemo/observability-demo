@@ -55,7 +55,7 @@ const scenarios = Object.values(BUSINESS_FAULT_IDS).map(id => ({
   platforms: ['android'], scenes: ['mobile-storefront'],
 })) as FaultScenario[];
 
-describe('three real Android fault flows', () => {
+describe('real Android fault flows', () => {
   let tree: TestRenderer.ReactTestRenderer;
   let consoleError: jest.SpyInstance;
   const drawer = () => tree.root.findByType(FaultDrawer).props;
@@ -75,7 +75,7 @@ describe('three real Android fault flows', () => {
     jest.clearAllMocks();
     jest.mocked(startView).mockReset().mockResolvedValue(undefined);
     Platform.OS = 'android';
-    NativeModules.DemoFaults = {checkoutCrashEnabled: true, crashCheckout: jest.fn(async () => undefined)};
+    NativeModules.DemoFaults = {nativePerformanceEnabled: true, blockBookDetails: jest.fn(async () => 2000), cancelBookDetailsBlock: jest.fn(), checkoutCrashEnabled: true, crashCheckout: jest.fn(async () => undefined)};
     consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     await AsyncStorage.clear();
     await persistStore({language: 'zh', currentBookId: bookId, activeTopic: 'all', sort: 'recommended',
@@ -93,6 +93,42 @@ describe('three real Android fault flows', () => {
     consoleError.mockRestore();
     jest.restoreAllMocks();
     jest.useRealTimers();
+  });
+
+  it.each([BUSINESS_FAULT_IDS.anr, BUSINESS_FAULT_IDS.freeze])('runs %s through the native bridge and recovers without a synthetic Error', async id => {
+    let complete!: (duration: number) => void;
+    NativeModules.DemoFaults.blockBookDetails.mockImplementationOnce(() => new Promise<number>(resolve => { complete = resolve; }));
+    await enable(id);
+    expect(NativeModules.DemoFaults.blockBookDetails).not.toHaveBeenCalled();
+    await openBook();
+    expect(drawer().run.phase).toBe('triggered');
+    expect(NativeModules.DemoFaults.blockBookDetails).toHaveBeenCalledWith(id === BUSINESS_FAULT_IDS.anr ? 'anr' : 'freeze');
+    expect(addError).not.toHaveBeenCalled();
+    await act(async () => { complete(2000); });
+    expect(drawer().run.phase).toBe('recovered');
+    expect(addError).not.toHaveBeenCalled();
+  });
+
+  it('ignores an old native completion after switching scenarios', async () => {
+    let complete!: (duration: number) => void;
+    NativeModules.DemoFaults.blockBookDetails.mockImplementationOnce(() => new Promise<number>(resolve => { complete = resolve; }));
+    await enable(BUSINESS_FAULT_IDS.anr);
+    await openBook();
+    await enable(BUSINESS_FAULT_IDS.loading);
+    const nextRun = drawer().run.id;
+    expect(NativeModules.DemoFaults.cancelBookDetailsBlock).toHaveBeenCalled();
+    await act(async () => { complete(3000); });
+    expect(drawer().run).toMatchObject({id: nextRun, phase: 'armed'});
+    expect(addError).not.toHaveBeenCalled();
+  });
+
+  it('recovers when the native bridge rejects instead of claiming a captured ANR', async () => {
+    NativeModules.DemoFaults.blockBookDetails.mockRejectedValueOnce(new Error('PERFORMANCE_BUSY'));
+    await enable(BUSINESS_FAULT_IDS.anr);
+    await openBook();
+    expect(drawer().run.phase).toBe('recovered');
+    expect(addError).not.toHaveBeenCalled();
+    expect(recordFaultEvent).not.toHaveBeenCalledWith('native_detail_block_finished', expect.anything());
   });
 
   it('arms without an error, then catches a real detail render error and reloads the baseline', async () => {

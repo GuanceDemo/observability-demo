@@ -23,6 +23,7 @@ class DemoFaultsModule(
   override fun getConstants(): Map<String, Any> =
     mapOf(
       "dangerousFaultsEnabled" to BuildConfig.DEMO_FAULTS_ENABLED,
+      "nativePerformanceEnabled" to BuildConfig.NATIVE_PERFORMANCE_ENABLED,
       "checkoutCrashEnabled" to BuildConfig.CHECKOUT_CRASH_ENABLED,
       "replayDisabledForDiagnostics" to BuildConfig.DIAGNOSTIC_DISABLE_REPLAY,
       "gatewayUrl" to BuildConfig.GATEWAY_URL,
@@ -42,6 +43,48 @@ class DemoFaultsModule(
 
   @ReactMethod
   fun finishRemoteCommand(id: String, status: String) { RemoteDemoControl.finish(id, status) }
+
+  private val detailBlockCancelled = java.util.concurrent.atomic.AtomicBoolean(false)
+  private val detailBlockPending = java.util.concurrent.atomic.AtomicBoolean(false)
+
+  @ReactMethod
+  fun blockBookDetails(kind: String, promise: Promise) {
+    if (!BuildConfig.NATIVE_PERFORMANCE_ENABLED) {
+      promise.reject("PERFORMANCE_DISABLED", "Native performance faults require the demonstration build")
+      return
+    }
+    val duration = when (kind) {
+      "anr" -> 20_000L
+      "freeze" -> 2_000L
+      else -> { promise.reject("INVALID_PERFORMANCE_FAULT", "Unknown fault kind"); return }
+    }
+    if (!detailBlockPending.compareAndSet(false, true)) {
+      promise.reject("PERFORMANCE_BUSY", "A native detail operation is already blocked")
+      return
+    }
+    detailBlockCancelled.set(false)
+    Handler(Looper.getMainLooper()).postDelayed({
+      val startedAt = SystemClock.elapsedRealtime()
+      try {
+        // Real UI thread stall: SDK owns ANR/LongTask detection and reporting.
+        loadBookDetailsOnMainThread(duration)
+        promise.resolve((SystemClock.elapsedRealtime() - startedAt).toDouble())
+      } finally {
+        detailBlockPending.set(false)
+      }
+    }, 500L)
+  }
+
+  @ReactMethod
+  fun cancelBookDetailsBlock() { detailBlockCancelled.set(true) }
+
+  private fun loadBookDetailsOnMainThread(durationMs: Long) {
+    val deadline = SystemClock.elapsedRealtime() + durationMs
+    // This does not yield the main Looper; it only permits remote recovery.
+    while (!detailBlockCancelled.get() && SystemClock.elapsedRealtime() < deadline) {
+      SystemClock.sleep(50L)
+    }
+  }
 
   @ReactMethod
   fun crashCheckout(promise: Promise) {

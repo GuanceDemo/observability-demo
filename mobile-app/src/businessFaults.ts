@@ -6,6 +6,8 @@ export const BUSINESS_FAULT_IDS = {
   detail: 'android_detail_white_screen',
   crash: 'android_checkout_crash',
   loading: 'android_content_loading',
+  anr: 'android_detail_anr',
+  freeze: 'android_detail_freeze',
 } as const;
 export type BusinessFaultId = typeof BUSINESS_FAULT_IDS[keyof typeof BUSINESS_FAULT_IDS];
 export type FaultPhase = 'armed' | 'triggered' | 'recovered';
@@ -54,7 +56,31 @@ export async function crashCheckout(): Promise<void> {
   await module.crashCheckout();
 }
 
+export function nativePerformanceEnabled(): boolean {
+  return NativeModules.DemoFaults?.nativePerformanceEnabled === true;
+}
+
+export function cancelBookDetailsBlock(): void {
+  NativeModules.DemoFaults?.cancelBookDetailsBlock?.();
+}
+
+export async function blockBookDetails(kind: 'anr' | 'freeze'): Promise<number> {
+  const module = NativeModules.DemoFaults;
+  if (!nativePerformanceEnabled() || !module?.blockBookDetails) {
+    throw new Error('Native performance faults require the Android demonstration build');
+  }
+  return module.blockBookDetails(kind);
+}
+
 const COPY: Record<BusinessFaultId, Record<StoreLanguage, {title: string; trigger: string; observation: string}>> = {
+  android_detail_anr: {
+    zh: {title: '图书详情 ANR', trigger: '打开图书后原生主线程阻塞约 20 秒；期间点击页面以触发输入无响应。可能出现系统 ANR 提示，请选择等待。', observation: '在 Error 查看 SDK 实际采集的 anr_error/anr_crash 和主线程堆栈；仅操作记录不代表 ANR 已采集。等待结束后自动恢复。'},
+    en: {title: 'Book detail ANR', trigger: 'Open a book to block the native UI thread for 20 seconds. Tap during the stall; choose Wait if Android shows an ANR dialog.', observation: 'Inspect SDK anr_error/anr_crash and main-thread stacks in Error. An action alone does not prove ANR capture. Recovers when the block ends.'},
+  },
+  android_detail_freeze: {
+    zh: {title: '图书详情原生卡顿', trigger: '打开图书后原生主线程阻塞约 2 秒，随后自动恢复；用于演示超过 1 秒阈值的 UI 卡顿。', observation: '在 Long Task 查看 SDK 自动采集的 long_task、持续时间和阻塞堆栈，关联当前 View；卡顿不冒充 Crash Error。'},
+    en: {title: 'Book detail native freeze', trigger: 'Open a book to block the native UI thread for 2 seconds, then recover automatically.', observation: 'Inspect SDK long_task duration and blocking stack in Long Task, linked to the current View. A freeze is not a Crash Error.'},
+  },
   android_detail_white_screen: {
     zh: {title: '商品详情白屏', trigger: '收起面板，打开任意图书，详情内容将因渲染异常变为空白。', observation: '回放确认打开的商品，结合真实 TypeError 和 JS 堆栈定位缺失字段；恢复基线后重新加载。'},
     en: {title: 'Blank book details', trigger: 'Close this panel and open a book. A render error leaves its content blank.', observation: 'Use replay, the real TypeError and JS stack to locate the missing field. Restore baseline to reload.'},
@@ -73,13 +99,14 @@ const COPY: Record<BusinessFaultId, Record<StoreLanguage, {title: string; trigge
 export function androidFaultCatalog(serverScenarios: FaultScenario[], language: StoreLanguage): FaultScenario[] {
   const clients = Object.values(BUSINESS_FAULT_IDS).map(id => {
     const copy = COPY[id][language];
-    const disabled = id === BUSINESS_FAULT_IDS.crash && !checkoutCrashEnabled();
+    const performance = id === BUSINESS_FAULT_IDS.anr || id === BUSINESS_FAULT_IDS.freeze;
+    const disabled = performance ? !nativePerformanceEnabled() : id === BUSINESS_FAULT_IDS.crash && !checkoutCrashEnabled();
     return {
       id, title: copy.title, layer: 'android', kind: id, service: 'mall-mobile',
       target: id === BUSINESS_FAULT_IDS.crash ? 'checkout' : 'book-detail',
       mode: 'client', ttlSeconds: 0, clientSide: true, execution: 'client' as const,
       platforms: ['android' as const], disabled,
-      description: disabled ? (language === 'en' ? 'Requires a checkout-crash demonstration build.' : '当前安装包未启用结算闪退，请使用演练构建。') : copy.trigger,
+      description: disabled ? (language === 'en' ? 'Requires an enabled Android demonstration build.' : '当前安装包未启用此原生故障，请使用演练构建。') : copy.trigger,
       expectedObservation: copy.observation,
     };
   });

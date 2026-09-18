@@ -38,6 +38,8 @@ import {androidRumBuildConfig, gatewayUrl} from './src/config';
 import {
   BUSINESS_FAULT_IDS,
   androidFaultCatalog,
+  blockBookDetails,
+  cancelBookDetailsBlock,
   crashCheckout,
   faultContext,
   faultRequestMetadata,
@@ -439,10 +441,37 @@ function Storefront() {
         book_title: getProductText(product, state.language).title,
       });
       dispatch({type: 'openBook', bookId});
+      const performanceId = [BUSINESS_FAULT_IDS.anr, BUSINESS_FAULT_IDS.freeze]
+        .find(id => businessFault.current.current?.phase === 'armed' && businessFault.enabled(id));
+      if (performanceId) {
+        runSilently((async () => {
+          const run = await businessFault.trigger(performanceId, {book_id: product.id,
+            expected_rum_source: performanceId === BUSINESS_FAULT_IDS.anr ? 'error' : 'long_task'});
+          if (!run || navigation !== bookNavigation.current || businessFault.current.current?.id !== run.id ||
+              businessFault.current.current.phase !== 'triggered') return;
+          const scenario = faults.find(item => item.id === performanceId);
+          try {
+            const duration = await blockBookDetails(performanceId === BUSINESS_FAULT_IDS.anr ? 'anr' : 'freeze');
+            if (businessFault.current.current?.id !== run.id || businessFault.current.current.phase !== 'triggered') return;
+            recordFaultEvent('native_detail_block_finished', {...faultContext(run), actual_duration_ms: duration});
+            await businessFault.recover('native_block_finished', {actual_duration_ms: duration});
+            if (businessFault.current.current?.id === run.id && scenario) {
+              dispatch({type: 'faultRecovered', history: historyItem(scenario, 'recovered')});
+            }
+          } catch (error) {
+            if (businessFault.current.current?.id !== run.id || businessFault.current.current.phase !== 'triggered') return;
+            await businessFault.recover('native_block_unavailable');
+            if (businessFault.current.current?.id === run.id && scenario) {
+              dispatch({type: 'faultRecovered', history: historyItem(scenario, 'failed')});
+              showToast({tone: 'error', title: nativeText(state.language, 'faultFailed'), detail: errorMessage(error)});
+            }
+          }
+        })());
+      }
       runSilently(bookContent.load(product.id, faultRequestMetadata(metadata, businessFault.current.current), 'normal',
         businessFault.enabled(BUSINESS_FAULT_IDS.loading)));
     },
-    [beginScreenView, bookContent, businessFault, metadata, state.language],
+    [beginScreenView, bookContent, businessFault, faults, metadata, showToast, state.language],
   );
 
   const addBook = useCallback(
@@ -677,6 +706,7 @@ function Storefront() {
     bookNavigation.current += 1;
     bookContent.cancel();
     cancelCheckoutCrash();
+    cancelBookDetailsBlock();
     await businessFault.recover(reason, properties);
     if (businessFault.current.current?.id !== active.id) return;
     const scenario = faults.find(item => item.id === active.scenarioId);
@@ -706,6 +736,7 @@ function Storefront() {
         setPreviewOpen(false);
         if (isBusinessFault(scenario.id)) {
           if (state.activeFault?.execution === 'server') await api.recoverFaults(metadata);
+          cancelBookDetailsBlock();
           await businessFault.recover('switch_scenario');
           await businessFault.arm(scenario);
           dispatch({type: 'faultActivated', scenario, history: historyItem(scenario, 'active')});
@@ -713,6 +744,7 @@ function Storefront() {
           showToast({tone: 'info', title: state.language === 'en' ? 'Scenario ready' : '场景已就绪', detail: scenario.description});
           return;
         }
+        cancelBookDetailsBlock();
         await businessFault.clearContext();
         dispatch({type: 'faultActivated', scenario, history: historyItem(scenario, 'active')});
         if (scenario.execution === 'client') {

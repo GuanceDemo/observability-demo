@@ -67,6 +67,8 @@ def diagnosticDisableReplay = providers.gradleProperty("MALL_DEMO_DISABLE_REPLAY
 if (diagnosticDisableReplay && !diagnosticProfileable) {
     throw new GradleException("MALL_DEMO_DISABLE_REPLAY requires MALL_DEMO_PROFILEABLE=true")
 }
+def nativePerformanceEnabled = providers.gradleProperty("MALL_DEMO_NATIVE_PERFORMANCE")
+        .map { it.toBoolean() }.getOrElse(false)
 def checkoutCrashEnabled = providers.gradleProperty("MALL_DEMO_CHECKOUT_CRASH")
         .map { it.toBoolean() }.getOrElse(false)
 def remoteControlEnabled = providers.gradleProperty("MALL_DEMO_REMOTE_CONTROL")
@@ -124,6 +126,7 @@ android {
         versionCode 19
         versionName "2.3.26"
         manifestPlaceholders["profileableByShell"] = diagnosticProfileable.toString()
+        buildConfigField "boolean", "NATIVE_PERFORMANCE_ENABLED", nativePerformanceEnabled.toString()
         buildConfigField "boolean", "CHECKOUT_CRASH_ENABLED", checkoutCrashEnabled.toString()
         buildConfigField "boolean", "REMOTE_CONTROL_ENABLED", remoteControlEnabled.toString()
         buildConfigField "boolean", "DIAGNOSTIC_DISABLE_REPLAY", diagnosticDisableReplay.toString()
