@@ -1,5 +1,5 @@
 import {NativeModules} from 'react-native';
-import {androidFaultCatalog, BUSINESS_FAULT_IDS, crashCheckout, blockBookDetails, faultLayerGroup} from '../src/businessFaults';
+import {androidFaultCatalog, BUSINESS_FAULT_IDS, crashCheckout, crashNativeCheckout, blockBookDetails, faultLayerGroup} from '../src/businessFaults';
 import type {FaultScenario} from '../src/types';
 
 test('replaces only client entries, retains server contracts, and groups infrastructure', () => {
@@ -27,4 +27,12 @@ test('ordinary builds block both native performance scenarios at the bridge', as
   }
   await expect(blockBookDetails('anr')).rejects.toThrow('demonstration build');
   expect(NativeModules.DemoFaults.blockBookDetails).not.toHaveBeenCalled();
+});
+
+
+test('ordinary builds disable the C/C++ crash independently of Java crash', async () => {
+  NativeModules.DemoFaults = {checkoutCrashEnabled: true, nativeCrashEnabled: false, crashNativeCheckout: jest.fn()};
+  expect(androidFaultCatalog([], 'zh').find(item => item.id === BUSINESS_FAULT_IDS.nativeCrash)?.disabled).toBe(true);
+  await expect(crashNativeCheckout()).rejects.toThrow('demonstration build');
+  expect(NativeModules.DemoFaults.crashNativeCheckout).not.toHaveBeenCalled();
 });

@@ -41,6 +41,7 @@ import {
   blockBookDetails,
   cancelBookDetailsBlock,
   crashCheckout,
+  crashNativeCheckout,
   faultContext,
   faultRequestMetadata,
   isBusinessFault,
@@ -568,7 +569,7 @@ function Storefront() {
         dispatch({type: 'setAuthOverlay', open: true, pending: mode});
         return;
       }
-      if (businessFault.enabled(BUSINESS_FAULT_IDS.crash)) {
+      if (businessFault.enabled(BUSINESS_FAULT_IDS.crash) || businessFault.enabled(BUSINESS_FAULT_IDS.nativeCrash)) {
         const armed = businessFault.current.current;
         if (!armed || checkoutConfirmation.current) return;
         checkoutConfirmation.current = true;
@@ -576,18 +577,19 @@ function Storefront() {
               setConfirmCheckoutCrash(null);
               runSilently((async () => {
                 try {
-                  if (businessFault.current.current?.id !== armed.id || !businessFault.enabled(BUSINESS_FAULT_IDS.crash)) return;
-                  const run = await businessFault.trigger(BUSINESS_FAULT_IDS.crash, {book_ids: checkout.bookIds, selected_copies: checkout.totalCopies});
+                  if (businessFault.current.current?.id !== armed.id || !businessFault.enabled(armed.scenarioId)) return;
+                  const run = await businessFault.trigger(armed.scenarioId, {book_ids: checkout.bookIds, selected_copies: checkout.totalCopies});
                   if (!run) return;
                   await writeCrashMarker(run.scenarioId, run);
-                  if (businessFault.current.current?.id !== run.id || !businessFault.enabled(BUSINESS_FAULT_IDS.crash)) {
-                    await consumeCrashMarker();
+                  if (businessFault.current.current?.id !== run.id || !businessFault.enabled(armed.scenarioId)) {
+                    await clearCrashMarker(run.id);
                     return;
                   }
                   rumAction('business_checkout_prepare', {...faultContext(run), book_ids: checkout.bookIds});
-                  await crashCheckout();
+                  if (run.scenarioId === BUSINESS_FAULT_IDS.nativeCrash) await crashNativeCheckout();
+                  else await crashCheckout();
                 } catch (error) {
-                  await consumeCrashMarker();
+                  await clearCrashMarker(armed.id);
                   if (businessFault.current.current?.id === armed.id) {
                     await businessFault.recover('checkout_crash_unavailable');
                     dispatch({type: 'faultRecovered', history: {id: armed.id, scenarioId: armed.scenarioId,
@@ -1149,7 +1151,7 @@ function Storefront() {
         onClose={() => setPreviewOpen(false)}
       />
 
-      <CheckoutCrashConfirmation visible={Boolean(confirmCheckoutCrash)} tokens={tokens} language={state.language}
+      <CheckoutCrashConfirmation nativeCrash={businessFault.run?.scenarioId === BUSINESS_FAULT_IDS.nativeCrash} visible={Boolean(confirmCheckoutCrash)} tokens={tokens} language={state.language}
         onCancel={() => confirmPress('checkout_crash_cancel', cancelCheckoutCrash)}
         onConfirm={() => confirmPress('checkout_crash_confirm', () => confirmCheckoutCrash?.())} />
 

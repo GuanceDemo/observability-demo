@@ -24,3 +24,6 @@
 
 # Replay resolves Kotlin value-class colors by their JVM method name.
 -keep class com.facebook.react.uimanager.style.BorderColors { *; }
+
+# JNI resolves the native checkout demo by this exact class/method name.
+-keep class com.malldemomobile.DemoNativeCrash { *; }

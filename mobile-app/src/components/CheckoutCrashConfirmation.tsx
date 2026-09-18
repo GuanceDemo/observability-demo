@@ -5,8 +5,8 @@ import type {StoreLanguage} from '../types';
 import {AppButton} from './AppButton';
 
 // Ordinary Views keep confirmation in the same input window and Replay tree.
-export function CheckoutCrashConfirmation({visible, tokens, language, onCancel, onConfirm}: {
-  visible: boolean; tokens: DesignTokens; language: StoreLanguage;
+export function CheckoutCrashConfirmation({visible, tokens, language, nativeCrash = false, onCancel, onConfirm}: {
+  nativeCrash?: boolean; visible: boolean; tokens: DesignTokens; language: StoreLanguage;
   onCancel: () => void; onConfirm: () => void;
 }) {
   if (!visible) return null;
@@ -14,7 +14,7 @@ export function CheckoutCrashConfirmation({visible, tokens, language, onCancel, 
     <View testID="checkout-crash-confirmation" style={[styles.overlay, {backgroundColor: tokens.colors.overlay}]} accessibilityViewIsModal>
       <View style={[styles.card, {backgroundColor: tokens.colors.surface}]}>
         <Text accessibilityRole="header" style={[styles.title, {color: tokens.colors.text}]}>
-          {language === 'en' ? 'Demonstrate checkout crash?' : '触发结算闪退？'}
+          {nativeCrash ? (language === 'en' ? 'Trigger C/C++ crash?' : '触发 C/C++ 崩溃？') : (language === 'en' ? 'Demonstrate checkout crash?' : '触发结算闪退？')}
         </Text>
         <Text style={{color: tokens.colors.muted}}>
           {language === 'en' ? 'The app will exit before placing an order. Restart to inspect the crash.' : 'App 将在提交订单前退出。重启后可查看崩溃记录。'}

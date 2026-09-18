@@ -69,6 +69,8 @@ if (diagnosticDisableReplay && !diagnosticProfileable) {
 }
 def nativePerformanceEnabled = providers.gradleProperty("MALL_DEMO_NATIVE_PERFORMANCE")
         .map { it.toBoolean() }.getOrElse(false)
+def nativeCrashEnabled = providers.gradleProperty("MALL_DEMO_NATIVE_CRASH")
+        .map { it.toBoolean() }.getOrElse(false)
 def checkoutCrashEnabled = providers.gradleProperty("MALL_DEMO_CHECKOUT_CRASH")
         .map { it.toBoolean() }.getOrElse(false)
 def remoteControlEnabled = providers.gradleProperty("MALL_DEMO_REMOTE_CONTROL")
@@ -118,13 +120,20 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
+    externalNativeBuild {
+        cmake { path "src/main/jni/CMakeLists.txt" }
+    }
     namespace "com.malldemomobile"
     defaultConfig {
         applicationId "com.malldemomobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 24
-        versionName "2.3.31"
+        versionCode 25
+        versionName "2.3.32"
+        externalNativeBuild {
+            cmake { arguments "-DDEMO_NATIVE_CRASH_ENABLED=${nativeCrashEnabled ? 'ON' : 'OFF'}" }
+        }
+        buildConfigField "boolean", "NATIVE_CRASH_ENABLED", nativeCrashEnabled.toString()
         manifestPlaceholders["profileableByShell"] = diagnosticProfileable.toString()
         buildConfigField "boolean", "NATIVE_PERFORMANCE_ENABLED", nativePerformanceEnabled.toString()
         buildConfigField "boolean", "CHECKOUT_CRASH_ENABLED", checkoutCrashEnabled.toString()

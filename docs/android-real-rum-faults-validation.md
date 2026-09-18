@@ -533,3 +533,30 @@ flag is enabled on the emulator. Final-version runtime validation is below.
   blank with the app header/navigation retained, and the sidebar showed the JS
   error and following Java crash at 00:40. This proves the captured pre-exit
   content state, not capture of the Android launcher after process death.
+
+
+### 2.3.32 native C/C++ crash scenario
+
+- Added `android_checkout_native_crash` (结算 C/C++ 崩溃), separate from Java checkout
+  crash. Confirming checkout calls JNI and real `std::abort()` before order submission.
+- Independent default-off build flag; ordinary and enabled Safe builds verified on
+  arm64-v8a, armeabi-v7a, x86 and x86_64. Disabled binaries have no abort import.
+- 114 tests / 22 suites, type-check and lint passed. Final Replay APK gate passed.
+- GCP APK and download updated to 2.3.32 (code 25); existing Web image retained.
+- Real run `fault-mu6toj4z-jdwwje2o`: 2026-09-18 18:36:25 CST received SIGABRT;
+  tombstone points to `libdemo_native_faults.so`, JNI prepareCheckout.
+  x86_64 Build ID: `4827cc3d799825c89e31002d89cbde7d07ef81ab`.
+- Exact-build SourceMap/R8 and separate native debug-symbol archives preserved under
+  `mobile-app/build/releases/2.3.32/`; symbols have not been uploaded to Guance.
+- Guance verified `error_type=native_crash`, same fault run, session
+  `7f951e9daf8b418a9f3201b54b29016f`, cart View
+  `4334f9a79c8c48948186736f2633f8df`, event time 1789727785532.
+- SDK report includes SIGABRT and native backtrace. Its Android 16 x86_64 dumper
+  reports exit 102, but fallback captured the abort/native library frames. Do not
+  claim every native thread was fully captured on this emulator.
+- Matching symbols locally resolve PC 0x6a8 to `DemoNativeCrash.cpp:7` (abort),
+  and 0x698 to JNI entry line 15. Cloud symbolication is not yet verified.
+- Public APK SHA-256 matches local build:
+  `9cecc14e0348b13910427f4cf97718aab01631fb4a63d12acffb6d28251a9bf6`.
+- Cloud native-crash Replay playback was not re-verified in this acceptance run;
+  confirmation uses the existing ordinary View capture path.

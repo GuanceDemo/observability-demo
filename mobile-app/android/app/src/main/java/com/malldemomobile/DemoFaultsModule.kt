@@ -24,6 +24,7 @@ class DemoFaultsModule(
     mapOf(
       "dangerousFaultsEnabled" to BuildConfig.DEMO_FAULTS_ENABLED,
       "nativePerformanceEnabled" to BuildConfig.NATIVE_PERFORMANCE_ENABLED,
+      "nativeCrashEnabled" to BuildConfig.NATIVE_CRASH_ENABLED,
       "checkoutCrashEnabled" to BuildConfig.CHECKOUT_CRASH_ENABLED,
       "replayDisabledForDiagnostics" to BuildConfig.DIAGNOSTIC_DISABLE_REPLAY,
       "gatewayUrl" to BuildConfig.GATEWAY_URL,
@@ -95,6 +96,23 @@ class DemoFaultsModule(
     Handler(Looper.getMainLooper()).post {
       // Reproduce a checkout model invariant violation on the real UI thread.
       prepareCheckout(null)
+    }
+  }
+
+  @ReactMethod
+  fun crashNativeCheckout(promise: Promise) {
+    if (!BuildConfig.NATIVE_CRASH_ENABLED) {
+      promise.reject("NATIVE_CRASH_DISABLED", "C/C++ crash requires the demonstration build")
+      return
+    }
+    try {
+      DemoNativeCrash.loadLibrary()
+    } catch (error: UnsatisfiedLinkError) {
+      promise.reject("NATIVE_CRASH_UNAVAILABLE", "Native demonstration library unavailable", error)
+      return
+    }
+    Handler(Looper.getMainLooper()).post {
+      DemoNativeCrash.prepareCheckout()
     }
   }
 

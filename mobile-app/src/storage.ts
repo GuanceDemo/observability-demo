@@ -158,7 +158,7 @@ export async function consumeCrashMarker(): Promise<CrashMarker | null> {
       const marker = JSON.parse(raw) as CrashMarker;
       if (typeof marker.scenarioId !== 'string') return null;
       const run = marker.run;
-      if (run && ((run.scenarioId !== BUSINESS_FAULT_IDS.detail && run.scenarioId !== BUSINESS_FAULT_IDS.crash && run.scenarioId !== BUSINESS_FAULT_IDS.anr) || run.scenarioId !== marker.scenarioId
+      if (run && ((run.scenarioId !== BUSINESS_FAULT_IDS.nativeCrash && run.scenarioId !== BUSINESS_FAULT_IDS.detail && run.scenarioId !== BUSINESS_FAULT_IDS.crash && run.scenarioId !== BUSINESS_FAULT_IDS.anr) || run.scenarioId !== marker.scenarioId
         || typeof run.id !== 'string' || !/^fault-[a-z0-9-]+$/.test(run.id)
         || !Number.isFinite(run.startedAt) || run.phase !== 'triggered')) delete marker.run;
       return marker;

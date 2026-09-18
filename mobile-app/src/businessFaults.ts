@@ -5,6 +5,7 @@ import type {FaultScenario, StoreLanguage} from './types';
 export const BUSINESS_FAULT_IDS = {
   detail: 'android_detail_white_screen',
   crash: 'android_checkout_crash',
+  nativeCrash: 'android_checkout_native_crash',
   loading: 'android_content_loading',
   anr: 'android_detail_anr',
   freeze: 'android_detail_freeze',
@@ -56,6 +57,18 @@ export async function crashCheckout(): Promise<void> {
   await module.crashCheckout();
 }
 
+export function nativeCrashEnabled(): boolean {
+  return NativeModules.DemoFaults?.nativeCrashEnabled === true;
+}
+
+export async function crashNativeCheckout(): Promise<void> {
+  const module = NativeModules.DemoFaults;
+  if (!nativeCrashEnabled() || !module?.crashNativeCheckout) {
+    throw new Error('C/C++ crash requires the Android demonstration build');
+  }
+  await module.crashNativeCheckout();
+}
+
 export function nativePerformanceEnabled(): boolean {
   return NativeModules.DemoFaults?.nativePerformanceEnabled === true;
 }
@@ -85,6 +98,10 @@ const COPY: Record<BusinessFaultId, Record<StoreLanguage, {title: string; trigge
     zh: {title: '图书详情 JS 未捕获异常', trigger: '打开图书时，缺失字段在异步内容准备中触发 TypeError；页面可能空白或应用退出，需要重启。', observation: '检查 SDK 自动采集的 reactnative_crash、原始 JS 堆栈和崩溃前回放；重启关联本轮标识。'},
     en: {title: 'Uncaught book detail JS error', trigger: 'Open a book: a missing field throws TypeError during asynchronous content preparation. The page may go blank or the app may exit; restart afterward.', observation: 'Inspect SDK-collected reactnative_crash, the original JS stack and preceding replay. Correlate the run after restarting.'},
   },
+  android_checkout_native_crash: {
+    zh: {title: '结算 C/C++ 崩溃', trigger: '进入购物车并点击结算，在 App 内确认后，JNI 结算校验触发真实 SIGABRT；不会提交订单。', observation: '重启后查看 SDK 的 native_crash、信号及原生堆栈，关联崩溃前回放；C/C++ 符号定位需匹配本次构建的原生符号文件。'},
+    en: {title: 'Checkout C/C++ crash', trigger: 'Check out from the cart and confirm in the app. JNI checkout validation triggers SIGABRT before placing an order.', observation: 'Restart and inspect SDK native_crash, signal and native stack with preceding replay. C/C++ symbolication requires matching native build symbols.'},
+  },
   android_checkout_crash: {
     zh: {title: '结算闪退', trigger: '进入购物车，点击结算，在 App 内确认后触发真实闪退；不会提交订单。', observation: '重启 App，关联崩溃前回放、原生 Crash 堆栈与本轮标识，定位结算数据异常。'},
     en: {title: 'Checkout crash', trigger: 'Open the cart, check out and confirm in the app. The app crashes before submitting an order.', observation: 'Restart and correlate the preceding replay, native Crash stack and run ID to locate invalid checkout data.'},
@@ -100,10 +117,10 @@ export function androidFaultCatalog(serverScenarios: FaultScenario[], language: 
   const clients = Object.values(BUSINESS_FAULT_IDS).map(id => {
     const copy = COPY[id][language];
     const performance = id === BUSINESS_FAULT_IDS.anr || id === BUSINESS_FAULT_IDS.freeze;
-    const disabled = performance ? !nativePerformanceEnabled() : id === BUSINESS_FAULT_IDS.crash && !checkoutCrashEnabled();
+    const disabled = id === BUSINESS_FAULT_IDS.nativeCrash ? !nativeCrashEnabled() : performance ? !nativePerformanceEnabled() : id === BUSINESS_FAULT_IDS.crash && !checkoutCrashEnabled();
     return {
       id, title: copy.title, layer: 'android', kind: id, service: 'mall-mobile',
-      target: id === BUSINESS_FAULT_IDS.crash ? 'checkout' : 'book-detail',
+      target: (id === BUSINESS_FAULT_IDS.crash || id === BUSINESS_FAULT_IDS.nativeCrash) ? 'checkout' : 'book-detail',
       mode: 'client', ttlSeconds: 0, clientSide: true, execution: 'client' as const,
       platforms: ['android' as const], disabled,
       description: disabled ? (language === 'en' ? 'Requires an enabled Android demonstration build.' : '当前安装包未启用此原生故障，请使用演练构建。') : copy.trigger,

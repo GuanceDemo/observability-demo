@@ -74,7 +74,7 @@ describe('real Android fault flows', () => {
     jest.clearAllMocks();
     jest.mocked(startView).mockReset().mockResolvedValue(undefined);
     Platform.OS = 'android';
-    NativeModules.DemoFaults = {nativePerformanceEnabled: true, blockBookDetails: jest.fn(async () => 2000), cancelBookDetailsBlock: jest.fn(), checkoutCrashEnabled: true, crashCheckout: jest.fn(async () => undefined)};
+    NativeModules.DemoFaults = {nativePerformanceEnabled: true, blockBookDetails: jest.fn(async () => 2000), cancelBookDetailsBlock: jest.fn(), checkoutCrashEnabled: true, nativeCrashEnabled: true, crashNativeCheckout: jest.fn(async () => undefined), crashCheckout: jest.fn(async () => undefined)};
     consoleError = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     await AsyncStorage.clear();
     await persistStore({language: 'zh', currentBookId: bookId, activeTopic: 'all', sort: 'recommended',
@@ -272,33 +272,35 @@ describe('real Android fault flows', () => {
     expect(recordFaultEvent).not.toHaveBeenCalledWith('book_content_load_failed', expect.anything());
   });
 
-  it('requires checkout confirmation, persists correlation, and never submits an order', async () => {
-    await enable(BUSINESS_FAULT_IDS.crash);
+  it.each([BUSINESS_FAULT_IDS.crash, BUSINESS_FAULT_IDS.nativeCrash])('requires confirmation and persists %s without submitting an order', async id => {
+    await enable(id);
+    const bridge = id === BUSINESS_FAULT_IDS.nativeCrash ? NativeModules.DemoFaults.crashNativeCheckout : NativeModules.DemoFaults.crashCheckout;
     await navigate('cart');
-    expect(NativeModules.DemoFaults.crashCheckout).not.toHaveBeenCalled();
+    expect(bridge).not.toHaveBeenCalled();
     await act(async () => { bag().onPurchase(); });
     await act(async () => { tree.root.findByType(CheckoutCrashConfirmation).props.onCancel(); });
     expect(drawer().run.phase).toBe('armed');
-    expect(NativeModules.DemoFaults.crashCheckout).not.toHaveBeenCalled();
+    expect(bridge).not.toHaveBeenCalled();
     await act(async () => { bag().onPurchase(); });
     await act(async () => { tree.root.findByType(CheckoutCrashConfirmation).props.onConfirm(); });
-    expect(NativeModules.DemoFaults.crashCheckout).toHaveBeenCalledTimes(1);
+    expect(bridge).toHaveBeenCalledTimes(1);
     expect(api.purchase).not.toHaveBeenCalled();
     expect(api.runPurchaseTraffic).not.toHaveBeenCalled();
     await expect(consumeCrashMarker()).resolves.toMatchObject({run: {id: drawer().run.id, phase: 'triggered'}});
   });
 
-  it('invalidates an outstanding checkout confirmation when recovered', async () => {
-    await enable(BUSINESS_FAULT_IDS.crash);
+  it.each([BUSINESS_FAULT_IDS.crash, BUSINESS_FAULT_IDS.nativeCrash])('invalidates an outstanding %s confirmation when recovered', async id => {
+    await enable(id);
     await navigate('cart');
     await act(async () => { bag().onPurchase(); });
     await act(async () => { drawer().onRecover(); });
     await act(async () => { tree.root.findByType(CheckoutCrashConfirmation).props.onConfirm(); });
     expect(NativeModules.DemoFaults.crashCheckout).not.toHaveBeenCalled();
+    expect(NativeModules.DemoFaults.crashNativeCheckout).not.toHaveBeenCalled();
     expect(api.purchase).not.toHaveBeenCalled();
   });
 
-  it.each([BUSINESS_FAULT_IDS.detail, BUSINESS_FAULT_IDS.crash, BUSINESS_FAULT_IDS.anr])('restores %s after restart without synthesizing an error', async scenarioId => {
+  it.each([BUSINESS_FAULT_IDS.detail, BUSINESS_FAULT_IDS.crash, BUSINESS_FAULT_IDS.nativeCrash, BUSINESS_FAULT_IDS.anr])('restores %s after restart without synthesizing an error', async scenarioId => {
     const run = {id: 'fault-restart-123', scenarioId, layer: 'android', phase: 'triggered' as const, startedAt: Date.now()};
     act(() => tree.unmount());
     await writeCrashMarker(run.scenarioId, run);
