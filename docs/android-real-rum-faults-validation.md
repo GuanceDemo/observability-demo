@@ -378,3 +378,22 @@ Replay frames. Existing checkout crash demonstrates `java_crash`; C/C++ and JS
 fatal crash types are not newly implemented here. Dynamic sampling live changes,
 carrier availability and server-side symbolication remain separate unverified
 requirements. No runtime deployment or cloud acceptance is implied by tests.
+
+
+### 2.3.27 GCP deployment (2026-09-18)
+- APK 2.3.27/code20 built through the patched release wrapper with native
+  performance, checkout crash and remote control enabled. Final APK Replay
+  compression/traversal and reflection/resource checks passed.
+- Installed using adb install -r, preserving application data. Existing Web
+  image retained, APK version metadata updated. Emulator, gateway, video, Caddy
+  and order-service checked running.
+- Local, host source and public download SHA256:
+  `401a35a0eff2fa20ec12110e74f1d826aa274ad0b249430a3cafe06b245b276e`.
+- Backup/release: `/home/cherry/mall-demo-web/releases/android-performance-2327-20260918`.
+- Browser confirms five Android scenarios, including ANR and native freeze.
+  Native freeze run `fault-mu6or4oh-vuiowl9s` armed on injection, triggered by
+  opening a book, then reported recovered with normal detail content displayed.
+- Same-build symbols: `mobile-app/build/releases/2.3.27/mall-app-android-demo-2.3.27-sourcemap.zip`,
+  SHA256 `88aa41f4a63110f51be60dfb9e29f11d9a6d91df106bdcae85279d27f2270d0f`.
+  Symbols not uploaded. This deployment smoke test does not prove cloud ANR or
+  LongTask ingestion, symbolication or Replay alignment for the new scenarios.
