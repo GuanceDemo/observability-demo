@@ -102,27 +102,37 @@ describe('real Android fault flows', () => {
     expect(NativeModules.DemoFaults.blockBookDetails).not.toHaveBeenCalled();
     await openBook();
     expect(drawer().run.phase).toBe('triggered');
+    if (id === BUSINESS_FAULT_IDS.freeze) {
+      expect(tree.root.findByProps({testID: 'book-content-expanding'})).toBeTruthy();
+      expect(tree.root.findAllByProps({testID: 'book-content-expanded'})).toHaveLength(0);
+    }
     expect(NativeModules.DemoFaults.blockBookDetails).toHaveBeenCalledWith(id === BUSINESS_FAULT_IDS.anr ? 'anr' : 'freeze');
     expect(addError).not.toHaveBeenCalled();
     const marker = await AsyncStorage.getItem('mall-demo-mobile:crash-marker:v1');
     if (id === BUSINESS_FAULT_IDS.anr) expect(JSON.parse(marker!)).toMatchObject({scenarioId: id, run: {id: drawer().run.id, phase: 'triggered'}});
     else expect(marker).toBeNull();
-    await act(async () => { complete(2000); });
+    await act(async () => { complete(4000); });
+    if (id === BUSINESS_FAULT_IDS.freeze) {
+      expect(tree.root.findAllByProps({testID: 'book-content-expanding'})).toHaveLength(0);
+      expect(tree.root.findByProps({testID: 'book-content-expanded'})).toBeTruthy();
+    }
     await expect(consumeCrashMarker()).resolves.toBeNull();
     expect(drawer().run.phase).toBe('recovered');
     expect(addError).not.toHaveBeenCalled();
   });
 
-  it('ignores an old native completion after switching scenarios', async () => {
+  it.each([BUSINESS_FAULT_IDS.anr, BUSINESS_FAULT_IDS.freeze])('ignores an old %s completion after switching scenarios', async id => {
     let complete!: (duration: number) => void;
     NativeModules.DemoFaults.blockBookDetails.mockImplementationOnce(() => new Promise<number>(resolve => { complete = resolve; }));
-    await enable(BUSINESS_FAULT_IDS.anr);
+    await enable(id);
     await openBook();
     await enable(BUSINESS_FAULT_IDS.loading);
     const nextRun = drawer().run.id;
     expect(NativeModules.DemoFaults.cancelBookDetailsBlock).toHaveBeenCalled();
     await act(async () => { complete(3000); });
     expect(drawer().run).toMatchObject({id: nextRun, phase: 'armed'});
+    expect(tree.root.findAllByProps({testID: 'book-content-expanded'})).toHaveLength(0);
+    expect(tree.root.findAllByProps({testID: 'book-content-expanding'})).toHaveLength(0);
     expect(addError).not.toHaveBeenCalled();
   });
 

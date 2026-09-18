@@ -441,3 +441,37 @@ Rollback files: GCP `releases/android-performance-2328-20260918/backup/`,
 including prior APK, Compose overlay and idle policy. Restore the prior APK via
 an appropriate downgrade/rebuild without clearing app data; restore the overlay
 and idle module then restart their affected services.
+
+
+## Native freeze presentation — 2.3.29 (2026-09-18)
+
+On book navigation, an ordinary View overlay displays “正在展开图书内容”. The
+native UI thread actually stalls for 4 seconds, then the same run displays
+“图书内容展开完成”. The existing loading ring uses ordinary View nodes; no fake
+LongTask is emitted. A new navigation clears the local expansion state. A stale
+callback after cancellation/switch cannot display completion for a newer run.
+
+The SDK LongTask record is useful for duration, affected View/session, version,
+device grouping and correlation with business actions/resources/Replay. Its
+`long_task_stack` in the pinned implementation contains a Looper Handler/Runnable
+message, not a sampled thread stack. This cannot determine CPU vs I/O vs lock
+wait or identify the exact source line. R8/source maps cannot add missing frames.
+Catalog descriptions now state that limitation and advise disabling Replay's
+Skip inactivity when demonstrating the pause.
+
+GCP deployed APK 2.3.29/code22 with unchanged SDK pair and persistent app data.
+106 mobile tests, typecheck, lint and final APK patch/ABI checks passed. The
+actual device displays the completion panel. Cloud SDK `long_task` at
+2026-09-18 17:03:33.190 Asia/Shanghai has duration **4.019705552 seconds**,
+run `fault-mu6qe4ay-dac609vo`, View `71b3629fdc4f4e41aac2fec617894c30`,
+session `8fa172f8c2734f7aaeee7ca768fce52b`; the View has `view_long_task_count=1`.
+Raw evidence is under local `owl-reports/freeze-2329/`.
+APK SHA-256: `fde48764eefa276c1d8465318573e7518dbd2b116987d8c9ed9284bf90acc223`.
+Matching symbols are packaged locally and not uploaded.
+
+Cloud playback acceptance: after session aggregation became available, disabled
+Skip inactivity, sought 00:29 and saw the expansion overlay/text. Continuous
+playback to 00:33 removed the overlay and displayed the completion panel, aligned
+with `native_detail_block_finished` / `mobile_fault_recovered` in the same View.
+The initial session lookup was empty before aggregation; it was not a missing
+LongTask. Public APK hash matches the local release artifact.

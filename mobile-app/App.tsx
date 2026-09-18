@@ -150,6 +150,7 @@ function Storefront() {
   const [traceId, setTraceId] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [faultBusy, setFaultBusy] = useState(false);
+  const [detailExpansion, setDetailExpansion] = useState<{runId: string; bookId: string; phase: 'expanding' | 'complete'} | null>(null);
   const faultTransition = useRef(false);
   const checkoutConfirmation = useRef(false);
   const [confirmCheckoutCrash, setConfirmCheckoutCrash] = useState<(() => void) | null>(null);
@@ -428,6 +429,7 @@ function Storefront() {
   const openBook = useCallback(
     async (bookId: string) => {
       const navigation = ++bookNavigation.current;
+      setDetailExpansion(null);
       const product = getProduct(bookId);
       bookContent.cancel();
       const triggerId = [BUSINESS_FAULT_IDS.detail, BUSINESS_FAULT_IDS.loading]
@@ -451,12 +453,18 @@ function Storefront() {
               businessFault.current.current.phase !== 'triggered') return;
           const scenario = faults.find(item => item.id === performanceId);
           try {
+            if (performanceId === BUSINESS_FAULT_IDS.freeze) {
+              setDetailExpansion({runId: run.id, bookId: product.id, phase: 'expanding'});
+            }
             if (performanceId === BUSINESS_FAULT_IDS.anr) {
               await writeCrashMarker(run.scenarioId, run);
               if (businessFault.current.current?.id !== run.id || businessFault.current.current.phase !== 'triggered') return;
             }
             const duration = await blockBookDetails(performanceId === BUSINESS_FAULT_IDS.anr ? 'anr' : 'freeze');
             if (businessFault.current.current?.id !== run.id || businessFault.current.current.phase !== 'triggered') return;
+            if (performanceId === BUSINESS_FAULT_IDS.freeze && navigation === bookNavigation.current) {
+              setDetailExpansion({runId: run.id, bookId: product.id, phase: 'complete'});
+            }
             recordFaultEvent('native_detail_block_finished', {...faultContext(run), actual_duration_ms: duration});
             await businessFault.recover('native_block_finished', {actual_duration_ms: duration});
             if (businessFault.current.current?.id === run.id && scenario) {
@@ -982,6 +990,8 @@ function Storefront() {
             language={state.language}
             product={detailFaulted ? withMissingDetailDescription(currentProduct, state.language) : currentProduct}
             content={bookContent.state}
+            expansion={detailExpansion?.runId === businessFault.run?.id && detailExpansion?.bookId === currentProduct.id &&
+              (detailExpansion.phase === 'complete' || businessFault.run?.phase === 'triggered') ? detailExpansion.phase : undefined}
             onContentRetry={() => runSilently(retryBookContent())}
             tab={state.detailTab}
             quantity={state.detailQuantity}

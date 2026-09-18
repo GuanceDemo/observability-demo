@@ -23,6 +23,7 @@ interface Props {
   quantity: number;
   inCart: boolean;
   content?: BookContentState;
+  expansion?: 'expanding' | 'complete';
   onContentRetry?: () => void;
   onBack: () => void;
   onTabChange: (tab: DetailTab) => void;
@@ -48,6 +49,7 @@ export function DetailScreen({
   quantity,
   inCart,
   content,
+  expansion,
   onContentRetry,
   onBack,
   onTabChange,
@@ -59,8 +61,11 @@ export function DetailScreen({
   const description = text.description.trim();
   const loaded = content?.status === 'ready' && content.bookId === product.id ? content.data : null;
   const waiting = content && (content.status === 'loading' || content.status === 'error') && content.bookId === product.id;
-  const loading = content?.status === 'loading' && content.bookId === product.id;
-  const loadingLabel = language === 'en' ? 'Loading book content…' : '正在加载图书内容…';
+  const expanding = expansion === 'expanding';
+  const loading = expanding || (content?.status === 'loading' && content.bookId === product.id);
+  const loadingLabel = expanding
+    ? (language === 'en' ? 'Expanding book content…' : '正在展开图书内容…')
+    : (language === 'en' ? 'Loading book content…' : '正在加载图书内容…');
   return (
     <View testID="detail-container" style={[styles.screen, {backgroundColor: tokens.colors.background}]}>
       <Pressable
@@ -82,6 +87,11 @@ export function DetailScreen({
           contentContainerStyle={styles.content}
           overScrollMode="never"
           showsVerticalScrollIndicator={false}>
+        {expansion === 'complete' && (
+          <View testID="book-content-expanded" collapsable={false} style={[styles.panel, {backgroundColor: tokens.colors.surfaceSoft}]} accessibilityLiveRegion="polite">
+            <Text style={[styles.panelLead, {color: tokens.colors.text}]}>{language === 'en' ? 'Book content expanded' : '图书内容展开完成'}</Text>
+          </View>
+        )}
         {waiting && content.status === 'error' && (
           <View testID={`book-content-${content.status}`} style={[styles.panel, {backgroundColor: tokens.colors.surfaceSoft}]}>
             <Text style={[styles.panelLead, {color: tokens.colors.text}]}>
@@ -253,7 +263,7 @@ export function DetailScreen({
         </ScrollView>
         {loading && (
           <View
-            testID="book-content-loading"
+            testID={expanding ? "book-content-expanding" : "book-content-loading"}
             collapsable={false}
             style={[styles.loadingOverlay, {backgroundColor: tokens.colors.overlay}]}
             accessibilityRole="progressbar"

@@ -55,7 +55,7 @@ class DemoFaultsModule(
     }
     val duration = when (kind) {
       "anr" -> 120_000L
-      "freeze" -> 2_000L
+      "freeze" -> 4_000L
       else -> { promise.reject("INVALID_PERFORMANCE_FAULT", "Unknown fault kind"); return }
     }
     if (!detailBlockPending.compareAndSet(false, true)) {

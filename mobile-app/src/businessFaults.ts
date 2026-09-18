@@ -78,8 +78,8 @@ const COPY: Record<BusinessFaultId, Record<StoreLanguage, {title: string; trigge
     en: {title: 'Book detail ANR', trigger: 'Open a book to block the UI thread for up to 120 seconds. Tap to trigger the system ANR dialog, choose Close app, then reopen the app. Do not use force-stop.', observation: 'On Android 11+, the SDK reads the ANR exit record after restart and reports anr_crash. Replay captures app content, not the system ANR dialog. Waiting or recovering does not guarantee an ANR error.'},
   },
   android_detail_freeze: {
-    zh: {title: '图书详情原生卡顿', trigger: '打开图书后原生主线程阻塞约 2 秒，随后自动恢复；用于演示超过 1 秒阈值的 UI 卡顿。', observation: '在 Long Task 查看 SDK 自动采集的 long_task、持续时间和阻塞堆栈，关联当前 View；卡顿不冒充 Crash Error。'},
-    en: {title: 'Book detail native freeze', trigger: 'Open a book to block the native UI thread for 2 seconds, then recover automatically.', observation: 'Inspect SDK long_task duration and blocking stack in Long Task, linked to the current View. A freeze is not a Crash Error.'},
+    zh: {title: '图书详情原生卡顿', trigger: '打开图书后显示“正在展开图书内容”，原生主线程阻塞约 4 秒，恢复后显示“图书内容展开完成”。', observation: '在 View 的 Long Tasks 查看 SDK 自动采集的耗时和消息处理器信息，结合操作及回放定位卡顿阶段；当前 SDK 不提供完整阻塞堆栈。回放请关闭“跳过不活跃”。'},
+    en: {title: 'Book detail native freeze', trigger: 'Open a book: Expanding book content → a 4-second native UI stall → Book content expanded.', observation: 'Inspect duration and message handler in the View’s Long Tasks, correlated with actions and Replay. The current SDK does not provide a full blocking stack. Turn off Skip inactivity in Replay.'},
   },
   android_detail_white_screen: {
     zh: {title: '商品详情白屏', trigger: '收起面板，打开任意图书，详情内容将因渲染异常变为空白。', observation: '回放确认打开的商品，结合真实 TypeError 和 JS 堆栈定位缺失字段；恢复基线后重新加载。'},
