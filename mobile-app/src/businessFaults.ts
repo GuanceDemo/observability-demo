@@ -74,8 +74,8 @@ export async function blockBookDetails(kind: 'anr' | 'freeze'): Promise<number> 
 
 const COPY: Record<BusinessFaultId, Record<StoreLanguage, {title: string; trigger: string; observation: string}>> = {
   android_detail_anr: {
-    zh: {title: '图书详情 ANR', trigger: '打开图书后原生主线程阻塞约 20 秒；期间点击页面以触发输入无响应。可能出现系统 ANR 提示，请选择等待。', observation: '在 Error 查看 SDK 实际采集的 anr_error/anr_crash 和主线程堆栈；仅操作记录不代表 ANR 已采集。等待结束后自动恢复。'},
-    en: {title: 'Book detail ANR', trigger: 'Open a book to block the native UI thread for 20 seconds. Tap during the stall; choose Wait if Android shows an ANR dialog.', observation: 'Inspect SDK anr_error/anr_crash and main-thread stacks in Error. An action alone does not prove ANR capture. Recovers when the block ends.'},
+    zh: {title: '图书详情 ANR', trigger: '打开图书后阻塞原生主线程（最多 120 秒）。点击页面触发系统 ANR，在系统弹窗选择“关闭应用”，再重新打开 App；不要用强制停止代替。', observation: 'Android 11 及以上由 SDK 在重启后读取 ANR 退出记录并上报 anr_crash。Replay 仅显示应用内操作，不能录制系统 ANR 弹窗。选择等待或恢复基线不保证产生 ANR 错误。'},
+    en: {title: 'Book detail ANR', trigger: 'Open a book to block the UI thread for up to 120 seconds. Tap to trigger the system ANR dialog, choose Close app, then reopen the app. Do not use force-stop.', observation: 'On Android 11+, the SDK reads the ANR exit record after restart and reports anr_crash. Replay captures app content, not the system ANR dialog. Waiting or recovering does not guarantee an ANR error.'},
   },
   android_detail_freeze: {
     zh: {title: '图书详情原生卡顿', trigger: '打开图书后原生主线程阻塞约 2 秒，随后自动恢复；用于演示超过 1 秒阈值的 UI 卡顿。', observation: '在 Long Task 查看 SDK 自动采集的 long_task、持续时间和阻塞堆栈，关联当前 View；卡顿不冒充 Crash Error。'},

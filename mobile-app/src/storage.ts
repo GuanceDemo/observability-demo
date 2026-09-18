@@ -126,24 +126,44 @@ export async function persistStore(store: HydratedStoreState): Promise<void> {
   await AsyncStorage.setItem(STORE_KEY, JSON.stringify(persisted));
 }
 
+// Serialize marker ownership checks with writes so a late completion cannot
+// erase a newer fault's restart context.
+let markerOperations: Promise<unknown> = Promise.resolve();
+function withMarkerLock<T>(operation: () => Promise<T>): Promise<T> {
+  const result = markerOperations.then(operation, operation);
+  markerOperations = result.catch(() => undefined);
+  return result;
+}
+
+export function clearCrashMarker(runId: string): Promise<void> {
+  return withMarkerLock(async () => {
+    const raw = await AsyncStorage.getItem(CRASH_MARKER_KEY);
+    if (raw && (JSON.parse(raw) as CrashMarker).run?.id === runId) {
+      await AsyncStorage.removeItem(CRASH_MARKER_KEY);
+    }
+  });
+}
+
 export async function writeCrashMarker(scenarioId: string, run?: BusinessFaultRun): Promise<void> {
   const marker: CrashMarker = {scenarioId, createdAt: new Date().toISOString(), ...(run ? {run} : {})};
-  await AsyncStorage.setItem(CRASH_MARKER_KEY, JSON.stringify(marker));
+  await withMarkerLock(() => AsyncStorage.setItem(CRASH_MARKER_KEY, JSON.stringify(marker)));
 }
 
 export async function consumeCrashMarker(): Promise<CrashMarker | null> {
-  const raw = await AsyncStorage.getItem(CRASH_MARKER_KEY);
-  if (!raw) return null;
-  await AsyncStorage.removeItem(CRASH_MARKER_KEY);
-  try {
-    const marker = JSON.parse(raw) as CrashMarker;
-    if (typeof marker.scenarioId !== 'string') return null;
-    const run = marker.run;
-    if (run && (run.scenarioId !== BUSINESS_FAULT_IDS.crash || run.scenarioId !== marker.scenarioId
-      || typeof run.id !== 'string' || !/^fault-[a-z0-9-]+$/.test(run.id)
-      || !Number.isFinite(run.startedAt) || run.phase !== 'triggered')) delete marker.run;
-    return marker;
-  } catch {
-    return null;
-  }
+  return withMarkerLock(async () => {
+    const raw = await AsyncStorage.getItem(CRASH_MARKER_KEY);
+    if (!raw) return null;
+    await AsyncStorage.removeItem(CRASH_MARKER_KEY);
+    try {
+      const marker = JSON.parse(raw) as CrashMarker;
+      if (typeof marker.scenarioId !== 'string') return null;
+      const run = marker.run;
+      if (run && ((run.scenarioId !== BUSINESS_FAULT_IDS.crash && run.scenarioId !== BUSINESS_FAULT_IDS.anr) || run.scenarioId !== marker.scenarioId
+        || typeof run.id !== 'string' || !/^fault-[a-z0-9-]+$/.test(run.id)
+        || !Number.isFinite(run.startedAt) || run.phase !== 'triggered')) delete marker.run;
+      return marker;
+    } catch {
+      return null;
+    }
+  });
 }

@@ -184,7 +184,9 @@ Mall Demo icon to enter the app. A single server timer for the shared emulator
 returns to Home after 30 seconds without dispatched Android input, then waits
 15 more seconds before force-stopping only `com.malldemomobile.safe`. This grace
 period lets pending telemetry upload; it is not a flush or cloud-playback guarantee.
-Any accepted input cancels the grace and starts a new idle period. Opening the
+An active system ANR in the demo process defers Home and force-stop, preserving
+the system Close app exit reason for historical SDK reporting. Unknown ANR state
+defers cleanup. Any accepted input cancels the grace and starts a new idle period. Opening the
 app through another surface is checked again before stopping. Failure to determine
 the resumed activity defers stopping. ADB failures retry without claiming success.
 The timer continues after browser disconnection. Video frames, stats polling,

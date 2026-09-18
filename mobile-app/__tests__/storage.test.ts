@@ -7,6 +7,7 @@ jest.mock(
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   consumeCrashMarker,
+  clearCrashMarker,
   loadPersistedStore,
   persistStore,
   writeCrashMarker,
@@ -40,6 +41,14 @@ describe('persistent mobile state', () => {
       selectedCartIds: ['observability-engineering'],
     });
     await expect(AsyncStorage.getItem('mall-demo-mobile:store:v1')).resolves.toBe(legacy);
+  });
+
+  it('does not erase a newer restart marker on a late completion', async () => {
+    const run = {id: 'fault-new-123', scenarioId: 'android_detail_anr' as const,
+      layer: 'android', phase: 'triggered' as const, startedAt: Date.now()};
+    await writeCrashMarker(run.scenarioId, run);
+    await clearCrashMarker('fault-old-123');
+    await expect(consumeCrashMarker()).resolves.toMatchObject({run});
   });
 
   it('consumes the native crash restart marker only once', async () => {

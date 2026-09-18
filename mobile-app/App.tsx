@@ -86,7 +86,7 @@ import {
   visibleProducts,
   type ToastState,
 } from './src/store';
-import {consumeCrashMarker, loadPersistedStore, persistStore, writeCrashMarker} from './src/storage';
+import {clearCrashMarker, consumeCrashMarker, loadPersistedStore, persistStore, writeCrashMarker} from './src/storage';
 import {buildRumUrl, buildTraceUrl} from './src/traceLink';
 import {useStableCallback} from './src/useStableCallback';
 import type {
@@ -265,7 +265,7 @@ function Storefront() {
       const marker = await consumeCrashMarker();
       if (cancelled) return;
       if (marker?.run) await restoreFault(marker.run);
-      if (marker) recordFaultEvent('native_crash_restart_observed', {
+      if (marker) recordFaultEvent(marker.scenarioId === BUSINESS_FAULT_IDS.anr ? 'native_anr_restart_observed' : 'native_crash_restart_observed', {
         ...(marker.run ? faultContext(marker.run) : {}), fault_phase: 'recovered', recovery_reason: 'app_restart',
         marker_created_at: marker.createdAt,
       });
@@ -451,6 +451,10 @@ function Storefront() {
               businessFault.current.current.phase !== 'triggered') return;
           const scenario = faults.find(item => item.id === performanceId);
           try {
+            if (performanceId === BUSINESS_FAULT_IDS.anr) {
+              await writeCrashMarker(run.scenarioId, run);
+              if (businessFault.current.current?.id !== run.id || businessFault.current.current.phase !== 'triggered') return;
+            }
             const duration = await blockBookDetails(performanceId === BUSINESS_FAULT_IDS.anr ? 'anr' : 'freeze');
             if (businessFault.current.current?.id !== run.id || businessFault.current.current.phase !== 'triggered') return;
             recordFaultEvent('native_detail_block_finished', {...faultContext(run), actual_duration_ms: duration});
@@ -465,6 +469,8 @@ function Storefront() {
               dispatch({type: 'faultRecovered', history: historyItem(scenario, 'failed')});
               showToast({tone: 'error', title: nativeText(state.language, 'faultFailed'), detail: errorMessage(error)});
             }
+          } finally {
+            if (performanceId === BUSINESS_FAULT_IDS.anr) await clearCrashMarker(run.id);
           }
         })());
       }

@@ -104,7 +104,11 @@ describe('real Android fault flows', () => {
     expect(drawer().run.phase).toBe('triggered');
     expect(NativeModules.DemoFaults.blockBookDetails).toHaveBeenCalledWith(id === BUSINESS_FAULT_IDS.anr ? 'anr' : 'freeze');
     expect(addError).not.toHaveBeenCalled();
+    const marker = await AsyncStorage.getItem('mall-demo-mobile:crash-marker:v1');
+    if (id === BUSINESS_FAULT_IDS.anr) expect(JSON.parse(marker!)).toMatchObject({scenarioId: id, run: {id: drawer().run.id, phase: 'triggered'}});
+    else expect(marker).toBeNull();
     await act(async () => { complete(2000); });
+    await expect(consumeCrashMarker()).resolves.toBeNull();
     expect(drawer().run.phase).toBe('recovered');
     expect(addError).not.toHaveBeenCalled();
   });
@@ -277,12 +281,13 @@ describe('real Android fault flows', () => {
     expect(api.purchase).not.toHaveBeenCalled();
   });
 
-  it('restores the previous crash run as recovered after restart, without arming again', async () => {
-    const run = {id: 'fault-restart-123', scenarioId: BUSINESS_FAULT_IDS.crash, layer: 'android', phase: 'triggered' as const, startedAt: Date.now()};
+  it.each([BUSINESS_FAULT_IDS.crash, BUSINESS_FAULT_IDS.anr])('restores %s after restart without synthesizing an error', async scenarioId => {
+    const run = {id: 'fault-restart-123', scenarioId, layer: 'android', phase: 'triggered' as const, startedAt: Date.now()};
     act(() => tree.unmount());
     await writeCrashMarker(run.scenarioId, run);
     await act(async () => { tree = TestRenderer.create(<App />); });
     expect(drawer().run).toMatchObject({...run, phase: 'recovered'});
+    expect(recordFaultEvent).toHaveBeenCalledWith(scenarioId === BUSINESS_FAULT_IDS.anr ? 'native_anr_restart_observed' : 'native_crash_restart_observed', expect.objectContaining({fault_run_id: run.id}));
     expect(NativeModules.DemoFaults.crashCheckout).not.toHaveBeenCalled();
     expect(addError).not.toHaveBeenCalled();
   });

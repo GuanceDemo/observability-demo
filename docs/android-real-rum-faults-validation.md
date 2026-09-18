@@ -359,9 +359,9 @@ needed. A new APK must be installed before these entries appear.
 
 Build with `-PMALL_DEMO_NATIVE_PERFORMANCE=true` (included in the demo build
 wrapper). Ordinary builds disable both entries and reject native calls. After
-arming, open a book: the native UI thread blocks for 20 seconds (ANR) or 2 seconds
+arming, open a book: the native UI thread blocks for up to 120 seconds (ANR) or 2 seconds
 (freeze), following a 500 ms rendering opportunity. Tap during the ANR stall;
-choose Wait if Android offers an ANR dialog. System ANR presentation is device
+choose Close app if Android offers an ANR dialog, then reopen the app. System ANR presentation is device
 and OS dependent. The operation is bounded, rejects overlapping native calls,
 and supports cancellation when restoring baseline or switching scenarios.
 
@@ -397,3 +397,47 @@ requirements. No runtime deployment or cloud acceptance is implied by tests.
   SHA256 `88aa41f4a63110f51be60dfb9e29f11d9a6d91df106bdcae85279d27f2270d0f`.
   Symbols not uploaded. This deployment smoke test does not prove cloud ANR or
   LongTask ingestion, symbolication or Replay alignment for the new scenarios.
+
+
+## ANR exit and restart acceptance — 2.3.28 (2026-09-18)
+
+The pinned SDK uses historical ANR collection on API 30+. A system input ANR
+followed by force-stop can leave REASON_USER_REQUESTED (10), even with an ANR
+trace; that exit is intentionally excluded by the SDK. The former 20-second
+stall / Wait instructions did not establish an ANR process exit.
+
+- ANR blocks the native main thread for at most 120 seconds; freeze remains 2s.
+  Tap the stalled app, choose **Close app** in Android's system dialog, then
+  reopen normally. Do not use force-stop. Cancellation/timeout is not proof of ANR.
+- Persist the triggered run before blocking; restart restores it as recovered
+  and records `native_anr_restart_observed`. Only the SDK emits `anr_crash`.
+- Shared emulator idle cleanup now defers Home/force-stop during an active ANR.
+  Android 16 exposes `mNotResponding=true`; older `notResponding=true` is supported.
+- Browser live-device validation observed the real system ANR dialog, clicked
+  Close app, then used the ordinary APK launch command to restart. System exit
+  at **2026-09-18 16:42:25.827 Asia/Shanghai** (08:42:25.827 UTC), PID 5933,
+  was **reason=6 (ANR)**, with the system input-timeout trace attached.
+- Cloud RUM query succeeded and returned **anr_crash**, version 2.3.28,
+  original run `fault-mu6plwqa-ei4s38u5`, and `storefront/detail`. A second
+  preceding validation run also produced SDK anr_crash. Original main-thread
+  stack contains `DemoFaultsModule.loadBookDetailsOnMainThread` and
+  `SystemClock.sleep`. Raw query evidence is local under `owl-reports/anr-2328/`.
+- System ANR dialogs belong to Android, outside application Replay. This fix
+  does not claim to reconstruct system UI in Replay or capture new frames while
+  the app main thread is blocked. The real device stream shows the dialog.
+
+Release: APK 2.3.28 / versionCode 21, existing SDK patch pair retained. Installed
+on GCP with data preserved; public APK and runtime version metadata updated.
+105 mobile tests, TypeScript, ESLint, 7 idle policy tests and patched release APK
+verification passed. Symbols are packaged but not uploaded to Guance.
+APK SHA-256: `ec90dc84ad613423fc0890f13861d9064a9e9721ecabf119cea34d526b29a9fa`.
+Symbol ZIP SHA-256: `493ebe8608d8e0f6b22d3ada426c2e1f781ed81e35929103ed5864b5a6a6224f`.
+The optional broad local Python discovery command was not usable: the system
+Python lacks aiohttp and gateway_test expects a source-path argument. The changed
+idle suite was run directly; the unchanged media/gateway suites are not claimed
+as revalidated here.
+
+Rollback files: GCP `releases/android-performance-2328-20260918/backup/`,
+including prior APK, Compose overlay and idle policy. Restore the prior APK via
+an appropriate downgrade/rebuild without clearing app data; restore the overlay
+and idle module then restart their affected services.

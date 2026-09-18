@@ -3,7 +3,7 @@ import sys
 from pathlib import Path
 import unittest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'latest-video'))
-from idle import IdlePolicy
+from idle import IdlePolicy, has_active_anr
 
 
 class IdleTests(unittest.IsolatedAsyncioTestCase):
@@ -11,10 +11,33 @@ class IdleTests(unittest.IsolatedAsyncioTestCase):
         self.now = 0
         self.calls = []
         self.foreground = False
+        self.anr = False
         async def command(action):
+            if action == 'anr':
+                return self.anr
             self.calls.append(action)
             return self.foreground
         self.policy = IdlePolicy(command, lambda: self.now)
+
+    async def test_anr_defers_home_and_force_stop(self):
+        self.anr = True
+        self.now = 120
+        await self.policy.tick()
+        self.assertEqual(self.calls, [])
+        self.anr = False
+        await self.policy.tick()
+        self.assertEqual(self.calls, ['home'])
+
+    def test_anr_matches_only_the_demo_process(self):
+        dump = ('ACTIVITY MANAGER RUNNING PROCESSES\n'
+                '  *APP* UID 1 ProcessRecord{a 12:other.app/u0a1}\n'
+                '    notResponding=true\n'
+                '  *APP* UID 2 ProcessRecord{b 13:com.malldemomobile.safe/u0a2}\n'
+                '    notResponding=false\n')
+        self.assertFalse(has_active_anr(dump, 'com.malldemomobile.safe'))
+        self.assertTrue(has_active_anr(dump.replace('notResponding=false', 'mNotResponding=true'), 'com.malldemomobile.safe'))
+        with self.assertRaises(RuntimeError):
+            has_active_anr('', 'com.malldemomobile.safe')
 
     async def test_home_then_full_grace_and_stop_once(self):
         self.now = 29.9
