@@ -32,7 +32,7 @@ export class DetailFaultBoundary extends React.Component<Props, {failed: boolean
 
 export function withMissingDetailDescription(product: StorefrontProduct, language: StoreLanguage): StorefrontProduct {
   // Deliberately violate the business model only for the armed render scenario.
-  // The normal DetailScreen access produces the actual TypeError and its stack.
+  // DetailScreen preparation accesses this field and produces the actual TypeError.
   return {...product, [language]: {...product[language], description: undefined}} as unknown as StorefrontProduct;
 }
 

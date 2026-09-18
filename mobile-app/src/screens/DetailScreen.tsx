@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {Pressable, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {
   formatPrice,
@@ -23,6 +23,7 @@ interface Props {
   quantity: number;
   inCart: boolean;
   content?: BookContentState;
+  deferPreparation?: boolean;
   expansion?: 'expanding' | 'complete';
   onContentRetry?: () => void;
   onBack: () => void;
@@ -41,7 +42,27 @@ const TABS: Array<{
   {tab: 'audience', key: 'audience'},
 ];
 
-export function DetailScreen({
+// Used by both normal rendering and the uncaught-JS demonstration.
+function prepareBookDescription(product: StorefrontProduct, language: StoreLanguage): string {
+  return getProductText(product, language).description.trim();
+}
+
+export function DetailScreen(props: Props) {
+  const {product, language, deferPreparation} = props;
+  const [prepared, setPrepared] = useState<string | null>(null);
+  useEffect(() => {
+    if (!deferPreparation) return;
+    // A real asynchronous content-preparation failure escapes React boundaries
+    // and reaches the runtime global handler. Do not catch or manually report it.
+    const timer = setTimeout(() => setPrepared(prepareBookDescription(product, language)), 0);
+    return () => clearTimeout(timer);
+  }, [product, language, deferPreparation]);
+  const description = deferPreparation ? prepared : prepareBookDescription(product, language);
+  if (description === null) return null;
+  return <PreparedDetailScreen {...props} description={description} />;
+}
+
+function PreparedDetailScreen({
   tokens,
   language,
   product,
@@ -56,9 +77,9 @@ export function DetailScreen({
   onQuantityChange,
   onAdd,
   onBuy,
-}: Props) {
+  description,
+}: Props & {description: string}) {
   const text = getProductText(product, language);
-  const description = text.description.trim();
   const loaded = content?.status === 'ready' && content.bookId === product.id ? content.data : null;
   const waiting = content && (content.status === 'loading' || content.status === 'error') && content.bookId === product.id;
   const expanding = expansion === 'expanding';

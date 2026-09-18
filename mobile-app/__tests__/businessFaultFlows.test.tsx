@@ -8,7 +8,6 @@ import {BUSINESS_FAULT_IDS} from '../src/businessFaults';
 import {FaultDrawer} from '../src/components/FaultDrawer';
 import {StoreBottomNav, StoreHeader} from '../src/components/StoreHeader';
 import {CheckoutCrashConfirmation} from '../src/components/CheckoutCrashConfirmation';
-import {DetailFaultBoundary} from '../src/components/DetailFaultBoundary';
 import {HomeScreen} from '../src/screens/HomeScreen';
 import {BagScreen} from '../src/screens/BagScreen';
 import {DetailScreen} from '../src/screens/DetailScreen';
@@ -145,23 +144,31 @@ describe('real Android fault flows', () => {
     expect(recordFaultEvent).not.toHaveBeenCalledWith('native_detail_block_finished', expect.anything());
   });
 
-  it('arms without an error, then catches a real detail render error and reloads the baseline', async () => {
+  it('arms without an error, then lets the real asynchronous TypeError escape to the runtime', async () => {
+    jest.useFakeTimers();
     await enable(BUSINESS_FAULT_IDS.detail);
-    expect(recordFaultEvent).not.toHaveBeenCalledWith('book_detail_render_failed', expect.anything());
+    expect(addError).not.toHaveBeenCalled();
     await openBook();
-    expect(tree.root.findByProps({testID: 'detail-white-screen'})).toBeTruthy();
-    expect(tree.root.findByType(StoreHeader)).toBeTruthy();
-    expect(drawer().run.phase).toBe('triggered');
-    expect(recordFaultEvent).toHaveBeenCalledWith('book_detail_render_failed', expect.objectContaining({
-      error_type: 'TypeError', js_stack: expect.stringContaining('DetailScreen'), book_id: bookId,
-    }));
-    await act(async () => { tree.root.findByType(DetailFaultBoundary).props.onRetry(); });
-    expect(tree.root.findAllByProps({testID: 'detail-white-screen'})).toHaveLength(0);
-    expect(tree.root.findByType(DetailScreen).props.product.zh.description).toEqual(expect.any(String));
-    expect(drawer().run.phase).toBe('recovered');
+    const runId = drawer().run.id;
+    expect(tree.root.findAllByProps({testID: 'detail-container'})).toHaveLength(0);
+    expect(() => { act(() => jest.advanceTimersByTime(0)); }).toThrow(TypeError);
+    expect(recordFaultEvent).not.toHaveBeenCalledWith('book_detail_render_failed', expect.anything());
+    expect(addError).not.toHaveBeenCalled();
+    await expect(consumeCrashMarker()).resolves.toMatchObject({run: {id: runId, scenarioId: BUSINESS_FAULT_IDS.detail, phase: 'triggered'}});
   });
 
-  it('establishes the detail View before render errors and content requests', async () => {
+  it('cancels pending JS preparation when the scenario is switched before it runs', async () => {
+    jest.useFakeTimers();
+    await enable(BUSINESS_FAULT_IDS.detail);
+    await openBook();
+    await enable(BUSINESS_FAULT_IDS.loading);
+    expect(() => { act(() => jest.advanceTimersByTime(0)); }).not.toThrow();
+    await expect(consumeCrashMarker()).resolves.toBeNull();
+    expect(addError).not.toHaveBeenCalled();
+  });
+
+  it('establishes the detail View before JS preparation errors and content requests', async () => {
+    jest.useFakeTimers();
     await enable(BUSINESS_FAULT_IDS.detail);
     let finishView!: () => void;
     jest.mocked(startView).mockImplementationOnce(() => new Promise<void>(resolve => { finishView = resolve; }));
@@ -171,7 +178,7 @@ describe('real Android fault flows', () => {
     expect(api.bookContent).not.toHaveBeenCalled();
     expect(drawer().run.phase).toBe('armed');
     await act(async () => { finishView(); });
-    expect(tree.root.findByProps({testID: 'detail-white-screen'})).toBeTruthy();
+    expect(tree.root.findByType(DetailScreen).props.deferPreparation).toBe(true);
     expect(api.bookContent).toHaveBeenCalledTimes(1);
     expect(stopView).not.toHaveBeenCalled();
     const views = jest.mocked(startView).mock.calls.length;
@@ -291,13 +298,13 @@ describe('real Android fault flows', () => {
     expect(api.purchase).not.toHaveBeenCalled();
   });
 
-  it.each([BUSINESS_FAULT_IDS.crash, BUSINESS_FAULT_IDS.anr])('restores %s after restart without synthesizing an error', async scenarioId => {
+  it.each([BUSINESS_FAULT_IDS.detail, BUSINESS_FAULT_IDS.crash, BUSINESS_FAULT_IDS.anr])('restores %s after restart without synthesizing an error', async scenarioId => {
     const run = {id: 'fault-restart-123', scenarioId, layer: 'android', phase: 'triggered' as const, startedAt: Date.now()};
     act(() => tree.unmount());
     await writeCrashMarker(run.scenarioId, run);
     await act(async () => { tree = TestRenderer.create(<App />); });
     expect(drawer().run).toMatchObject({...run, phase: 'recovered'});
-    expect(recordFaultEvent).toHaveBeenCalledWith(scenarioId === BUSINESS_FAULT_IDS.anr ? 'native_anr_restart_observed' : 'native_crash_restart_observed', expect.objectContaining({fault_run_id: run.id}));
+    expect(recordFaultEvent).toHaveBeenCalledWith(scenarioId === BUSINESS_FAULT_IDS.detail ? 'js_crash_restart_observed' : scenarioId === BUSINESS_FAULT_IDS.anr ? 'native_anr_restart_observed' : 'native_crash_restart_observed', expect.objectContaining({fault_run_id: run.id}));
     expect(NativeModules.DemoFaults.crashCheckout).not.toHaveBeenCalled();
     expect(addError).not.toHaveBeenCalled();
   });

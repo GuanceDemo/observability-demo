@@ -82,8 +82,8 @@ const COPY: Record<BusinessFaultId, Record<StoreLanguage, {title: string; trigge
     en: {title: 'Book detail native freeze', trigger: 'Open a book: Expanding book content → a 4-second native UI stall → Book content expanded.', observation: 'Inspect duration and message handler in the View’s Long Tasks, correlated with actions and Replay. The current SDK does not provide a full blocking stack. Turn off Skip inactivity in Replay.'},
   },
   android_detail_white_screen: {
-    zh: {title: '商品详情白屏', trigger: '收起面板，打开任意图书，详情内容将因渲染异常变为空白。', observation: '回放确认打开的商品，结合真实 TypeError 和 JS 堆栈定位缺失字段；恢复基线后重新加载。'},
-    en: {title: 'Blank book details', trigger: 'Close this panel and open a book. A render error leaves its content blank.', observation: 'Use replay, the real TypeError and JS stack to locate the missing field. Restore baseline to reload.'},
+    zh: {title: '图书详情 JS 未捕获异常', trigger: '打开图书时，缺失字段在异步内容准备中触发 TypeError；页面可能空白或应用退出，需要重启。', observation: '检查 SDK 自动采集的 reactnative_crash、原始 JS 堆栈和崩溃前回放；重启关联本轮标识。'},
+    en: {title: 'Uncaught book detail JS error', trigger: 'Open a book: a missing field throws TypeError during asynchronous content preparation. The page may go blank or the app may exit; restart afterward.', observation: 'Inspect SDK-collected reactnative_crash, the original JS stack and preceding replay. Correlate the run after restarting.'},
   },
   android_checkout_crash: {
     zh: {title: '结算闪退', trigger: '进入购物车，点击结算，在 App 内确认后触发真实闪退；不会提交订单。', observation: '重启 App，关联崩溃前回放、原生 Crash 堆栈与本轮标识，定位结算数据异常。'},

@@ -150,6 +150,7 @@ function Storefront() {
   const [traceId, setTraceId] = useState('');
   const [previewOpen, setPreviewOpen] = useState(false);
   const [faultBusy, setFaultBusy] = useState(false);
+  const [detailCrashRun, setDetailCrashRun] = useState<string | null>(null);
   const [detailExpansion, setDetailExpansion] = useState<{runId: string; bookId: string; phase: 'expanding' | 'complete'} | null>(null);
   const faultTransition = useRef(false);
   const checkoutConfirmation = useRef(false);
@@ -266,7 +267,7 @@ function Storefront() {
       const marker = await consumeCrashMarker();
       if (cancelled) return;
       if (marker?.run) await restoreFault(marker.run);
-      if (marker) recordFaultEvent(marker.scenarioId === BUSINESS_FAULT_IDS.anr ? 'native_anr_restart_observed' : 'native_crash_restart_observed', {
+      if (marker) recordFaultEvent(marker.scenarioId === BUSINESS_FAULT_IDS.detail ? 'js_crash_restart_observed' : marker.scenarioId === BUSINESS_FAULT_IDS.anr ? 'native_anr_restart_observed' : 'native_crash_restart_observed', {
         ...(marker.run ? faultContext(marker.run) : {}), fault_phase: 'recovered', recovery_reason: 'app_restart',
         marker_created_at: marker.createdAt,
       });
@@ -430,13 +431,25 @@ function Storefront() {
     async (bookId: string) => {
       const navigation = ++bookNavigation.current;
       setDetailExpansion(null);
+      setDetailCrashRun(null);
       const product = getProduct(bookId);
       bookContent.cancel();
       const triggerId = [BUSINESS_FAULT_IDS.detail, BUSINESS_FAULT_IDS.loading]
         .find(id => businessFault.enabled(id));
       await beginScreenView('detail', product.id);
       if (navigation !== bookNavigation.current) return;
-      if (triggerId) await businessFault.trigger(triggerId, {book_id: product.id});
+      if (triggerId) {
+        const run = await businessFault.trigger(triggerId, {book_id: product.id});
+        if (run?.scenarioId === BUSINESS_FAULT_IDS.detail) {
+          await writeCrashMarker(run.scenarioId, run);
+          if (navigation !== bookNavigation.current || businessFault.current.current?.id !== run.id ||
+              businessFault.current.current.phase !== 'triggered') {
+            await clearCrashMarker(run.id);
+            return;
+          }
+          setDetailCrashRun(run.id);
+        }
+      }
       if (navigation !== bookNavigation.current) return;
       rumAction('business_view_book_detail', {
         book_id: product.id,
@@ -722,6 +735,7 @@ function Storefront() {
     cancelCheckoutCrash();
     cancelBookDetailsBlock();
     await businessFault.recover(reason, properties);
+    if (active.scenarioId === BUSINESS_FAULT_IDS.detail) await clearCrashMarker(active.id);
     if (businessFault.current.current?.id !== active.id) return;
     const scenario = faults.find(item => item.id === active.scenarioId);
     if (scenario) dispatch({type: 'faultRecovered', history: historyItem(scenario, 'recovered')});
@@ -751,7 +765,9 @@ function Storefront() {
         if (isBusinessFault(scenario.id)) {
           if (state.activeFault?.execution === 'server') await api.recoverFaults(metadata);
           cancelBookDetailsBlock();
+          const previous = businessFault.current.current;
           await businessFault.recover('switch_scenario');
+          if (previous?.scenarioId === BUSINESS_FAULT_IDS.detail) await clearCrashMarker(previous.id);
           await businessFault.arm(scenario);
           dispatch({type: 'faultActivated', scenario, history: historyItem(scenario, 'active')});
           dispatch({type: 'setDrawer', open: false});
@@ -874,7 +890,7 @@ function Storefront() {
       await activateFault(fault);
     }, recover: recoverFaults,
   });
-  const detailFaulted = businessFault.run?.scenarioId === BUSINESS_FAULT_IDS.detail && businessFault.run.phase === 'triggered';
+  const detailFaulted = detailCrashRun === businessFault.run?.id && businessFault.run?.scenarioId === BUSINESS_FAULT_IDS.detail && businessFault.run.phase === 'triggered';
   const traceHint = traceId
     ? `trace_id=${shortId(traceId)}`
     : nativeText(state.language, 'traceHint');
@@ -988,6 +1004,7 @@ function Storefront() {
           <DetailScreen
             tokens={tokens}
             language={state.language}
+            deferPreparation={detailFaulted}
             product={detailFaulted ? withMissingDetailDescription(currentProduct, state.language) : currentProduct}
             content={bookContent.state}
             expansion={detailExpansion?.runId === businessFault.run?.id && detailExpansion?.bookId === currentProduct.id &&

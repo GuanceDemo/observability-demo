@@ -172,3 +172,39 @@ index 496d343..e26688d 100644
    enableNativeUserResource?: boolean;
    enableResourceHostIP?: boolean;
    errorMonitorType?: ErrorMonitorType;
+diff --git a/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx b/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx
+--- a/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx
++++ b/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx
+@@ -22,7 +22,7 @@
+       return;
+     }
+     if (ErrorUtils) {
+-      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler;
++      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler();
+       FTRumErrorTracking.defaultConsoleError = console.error;
+       ErrorUtils.setGlobalHandler(FTRumErrorTracking.onGlobalError);
+       console.error = FTRumErrorTracking.onConsoleError;
+diff --git a/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js b/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js
+--- a/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js
++++ b/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js
+@@ -16,7 +16,7 @@
+       return;
+     }
+     if (ErrorUtils) {
+-      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler;
++      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler();
+       FTRumErrorTracking.defaultConsoleError = console.error;
+       ErrorUtils.setGlobalHandler(FTRumErrorTracking.onGlobalError);
+       console.error = FTRumErrorTracking.onConsoleError;
+diff --git a/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js b/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js
+--- a/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js
++++ b/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js
+@@ -10,7 +10,7 @@
+       return;
+     }
+     if (ErrorUtils) {
+-      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler;
++      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler();
+       FTRumErrorTracking.defaultConsoleError = console.error;
+       ErrorUtils.setGlobalHandler(FTRumErrorTracking.onGlobalError);
+       console.error = FTRumErrorTracking.onConsoleError;

@@ -475,3 +475,27 @@ playback to 00:33 removed the overlay and displayed the completion panel, aligne
 with `native_detail_block_finished` / `mobile_fault_recovered` in the same View.
 The initial session lookup was empty before aggregation; it was not a missing
 LongTask. Public APK hash matches the local release artifact.
+
+## Uncaught JS detail scenario (2026-09-18, local validation)
+
+The existing `android_detail_white_screen` ID now represents an uncaught JS
+content-preparation error. The missing description is accessed by the same
+`prepareBookDescription` function used for normal details, in an asynchronous
+callback without a catch. React boundaries cannot intercept that callback.
+The SDK global handler calls its default `addError`, whose Android bridge type
+is `reactnative_crash`; the demo does not assign a crash type or manually call
+ErrorUtils. RN 0.86 uncaught *render* exceptions instead go directly through
+ExceptionsManager, so merely removing the boundary would not establish this path.
+
+Persist the run before enabling faulty preparation. Navigation and scenario
+changes cancel pending callbacks; restarting restores the original run as
+`js_crash_restart_observed`, without another synthetic error or re-arming.
+The page can become blank or the app can exit: in-page recovery and a captured
+post-crash blank Replay frame are not guaranteed.
+
+Pinned RN SDK 0.4.2 also needs the existing-handler getter called during hook
+installation (`ErrorUtils.getGlobalHandler()`), otherwise it stores the getter
+rather than the handler and fails to delegate to the original runtime handler.
+The patch covers source, CommonJS and module entries. Tests exercise original
+stack reporting and delegation, uncaught callback behavior and restart recovery.
+This change has not yet been packaged/deployed or verified in cloud RUM/Replay.
