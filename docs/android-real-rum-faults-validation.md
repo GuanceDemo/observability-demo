@@ -498,4 +498,38 @@ installation (`ErrorUtils.getGlobalHandler()`), otherwise it stores the getter
 rather than the handler and fails to delegate to the original runtime handler.
 The patch covers source, CommonJS and module entries. Tests exercise original
 stack reporting and delegation, uncaught callback behavior and restart recovery.
-This change has not yet been packaged/deployed or verified in cloud RUM/Replay.
+This was packaged as 2.3.30 and deployed to GCP. Cloud eventually returned one
+reactnative_crash and the resulting java_crash for the same missing-field failure.
+An early empty query was ingestion/indexing delay, not evidence of a failed SDK
+hook. Do not infer active runtime error routing solely from static RN sources.
+
+2.3.31 adds conditional SDK support for RN$registerExceptionListener only when
+RN$useAlwaysAvailableJSErrorHandling is true. It observes fatal runtime errors,
+uses extraData.rawStack and leaves preventDefault untouched; nonfatal console
+errors retain the existing hook. Legacy delegation is preserved. The additional
+branch has a unit regression test; its presence does not prove that this runtime
+flag is enabled on the emulator. Final-version runtime validation is below.
+
+### 2.3.31 GCP release acceptance
+
+- Installed versionCode 24, versionName 2.3.31 with existing app data preserved.
+  Host APK and public download SHA-256 both match the final local build:
+  `9f07cd97adde4450e5aebf3f9e9d40ef13a5441728dbe02737a024000a8d3690`.
+- Existing Web image retained; GCP runtime APK metadata updated to 2.3.31.
+  Backup: `releases/android-js-crash-2331-20260918/backup`.
+- At 2026-09-18 18:19:55.334 Asia/Shanghai, run
+  `fault-mu6t43qw-4guclyl5` produced one `reactnative_crash` with
+  `Cannot read property 'trim' of undefined` and original Hermes stack.
+  Android process termination followed at 18:19:55.366 with `java_crash` for the
+  same JS exception; these are two layers of one failure, not two SDK JS reports.
+- Both errors share session `658519e95d844af59ca0bf20dfca91d0` and detail View
+  `5b8d1ab61cd54196a8fd6ed90eafbbfd`. Restart restored the run as recovered;
+  subsequent baseline navigation visibly rendered normal book details.
+- 110 tests, typecheck, lint and final APK Replay/ABI gates passed. Matching
+  `mall-app-android-demo-2.3.31-sourcemap.zip` is prepared, not uploaded.
+  SHA-256: `a7e8cafdf93990115bf2bce3821e6da577343064d12dc6c5d94c60035930752a`.
+- Raw cloud-query evidence is under ignored `owl-reports/js-crash-2331/`.
+- Cloud Replay was actually played through to 00:40: the detail content became
+  blank with the app header/navigation retained, and the sidebar showed the JS
+  error and following Java crash at 00:40. This proves the captured pre-exit
+  content state, not capture of the Android launcher after process death.

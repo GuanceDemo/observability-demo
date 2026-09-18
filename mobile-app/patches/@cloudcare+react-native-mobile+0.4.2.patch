@@ -175,9 +175,25 @@ index 496d343..e26688d 100644
 diff --git a/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx b/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx
 --- a/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx
 +++ b/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTracking.tsx
-@@ -22,7 +22,7 @@
+@@ -21,8 +21,23 @@
+     if (FTRumErrorTracking.isTracking) {
        return;
      }
++    const runtime = globalThis as typeof globalThis & {
++      RN$useAlwaysAvailableJSErrorHandling?: boolean;
++      RN$registerExceptionListener?: (listener: (error: {
++        isFatal?: boolean; message: string; extraData?: {rawStack?: string};
++      }) => void) => void;
++    };
++    // RN 0.86's C++ pipeline bypasses ErrorUtils, including timer exceptions.
++    // Observe real fatal exceptions without suppressing the runtime's handler.
++    if (runtime.RN$useAlwaysAvailableJSErrorHandling === true &&
++        typeof runtime.RN$registerExceptionListener === 'function') {
++      runtime.RN$registerExceptionListener(error => {
++        if (!error.isFatal) return;
++        FTReactNativeRUM.addError(error.extraData?.rawStack ?? '', error.message).catch(() => {});
++      });
++    }
      if (ErrorUtils) {
 -      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler;
 +      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler();
@@ -187,9 +203,20 @@ diff --git a/node_modules/@cloudcare/react-native-mobile/src/rum/FTRumErrorTrack
 diff --git a/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js b/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js
 --- a/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js
 +++ b/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumErrorTracking.js
-@@ -16,7 +16,7 @@
+@@ -15,8 +15,18 @@
+     if (FTRumErrorTracking.isTracking) {
        return;
      }
++    const runtime = globalThis;
++    // RN 0.86's C++ pipeline bypasses ErrorUtils, including timer exceptions.
++    // Observe real fatal exceptions without suppressing the runtime's handler.
++    if (runtime.RN$useAlwaysAvailableJSErrorHandling === true &&
++        typeof runtime.RN$registerExceptionListener === 'function') {
++      runtime.RN$registerExceptionListener(error => {
++        if (!error.isFatal) return;
++        _ft_rum.FTReactNativeRUM.addError(error.extraData?.rawStack ?? '', error.message).catch(() => {});
++      });
++    }
      if (ErrorUtils) {
 -      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler;
 +      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler();
@@ -199,9 +226,20 @@ diff --git a/node_modules/@cloudcare/react-native-mobile/lib/commonjs/rum/FTRumE
 diff --git a/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js b/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js
 --- a/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js
 +++ b/node_modules/@cloudcare/react-native-mobile/lib/module/rum/FTRumErrorTracking.js
-@@ -10,7 +10,7 @@
+@@ -9,8 +9,18 @@
+     if (FTRumErrorTracking.isTracking) {
        return;
      }
++    const runtime = globalThis;
++    // RN 0.86's C++ pipeline bypasses ErrorUtils, including timer exceptions.
++    // Observe real fatal exceptions without suppressing the runtime's handler.
++    if (runtime.RN$useAlwaysAvailableJSErrorHandling === true &&
++        typeof runtime.RN$registerExceptionListener === 'function') {
++      runtime.RN$registerExceptionListener(error => {
++        if (!error.isFatal) return;
++        FTReactNativeRUM.addError(error.extraData?.rawStack ?? '', error.message).catch(() => {});
++      });
++    }
      if (ErrorUtils) {
 -      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler;
 +      FTRumErrorTracking.defaultErrorHandler = ErrorUtils.getGlobalHandler();

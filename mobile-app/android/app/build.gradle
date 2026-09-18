@@ -123,8 +123,8 @@ android {
         applicationId "com.malldemomobile"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 22
-        versionName "2.3.29"
+        versionCode 24
+        versionName "2.3.31"
         manifestPlaceholders["profileableByShell"] = diagnosticProfileable.toString()
         buildConfigField "boolean", "NATIVE_PERFORMANCE_ENABLED", nativePerformanceEnabled.toString()
         buildConfigField "boolean", "CHECKOUT_CRASH_ENABLED", checkoutCrashEnabled.toString()
