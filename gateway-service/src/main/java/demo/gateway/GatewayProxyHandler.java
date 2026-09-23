@@ -1,6 +1,5 @@
 package demo.gateway;
 
-import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,16 +15,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.HttpRequestHandler;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.servlet.HandlerMapping;
+import org.springframework.web.servlet.handler.AbstractHandlerMapping;
 
 final class PassthroughResponseErrorHandler implements ResponseErrorHandler {
   @Override
@@ -40,12 +42,14 @@ final class PassthroughResponseErrorHandler implements ResponseErrorHandler {
 }
 
 @Component
-class GatewayProxyFilter extends OncePerRequestFilter {
+class GatewayProxyHandler implements HttpRequestHandler {
+  static final String ROUTE_DECISION_ATTRIBUTE =
+      GatewayProxyHandler.class.getName() + ".routeDecision";
   private static final int MAX_REQUEST_BODY_BYTES = 1024 * 1024;
   private static final int MAX_SOURCE_FIELD_LENGTH = 512;
   private static final byte[] ROBOTS_RESPONSE =
       "User-agent: *\nDisallow: /\n".getBytes(StandardCharsets.UTF_8);
-  private static final Logger log = LoggerFactory.getLogger(GatewayProxyFilter.class);
+  private static final Logger log = LoggerFactory.getLogger(GatewayProxyHandler.class);
   private static final Set<String> HOP_BY_HOP_HEADERS =
       Set.of(
           "connection",
@@ -88,7 +92,7 @@ class GatewayProxyFilter extends OncePerRequestFilter {
   private final String gameUrl;
   private final PublicRoutePolicy publicRoutePolicy;
 
-  GatewayProxyFilter(
+  GatewayProxyHandler(
       RestTemplate gatewayRestTemplate,
       @Value("${gateway.order-url:http://127.0.0.1:8083}") String orderUrl,
       @Value("${gateway.game-url:http://127.0.0.1:8084}") String gameUrl) {
@@ -99,24 +103,15 @@ class GatewayProxyFilter extends OncePerRequestFilter {
   }
 
   @Override
-  protected boolean shouldNotFilter(HttpServletRequest request) {
-    String requestUri = request.getRequestURI();
-    return "/actuator".equals(requestUri) || requestUri.startsWith("/actuator/");
-  }
-
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+  public void handleRequest(HttpServletRequest request, HttpServletResponse response)
       throws ServletException, IOException {
     String keyRequest = valueOrDash(request.getHeader("X-Key-Request"));
     String businessRequestId = valueOrDash(request.getHeader("X-Business-Request-Id"));
     String visitorId = safeVisitorId(request.getHeader("X-Demo-Visitor-Id"));
     DemoLanguage language = DemoLanguage.from(request.getHeader("X-Demo-Language"));
-    PublicRoutePolicy.Decision route =
-        publicRoutePolicy.evaluate(request.getMethod(), request.getRequestURI());
+    PublicRoutePolicy.Decision route = resolveRoute(request);
     RequestSource source = RequestSource.from(request);
     putRequestContext(keyRequest, businessRequestId, visitorId, language, route, source);
-    applyCurrentSpanTags(keyRequest, businessRequestId, visitorId, language, route, source);
 
     try {
       if (!route.forwardsDownstream()) {
@@ -194,6 +189,13 @@ class GatewayProxyFilter extends OncePerRequestFilter {
     } finally {
       clearRequestContext();
     }
+  }
+
+  PublicRoutePolicy.Decision resolveRoute(HttpServletRequest request) {
+    Object route = request.getAttribute(ROUTE_DECISION_ATTRIBUTE);
+    return route instanceof PublicRoutePolicy.Decision decision
+        ? decision
+        : publicRoutePolicy.evaluate(request.getMethod(), request.getRequestURI());
   }
 
   private void writeLocalResponse(
@@ -303,47 +305,6 @@ class GatewayProxyFilter extends OncePerRequestFilter {
     }
   }
 
-  private void applyCurrentSpanTags(
-      String keyRequest,
-      String businessRequestId,
-      String visitorId,
-      DemoLanguage language,
-      PublicRoutePolicy.Decision route,
-      RequestSource source) {
-    try {
-      Class<?> globalTracer = Class.forName("datadog.trace.api.GlobalTracer");
-      Object tracer = globalTracer.getMethod("get").invoke(null);
-      Object span = tracer.getClass().getMethod("activeSpan").invoke(tracer);
-      if (span != null) {
-        setTag(
-            span,
-            "gateway.target",
-            route.forwardsDownstream() ? "order-service" : "gateway-service");
-        setTag(span, "key_request", keyRequest);
-        setTag(span, "biz_request_id", businessRequestId);
-        setTag(span, "visitor_id", valueOrDash(visitorId));
-        setTag(span, "auth_state", "anonymous");
-        setTag(span, "language", language.code());
-        setTag(span, "public_route", route.routeId());
-        setTag(span, "route_class", route.routeClass());
-        setTag(span, "traffic_type", route.trafficType());
-        setTag(span, "client_ip", source.clientIp());
-        setTag(span, "peer_ip", source.peerIp());
-        setTag(span, "request_host", source.host());
-        setTag(span, "user_agent", source.userAgent());
-        setTag(span, "referer", source.referer());
-      }
-    } catch (ReflectiveOperationException | LinkageError ignored) {
-      // Unit tests and local builds do not require the runtime tracing agent.
-    }
-  }
-
-  private void setTag(Object span, String key, String value) throws ReflectiveOperationException {
-    if (!"-".equals(value)) {
-      span.getClass().getMethod("setTag", String.class, String.class).invoke(span, key, value);
-    }
-  }
-
   private void putRequestContext(
       String keyRequest,
       String businessRequestId,
@@ -423,18 +384,6 @@ class GatewayProxyFilter extends OncePerRequestFilter {
     MDC.put("user_id", identity.userId());
     MDC.put("user_tier", identity.userTier());
     MDC.put("auth_state", "authenticated");
-    try {
-      Class<?> globalTracer = Class.forName("datadog.trace.api.GlobalTracer");
-      Object tracer = globalTracer.getMethod("get").invoke(null);
-      Object span = tracer.getClass().getMethod("activeSpan").invoke(tracer);
-      if (span != null) {
-        setTag(span, "user_id", identity.userId());
-        setTag(span, "user_tier", identity.userTier());
-        setTag(span, "auth_state", "authenticated");
-      }
-    } catch (ReflectiveOperationException | LinkageError ignored) {
-      // Unit tests and local builds do not require the runtime tracing agent.
-    }
   }
 
   private static String safeVisitorId(String value) {
@@ -560,5 +509,31 @@ class GatewayProxyFilter extends OncePerRequestFilter {
 
   private static String valueOrDash(String value) {
     return value == null || value.isBlank() ? "-" : value.trim();
+  }
+}
+
+@Component
+final class GatewayRouteHandlerMapping extends AbstractHandlerMapping {
+  private final GatewayProxyHandler handler;
+
+  GatewayRouteHandlerMapping(GatewayProxyHandler handler) {
+    this.handler = handler;
+    setOrder(Ordered.HIGHEST_PRECEDENCE);
+  }
+
+  @Override
+  protected Object getHandlerInternal(HttpServletRequest request) {
+    String requestUri = request.getRequestURI();
+    if ("/actuator".equals(requestUri) || requestUri.startsWith("/actuator/")) {
+      return null;
+    }
+    PublicRoutePolicy.Decision route = handler.resolveRoute(request);
+    request.setAttribute(GatewayProxyHandler.ROUTE_DECISION_ATTRIBUTE, route);
+    if (route.pathPattern() != null) {
+      // Publish the standard MVC route attribute so tracing and metrics integrations can use the
+      // low-cardinality route pattern without any gateway-specific tracing code.
+      request.setAttribute(HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, route.pathPattern());
+    }
+    return handler;
   }
 }
