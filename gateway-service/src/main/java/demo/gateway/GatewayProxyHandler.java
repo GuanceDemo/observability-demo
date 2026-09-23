@@ -10,6 +10,7 @@ import java.time.Duration;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Map;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,6 +113,7 @@ class GatewayProxyHandler implements HttpRequestHandler {
     PublicRoutePolicy.Decision route = resolveRoute(request);
     RequestSource source = RequestSource.from(request);
     putRequestContext(keyRequest, businessRequestId, visitorId, language, route, source);
+    applyCurrentSpanTags(keyRequest, businessRequestId, visitorId, language, route, source);
 
     try {
       if (!route.forwardsDownstream()) {
@@ -305,6 +307,29 @@ class GatewayProxyHandler implements HttpRequestHandler {
     }
   }
 
+  private void applyCurrentSpanTags(
+      String keyRequest, String businessRequestId, String visitorId,
+      DemoLanguage language, PublicRoutePolicy.Decision route, RequestSource source) {
+    Map<String, String> tags = new java.util.LinkedHashMap<>();
+    tags.put("gateway.target", route.forwardsDownstream()
+        ? (route.routeId().startsWith("game.") ? "game-service" : "order-service")
+        : "gateway-service");
+    tags.put("key_request", keyRequest);
+    tags.put("biz_request_id", businessRequestId);
+    tags.put("visitor_id", valueOrDash(visitorId));
+    tags.put("auth_state", "anonymous");
+    tags.put("language", language.code());
+    tags.put("public_route", route.routeId());
+    tags.put("route_class", route.routeClass());
+    tags.put("traffic_type", route.trafficType());
+    tags.put("client_ip", source.clientIp());
+    tags.put("peer_ip", source.peerIp());
+    tags.put("request_host", source.host());
+    tags.put("user_agent", source.userAgent());
+    tags.put("referer", source.referer());
+    GatewaySpanTags.apply(tags);
+  }
+
   private void putRequestContext(
       String keyRequest,
       String businessRequestId,
@@ -384,6 +409,9 @@ class GatewayProxyHandler implements HttpRequestHandler {
     MDC.put("user_id", identity.userId());
     MDC.put("user_tier", identity.userTier());
     MDC.put("auth_state", "authenticated");
+    GatewaySpanTags.apply(Map.of(
+        "user_id", identity.userId(), "user_tier", identity.userTier(),
+        "auth_state", "authenticated"));
   }
 
   private static String safeVisitorId(String value) {

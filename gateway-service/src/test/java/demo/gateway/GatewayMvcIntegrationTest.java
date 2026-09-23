@@ -88,4 +88,48 @@ class GatewayMvcIntegrationTest {
 
     downstream.verify();
   }
+  @Test
+  void preservesBusinessTagsAndOnlyTrustsVerifiedResponseIdentity() throws Exception {
+    var recorded = new GatewaySpanTagsTest.RecordingSpan();
+    try (var tags = org.mockito.Mockito.mockStatic(GatewaySpanTags.class)) {
+      tags.when(() -> GatewaySpanTags.apply(org.mockito.ArgumentMatchers.anyMap()))
+          .thenAnswer(invocation -> {
+            GatewaySpanTags.applyToSpan(recorded, invocation.getArgument(0));
+            return null;
+          });
+      // Use the actual tag writer while replacing only the optional Agent lookup.
+      tags.when(() -> GatewaySpanTags.applyToSpan(
+          org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyMap()))
+          .thenCallRealMethod();
+      downstream.expect(requestTo("http://order-service.test/api/demo/auth/session"))
+          .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON)
+              .header("X-Demo-Authenticated-User-Id", "demo-reader-001")
+              .header("X-Demo-Authenticated-User-Tier", "standard"));
+      mockMvc.perform(get("/api/demo/auth/session")
+              .header("X-Business-Request-Id", "biz-tag-regression")
+              .header("X-Key-Request", "checkout_submit_order")
+              .header("X-Demo-User-Id", "spoofed-user")
+              .header("X-Demo-Visitor-Id", "visitor-00000000-0000-0000-0000-000000000001")
+              .header("User-Agent", "route-tag-test"))
+          .andExpect(status().isOk())
+          .andExpect(request().attribute(
+              HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE, "/api/demo/auth/session"))
+          .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+              .doesNotExist("X-Demo-Authenticated-User-Id"));
+      org.assertj.core.api.Assertions.assertThat(recorded.tags)
+          .containsEntry("biz_request_id", "biz-tag-regression")
+          .containsEntry("key_request", "checkout_submit_order")
+          .containsEntry("public_route", "demo.auth.session.get")
+          .containsEntry("route_class", "demo_api")
+          .containsEntry("traffic_type", "public_demo")
+          .containsEntry("visitor_id", "visitor-00000000-0000-0000-0000-000000000001")
+          .containsEntry("user_id", "demo-reader-001")
+          .containsEntry("user_tier", "standard")
+          .containsEntry("auth_state", "authenticated")
+          .containsEntry("user_agent", "route-tag-test")
+          .doesNotContainKey("http.route");
+      downstream.verify();
+    }
+  }
+
 }
