@@ -47,3 +47,16 @@ helm rollback demo 26 -n observability-demo --wait --timeout 10m
 ```
 
 APK 备份位于 GCP 的 `/opt/mall-demo-webrtc/backups/k8s-apk-2.3.16-20260910T085951Z/`。APK 与 Helm 独立回滚；恢复旧 APK 前先确认 Android 版本降级限制，不通过卸载清空应用数据。仅调整 Android 元数据时保留 image.tag=2.3.12。
+
+## 2026-09-23 APK 下载元数据更新
+
+正式 K8s 的 APK 下载版本由 `2.3.26` 更新为 `2.3.32`，最低 Android 版本保持 `7.0`。
+版本覆盖文件为 `charts/observability-demo/values-android-demo.yaml`；后续部署应在环境私有 values 之后加载此文件。
+APK 仍由 GCP 下载服务提供，Java 镜像版本独立管理。
+
+本次使用线上 revision 31 保存的 Chart 和原有 values，只更新 `mobileDevice.apkVersion`，避免引入尚未发布的模板变更。
+升级前配置与清单保存在服务器 `/root/apk-metadata-2.3.32/`，包含敏感配置，不提交仓库。
+服务端 dry-run 确认数据库凭据保留；Java 镜像保持 `2.4.1`。
+
+升级完成为 Helm revision `32`，五个 Java Deployment 均 Ready。
+公开 `/api/demo/config` 已核验返回 `mobileDeviceApkVersion=2.3.32`、`mobileDeviceApkMinAndroidVersion=7.0`，服务版本仍为 `2.4.1`。

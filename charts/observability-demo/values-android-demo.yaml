@@ -1,0 +1,5 @@
+# APK metadata for the shared Android demo deployment.
+# Apply after the environment's private values. Java image.tag is independent.
+mobileDevice:
+  apkVersion: "2.3.32"
+  apkMinAndroidVersion: "7.0"
