@@ -26,7 +26,7 @@ final class PublicRoutePolicy {
       Pattern.compile("^/assets/guide-carousel/image2-slide-0[1-5]\\.png$");
 
   private static final Decision UNMATCHED =
-      new Decision(Action.REJECT, "unmatched", "unmatched", "internet_probe");
+      new Decision(Action.REJECT, "unmatched", "unmatched", "internet_probe", null);
 
   /*
    * DENY-BY-DEFAULT CONTRACT:
@@ -212,6 +212,7 @@ final class PublicRoutePolicy {
           RouteRule.regex(
               READ_METHODS,
               USAGE_GUIDE_SLIDE_PATH,
+              "/assets/guide-carousel/image2-slide-{slide}.png",
               Action.FORWARD,
               "asset.usage-guide-slide",
               "static_asset"),
@@ -292,6 +293,7 @@ final class PublicRoutePolicy {
           RouteRule.regex(
               Set.of("POST"),
               FAULT_ENABLE_PATH,
+              "/api/demo/faults/{faultName}/enable",
               Action.FORWARD,
               "demo.faults.enable",
               "demo_api"),
@@ -386,7 +388,14 @@ final class PublicRoutePolicy {
     }
     String normalizedMethod = method == null ? "" : method.toUpperCase(Locale.ROOT);
     if (READ_METHODS.contains(normalizedMethod) && PVZ_ASSETS.contains(requestPath)) {
-      return new Decision(Action.FORWARD, "game.pvz-pinned-asset", "static_asset", "public_demo");
+      String pathPattern =
+          requestPath.startsWith("/assets/pvz/") ? "/assets/pvz/{assetPath}" : requestPath;
+      return new Decision(
+          Action.FORWARD,
+          "game.pvz-pinned-asset",
+          "static_asset",
+          "public_demo",
+          pathPattern);
     }
     for (RouteRule route : ROUTES) {
       if (route.matches(normalizedMethod, requestPath)) {
@@ -419,7 +428,12 @@ final class PublicRoutePolicy {
     REJECT
   }
 
-  record Decision(Action action, String routeId, String routeClass, String trafficType) {
+  record Decision(
+      Action action,
+      String routeId,
+      String routeClass,
+      String trafficType,
+      String pathPattern) {
     boolean forwardsDownstream() {
       return action == Action.FORWARD;
     }
@@ -447,12 +461,13 @@ final class PublicRoutePolicy {
           MatchType.EXACT,
           path,
           null,
-          new Decision(action, routeId, routeClass, "public_demo"));
+          new Decision(action, routeId, routeClass, "public_demo", path));
     }
 
     static RouteRule regex(
         Set<String> methods,
         Pattern pattern,
+        String pathPattern,
         Action action,
         String routeId,
         String routeClass) {
@@ -461,7 +476,7 @@ final class PublicRoutePolicy {
           MatchType.REGEX,
           "",
           pattern,
-          new Decision(action, routeId, routeClass, "public_demo"));
+          new Decision(action, routeId, routeClass, "public_demo", pathPattern));
     }
 
     boolean matches(String method, String requestPath) {
