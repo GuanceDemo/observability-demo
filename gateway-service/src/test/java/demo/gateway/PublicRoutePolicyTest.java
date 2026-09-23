@@ -197,6 +197,15 @@ class PublicRoutePolicyTest {
       assertThat(decision.routeId()).isEqualTo(expected.routeId());
       assertThat(decision.routeClass()).isEqualTo(expected.routeClass());
       assertThat(decision.trafficType()).isEqualTo("public_demo");
+      if (decision.routeId().equals("asset.usage-guide-slide")) {
+        assertThat(decision.pathPattern())
+            .isEqualTo("/assets/guide-carousel/image2-slide-{slide}.png");
+      } else if (decision.routeId().equals("demo.faults.enable")) {
+        assertThat(decision.pathPattern())
+            .isEqualTo("/api/demo/faults/{faultName}/enable");
+      } else {
+        assertThat(decision.pathPattern()).isEqualTo(expected.path());
+      }
     }
   }
 
@@ -238,6 +247,7 @@ class PublicRoutePolicyTest {
       assertThat(decision.routeId()).isEqualTo("unmatched");
       assertThat(decision.routeClass()).isEqualTo("unmatched");
       assertThat(decision.trafficType()).isEqualTo("internet_probe");
+      assertThat(decision.pathPattern()).isNull();
     }
   }
 
