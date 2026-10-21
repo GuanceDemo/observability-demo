@@ -370,6 +370,9 @@
           traceType: c.traceType || "ddtrace",
           allowedTracingOrigins: [location.origin],
         });
+        window.DATAFLUX_RUM.setGlobalContextProperty?.(
+          "project", c.project || "mall-demo"
+        );
         bindRum();
         window.DATAFLUX_RUM.startSessionReplayRecording?.();
         window.DATAFLUX_RUM.startView?.({ name: viewName });

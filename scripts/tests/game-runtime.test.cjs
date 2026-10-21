@@ -10,10 +10,12 @@ const source = fs.readFileSync(
   ),
   "utf8"
 );
-function setup() {
+function setup({gameId = "plants-vs-zombies", rumConfig = {}} = {}) {
   const events = [],
     listeners = {},
-    requests = [];
+    requests = [],
+    rumCalls = [],
+    globalContext = {};
   let session = {
       authenticated: false,
       personas: [{ id: "a", name: "Reader A", tier: "standard" }],
@@ -42,16 +44,19 @@ function setup() {
     }
   }
   const body = new Element();
-  body.dataset = { gameId: "plants-vs-zombies" };
+  body.dataset = { gameId };
   body.append = (el) => {
     overlay = el;
   };
   const sdk = {
-    addAction: (name, c) => events.push({ name, ...c }),
+    addAction: (name, c) => events.push({ ...globalContext, name, ...c }),
     addError: () => {},
     setUser: (u) => events.push({ identity: u.id }),
     clearUser: () => events.push({ identity: null }),
-    setGlobalContextProperty: () => {},
+    init: (config) => rumCalls.push({type: "init", config}),
+    setGlobalContextProperty: (key, value) => { globalContext[key] = value; },
+    startSessionReplayRecording: () => rumCalls.push({type: "replay", ...globalContext}),
+    startView: (view) => rumCalls.push({type: "view", ...view, ...globalContext}),
   };
   const window = {
     DATAFLUX_RUM: sdk,
@@ -64,7 +69,7 @@ function setup() {
       body,
       activeElement: new Element(),
       createElement: () => new Element(),
-      head: new Element(),
+      head: {append: (script) => script.onload()},
     },
     location: {
       search: "",
@@ -83,6 +88,12 @@ function setup() {
     setInterval: () => 1,
     clearInterval: () => {},
     fetch: async (url, options) => {
+      if (url.endsWith("/api/games/rum-config")) {
+        return {ok: true, json: async () => ({
+          enabled: true, gameApplicationId: "game-app", gameService: "mall-game-h5",
+          env: "demo", version: "2.4.3", ...rumConfig,
+        })};
+      }
       requests.push(options);
       if (options.method === "POST") {
         if (failLogin) return { ok: false, status: 503 };
@@ -103,6 +114,7 @@ function setup() {
     sdk,
     events,
     requests,
+    rumCalls,
     listeners,
     get overlay() {
       return overlay;
@@ -138,6 +150,26 @@ test("failed login keeps dialog and supports retry into originally pending game"
     )
   );
 });
+
+for (const gameId of ["home", "plants-vs-zombies"]) {
+  for (const project of ["configured-project", undefined]) {
+    test(`${gameId} applies ${project || "fallback"} project before its first RUM events`, async () => {
+      const h = setup({gameId, rumConfig: {project}});
+      await h.R.initRum();
+      await h.R.initRum();
+      const init = h.rumCalls.filter((call) => call.type === "init");
+      assert.equal(init.length, 1);
+      assert.equal(init[0].config.service, "mall-game-h5");
+      assert.equal(init[0].config.env, "demo");
+      const expected = project || "mall-demo";
+      assert.equal(h.rumCalls.find((call) => call.type === "replay").project, expected);
+      assert.equal(h.rumCalls.find((call) => call.type === "view").project, expected);
+      if (gameId !== "home") {
+        assert.equal(h.events.find((event) => event.name === "game_enter").project, expected);
+      }
+    });
+  }
+}
 test("expired session ends run under old user, clears identity, and creates fresh run after login", async () => {
   const h = setup();
   h.session = { authenticated: true, user: { id: "a" }, personas: [] };
