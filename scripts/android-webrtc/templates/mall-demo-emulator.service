@@ -1,7 +1,9 @@
 [Unit]
 Description=Mall Demo Android Emulator
-After=network-online.target
+After=network-online.target user-runtime-dir@1002.service
 Wants=network-online.target
+# XDG_RUNTIME_DIR must exist with the user ownership before emulator discovery.
+Requires=user-runtime-dir@1002.service
 
 [Service]
 Type=simple

@@ -19,6 +19,7 @@ from aiortc.sdp import candidate_from_sdp
 from control import install_control
 from idle import IdlePolicy, android_command, run_policy
 from frames import LatestSource
+from discovery import wait_for_emulator
 from playout import PLAYOUT_URI, install
 
 LABELS = ('mouse', 'keyboard', 'touch')
@@ -309,8 +310,7 @@ async def main():
     import emulator_controller_pb2_grpc as ec_grpc
 
     runtime = Path(os.environ.get('XDG_RUNTIME_DIR', '/run/user/1002'))
-    running = next((runtime / 'avd/running').glob('pid_*.ini'))
-    props = dict(line.split('=', 1) for line in running.read_text().splitlines() if '=' in line)
+    props = await wait_for_emulator(runtime / 'avd/running')
     channel = grpc.aio.insecure_channel('127.0.0.1:' + props['grpc.port'],
                                        options=[('grpc.max_receive_message_length', 8 * 1024 * 1024)])
     stub = ec_grpc.EmulatorControllerStub(channel)

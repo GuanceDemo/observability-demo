@@ -1,7 +1,7 @@
 [Unit]
 Description=Mall Demo latest-frame WebRTC video bridge
-After=network-online.target mall-demo-gateway.service
-Requires=mall-demo-gateway.service
+After=network-online.target mall-demo-gateway.service mall-demo-emulator.service
+Requires=mall-demo-gateway.service mall-demo-emulator.service
 
 [Service]
 Type=simple
