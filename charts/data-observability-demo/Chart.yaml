@@ -1,0 +1,6 @@
+apiVersion: v2
+name: data-observability-demo
+description: Mall order analytics and OpenLineage demonstration
+type: application
+version: 0.1.1
+appVersion: "0.1.1"

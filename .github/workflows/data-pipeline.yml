@@ -1,0 +1,32 @@
+name: Data pipeline
+
+on:
+  pull_request:
+    paths: ["data-pipeline/**", "charts/data-observability-demo/**", "scripts/data-observability*", ".github/workflows/data-pipeline.yml"]
+  push:
+    branches: [main]
+    paths: ["data-pipeline/**", "charts/data-observability-demo/**", "scripts/data-observability*", ".github/workflows/data-pipeline.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.5"
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+      - run: uv sync --project data-pipeline --frozen --python 3.12
+      - run: uv run --project data-pipeline ruff check data-pipeline scripts/data-observability-bootstrap.py
+      - run: uv run --project data-pipeline mypy data-pipeline/src
+      - run: uv run --project data-pipeline pytest data-pipeline/tests -m 'not integration'
+      - run: data-pipeline/tests/integration.sh
+      - run: helm lint charts/data-observability-demo
+      - run: bash -n scripts/data-observability.sh
+      - run: docker build -t mall-data-pipeline:ci data-pipeline

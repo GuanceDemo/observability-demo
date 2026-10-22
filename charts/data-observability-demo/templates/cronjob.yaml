@@ -1,0 +1,100 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ .Release.Name }}-pipeline
+  labels:
+    app.kubernetes.io/name: data-observability-demo
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+    project: mall-demo
+spec:
+  schedule: {{ .Values.schedule | quote }}
+  suspend: {{ .Values.suspend }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 120
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    metadata:
+      labels:
+        app.kubernetes.io/name: data-observability-demo
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        project: mall-demo
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 240
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: data-observability-demo
+            app.kubernetes.io/instance: {{ .Release.Name }}
+            project: mall-demo
+          annotations:
+            datakit/logs: '[{"source":"mall_data_pipeline","service":"mall-data-pipeline","tags":{"project":"mall-demo"}}]'
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          terminationGracePeriodSeconds: 30
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            seccompProfile:
+              type: RuntimeDefault
+          {{- with .Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: pipeline
+              {{- if .Values.image.digest }}
+              image: "{{ .Values.image.repository }}@{{ .Values.image.digest }}"
+              {{- else }}
+              image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+              {{- end }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              args: ["--mode", "normal"]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              resources:
+                {{- toYaml .Values.resources | nindent 16 }}
+              env:
+                - name: MYSQL_HOST
+                  value: {{ .Values.mysql.host | quote }}
+                - name: MYSQL_PORT
+                  value: {{ .Values.mysql.port | quote }}
+                - name: MYSQL_USER
+                  value: {{ .Values.mysql.user | quote }}
+                - name: SOURCE_DATABASE
+                  value: {{ .Values.mysql.sourceDatabase | quote }}
+                - name: ANALYTICS_DATABASE
+                  value: {{ .Values.mysql.analyticsDatabase | quote }}
+                - name: MYSQL_PASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secret.name | quote }}
+                      key: {{ .Values.secret.mysqlPasswordKey | quote }}
+                - name: OPENLINEAGE_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ .Values.secret.name | quote }}
+                      key: {{ .Values.secret.openlineageTokenKey | quote }}
+                - name: OPENLINEAGE_URL
+                  value: {{ .Values.openlineage.url | quote }}
+                - name: JOB_NAMESPACE
+                  value: {{ .Values.openlineage.jobNamespace | quote }}
+                - name: DATASET_NAMESPACE
+                  value: {{ .Values.openlineage.datasetNamespace | quote }}
+                - name: LOOKBACK_DAYS
+                  value: {{ .Values.lookbackDays | quote }}
+              volumeMounts:
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: tmp
+              emptyDir:
+                sizeLimit: 16Mi

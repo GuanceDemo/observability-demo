@@ -1,0 +1,31 @@
+image:
+  repository: pubrepo.jiagouyun.com/demo/observability-demo-data-pipeline
+  tag: "0.1.1"
+  digest: ""
+  pullPolicy: IfNotPresent
+imagePullSecrets: []
+schedule: "*/5 * * * *"
+# Install suspended; enable after the first manual run and Guance verification.
+suspend: true
+mysql:
+  host: demo-observability-demo-mysql
+  port: 3306
+  user: mall_pipeline
+  sourceDatabase: selfheal
+  analyticsDatabase: mall_analytics
+secret:
+  name: mall-data-pipeline
+  mysqlPasswordKey: mysql-password
+  openlineageTokenKey: openlineage-token
+openlineage:
+  url: https://openway.guance.com
+  jobNamespace: mall-demo.data-pipeline
+  datasetNamespace: mysql://demo-observability-demo-mysql:3306
+lookbackDays: 7
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: "1"
+    memory: 256Mi
