@@ -22,4 +22,6 @@ __pycache__/
 scripts/android-webrtc/*.apk
 scripts/android-webrtc/player-dist/
 
+# Local diagnostics and work unrelated to the Demo application
 owl-reports/
+/.local-work/
