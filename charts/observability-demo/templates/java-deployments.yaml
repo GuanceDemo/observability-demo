@@ -160,6 +160,9 @@ spec:
             - name: DD_TAGS
               value: {{ $ddTags | quote }}
             {{- if eq $service.name "gateway-service" }}
+            # Also protects existing gateway images which predate the application default.
+            - name: SPRING_SERVLET_MULTIPART_ENABLED
+              value: "false"
             - name: ORDER_URL
               value: http://{{ include "observability-demo.fullname" $ }}-order-service:8080
             - name: GAME_URL
