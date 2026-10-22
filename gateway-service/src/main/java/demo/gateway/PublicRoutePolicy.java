@@ -36,6 +36,10 @@ final class PublicRoutePolicy {
    */
   private static final List<RouteRule> ROUTES =
       List.of(
+          RouteRule.exact(READ_METHODS, "/reports.html", Action.FORWARD, "storefront.reports", "storefront_page"),
+          RouteRule.exact(READ_METHODS, "/assets/reports.css", Action.FORWARD, "asset.reports-css", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/assets/reports.js", Action.FORWARD, "asset.reports-js", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/api/reports/sales", Action.FORWARD, "reports.sales", "public_demo"),
           RouteRule.exact(READ_METHODS, "/api/games/rum-config", Action.FORWARD, "game.rum-config", "public_demo"),
           RouteRule.exact(READ_METHODS, "/api/games/faults", Action.FORWARD, "game.faults", "public_demo"),
           RouteRule.exact(READ_METHODS, "/api/games/assets/orbital-shield-texture.webp", Action.FORWARD, "game.missing-texture", "public_demo"),

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>经营报表 · 可观测性书店</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="assets/reports.css?v=1" />
+    <script src="assets/reports.js?v=1" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" id="shopLink" href="shop.html"
+        ><span class="brand-mark" aria-hidden="true">▤</span
+        ><strong data-copy="brand">可观测性书店</strong
+        ><span class="brand-divider"></span
+        ><span data-copy="workspace">经营工作台</span></a
+      >
+      <div class="header-actions">
+        <a id="backLink" href="shop.html" data-copy="back">返回商城 ↗</a
+        ><button type="button" id="language" aria-label="Switch to English">
+          EN
+        </button>
+      </div>
+    </header>
+    <main>
+      <section class="page-heading">
+        <div>
+          <div class="eyebrow">BUSINESS ANALYTICS</div>
+          <h1 data-copy="title">每一笔订单，都有迹可循。</h1>
+          <p data-copy="subtitle">
+            从真实订单到经营洞察，查看近 7 日销售与数据更新情况。
+          </p>
+        </div>
+        <div class="heading-actions">
+          <span class="date-range" id="dateRange" data-copy="sevenDays"
+            >近 7 个自然日</span
+          ><button class="refresh" id="refresh" type="button">
+            <span aria-hidden="true">↻</span
+            ><span data-copy="refresh">刷新数据</span>
+          </button>
+        </div>
+      </section>
+      <div
+        id="notice"
+        class="notice"
+        role="status"
+        aria-live="polite"
+        data-copy="loading"
+      >
+        正在读取经营报表…
+      </div>
+      <section id="report" hidden>
+        <div class="freshness">
+          <span class="status-dot" id="freshnessDot"></span
+          ><span id="freshnessText"></span
+          ><span class="timezone" data-copy="timezone"
+            >北京时间 · 每 5 分钟更新</span
+          >
+        </div>
+        <section class="kpis" aria-label="经营指标">
+          <article class="kpi featured">
+            <span data-copy="revenue">7 日营业额</span
+            ><strong id="revenue">—</strong>
+            <div data-copy="revenueHint">已确认订单的实际总金额</div>
+            <span class="kpi-symbol" aria-hidden="true">¥</span>
+          </article>
+          <article class="kpi">
+            <span data-copy="orders">成交订单</span
+            ><strong id="orders">—</strong>
+            <div data-copy="ordersHint">近 7 日有效订单数</div>
+            <span class="kpi-icon" aria-hidden="true">↗</span>
+          </article>
+          <article class="kpi">
+            <span data-copy="units">售出件数</span><strong id="units">—</strong>
+            <div data-copy="unitsHint">按订单购买数量统计</div>
+            <span class="kpi-icon" aria-hidden="true">▤</span>
+          </article>
+          <article class="kpi">
+            <span data-copy="average">平均客单价</span
+            ><strong id="average">—</strong>
+            <div data-copy="averageHint">营业额 ÷ 成交订单</div>
+            <span class="kpi-icon" aria-hidden="true">≈</span>
+          </article>
+        </section>
+        <div class="analysis-grid">
+          <section class="panel trend-panel" aria-labelledby="trendTitle">
+            <div class="panel-heading">
+              <div>
+                <h2 id="trendTitle" data-copy="trend">销售趋势</h2>
+                <p data-copy="trendHint">观察日销售变化与短期均值</p>
+              </div>
+              <div class="metric-switch" aria-label="趋势指标">
+                <button
+                  type="button"
+                  data-metric="revenue"
+                  aria-pressed="true"
+                  data-copy="revenueShort"
+                >
+                  营业额</button
+                ><button
+                  type="button"
+                  data-metric="orders"
+                  aria-pressed="false"
+                  data-copy="ordersShort"
+                >
+                  订单量
+                </button>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <span
+                ><i class="legend-bar"></i
+                ><span id="metricLabel" data-copy="revenueShort"
+                  >营业额</span
+                ></span
+              ><span id="averageLegend"
+                ><i class="legend-line"></i
+                ><span data-copy="movingAverage">3 日移动平均</span></span
+              ><span class="chart-unit" id="chartUnit">CNY</span>
+            </div>
+            <div id="chart" class="chart"></div>
+            <div id="dayPicker" class="day-picker" aria-label="选择日期"></div>
+            <div id="dayDetail" class="day-detail" aria-live="polite"></div>
+          </section>
+          <aside class="panel updates" aria-labelledby="updatesTitle">
+            <div class="panel-heading">
+              <div>
+                <h2 id="updatesTitle" data-copy="updates">数据更新</h2>
+                <p data-copy="updatesHint">每份报表，追溯到来源批次</p>
+              </div>
+              <span class="live-label">LIVE</span>
+            </div>
+            <div class="flow-source">
+              <span class="engine python">Py</span>
+              <div>
+                <strong data-copy="sourceTitle">订单清洗与销售汇总</strong
+                ><small data-copy="sourceDescription"
+                  >Python · 真实订单数据源</small
+                >
+              </div>
+            </div>
+            <div id="jobCards" class="job-cards"></div>
+            <div class="update-note">
+              <span aria-hidden="true">ⓘ</span>
+              <p data-copy="updateNote">
+                作业失败时保留最近成功结果。当前日期尚未结束，日环比暂不计算。
+              </p>
+            </div>
+            <details class="provenance">
+              <summary data-copy="provenance">查看报表批次</summary>
+              <dl id="provenance"></dl>
+            </details>
+          </aside>
+        </div>
+        <section class="panel details-panel" aria-labelledby="detailsTitle">
+          <div class="panel-heading">
+            <div>
+              <h2 id="detailsTitle" data-copy="details">每日经营明细</h2>
+              <p data-copy="detailsHint">
+                指标来自同一成功批次，可与数据库和血缘作业对照
+              </p>
+            </div>
+            <span class="engine-label">JAVA → SPARK</span>
+          </div>
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th data-copy="date">日期</th>
+                  <th data-copy="ordersShort">订单量</th>
+                  <th data-copy="units">售出件数</th>
+                  <th data-copy="revenueShort">营业额</th>
+                  <th data-copy="average">平均客单价</th>
+                  <th data-copy="change">日环比</th>
+                  <th data-copy="share">营业额占比</th>
+                </tr>
+              </thead>
+              <tbody id="dailyRows"></tbody>
+            </table>
+          </div>
+          <p class="table-note" data-copy="tableNote">
+            金额单位：人民币。仅统计有效已确认订单，订单总额不重复乘以购买数量。环比为「—」表示当天未结束、无前日数据或前日营业额为零。
+          </p>
+        </section>
+      </section>
+      <footer>
+        <span>OBSERVABILITY BOOKS</span
+        ><span data-copy="footer">真实业务数据 · 可追溯的数据旅程</span>
+      </footer>
+    </main>
+  </body>
+</html>

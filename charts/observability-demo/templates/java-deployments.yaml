@@ -186,6 +186,19 @@ spec:
                 secretKeyRef:
                   name: {{ include "observability-demo.secretName" $ }}
                   key: {{ $.Values.secretKeys.mysqlPassword }}
+            - name: REPORTS_ENABLED
+              value: {{ $.Values.reports.enabled | quote }}
+            {{- if $.Values.reports.enabled }}
+            - name: REPORTS_MYSQL_URL
+              value: jdbc:mysql://{{ include "observability-demo.fullname" $ }}-mysql:3306/{{ $.Values.reports.database }}
+            - name: REPORTS_MYSQL_USER
+              value: {{ $.Values.reports.user | quote }}
+            - name: REPORTS_MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $.Values.reports.secretName | quote }}
+                  key: {{ $.Values.reports.passwordKey | quote }}
+            {{- end }}
             - name: INVENTORY_URL
               value: http://{{ include "observability-demo.fullname" $ }}-inventory-service:8081
             - name: PAYMENT_URL

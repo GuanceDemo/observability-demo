@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   registry: pubrepo.jiagouyun.com
   owner: demo
-  tag: "2.4.1"
+  tag: "2.4.4"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -131,3 +131,11 @@ ddtrace:
 # Independent stateless game backend (2.4.0+ images).
 game:
   enabled: true
+
+# Optional independent reporting pipeline; bootstrap its reader Secret first.
+reports:
+  enabled: false
+  database: mall_reports
+  user: mall_reports_reader
+  secretName: mall-report-reader
+  passwordKey: mysql-password

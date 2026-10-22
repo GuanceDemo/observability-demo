@@ -1,0 +1,79 @@
+{{- range $mode, $job := .Values.jobs }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ $.Release.Name }}-{{ $mode }}
+  labels:
+    app.kubernetes.io/name: mall-report-jobs
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+    app.kubernetes.io/component: {{ $mode }}
+spec:
+  schedule: {{ $job.schedule | quote }}
+  suspend: {{ $.Values.suspend }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 240
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: mall-report-jobs
+            app.kubernetes.io/instance: {{ $.Release.Name }}
+            app.kubernetes.io/component: {{ $mode }}
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+            seccompProfile: {type: RuntimeDefault}
+          {{- with $.Values.imagePullSecrets }}
+          imagePullSecrets:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          containers:
+            - name: report
+              image: {{ if $.Values.image.digest }}{{ printf "%s@%s" $.Values.image.repository $.Values.image.digest | quote }}{{ else }}{{ printf "%s:%s" $.Values.image.repository $.Values.image.tag | quote }}{{ end }}
+              imagePullPolicy: {{ $.Values.image.pullPolicy }}
+              args: [{{ $mode | quote }}]
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: ["ALL"]}
+              resources:
+                {{- toYaml $job.resources | nindent 16 }}
+              env:
+                - name: JAVA_HEAP_MB
+                  value: {{ $job.heapMb | quote }}
+                - name: MYSQL_HOST
+                  value: {{ $.Values.mysql.host | quote }}
+                - name: MYSQL_PORT
+                  value: {{ $.Values.mysql.port | quote }}
+                - name: MYSQL_USER
+                  value: {{ $.Values.mysql.user | quote }}
+                - name: MYSQL_PASSWORD
+                  valueFrom:
+                    secretKeyRef: {name: {{ $.Values.secret.name | quote }}, key: mysql-password}
+                - name: OPENLINEAGE_TOKEN
+                  valueFrom:
+                    secretKeyRef: {name: {{ $.Values.secret.name | quote }}, key: openlineage-token}
+                - name: OPENLINEAGE_URL
+                  value: {{ $.Values.openlineage.url | quote }}
+                - name: OPENLINEAGE_JOB_NAMESPACE
+                  value: {{ $.Values.openlineage.jobNamespace | quote }}
+                - name: OPENLINEAGE_DATASET_NAMESPACE
+                  value: {{ $.Values.openlineage.datasetNamespace | quote }}
+              volumeMounts:
+                - {name: temp, mountPath: /tmp}
+          volumes:
+            - name: temp
+              emptyDir: {sizeLimit: 512Mi}
+{{- end }}

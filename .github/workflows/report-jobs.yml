@@ -1,0 +1,32 @@
+name: Report jobs
+
+on:
+  pull_request:
+    paths: ["report-jobs/**", "charts/report-jobs/**", "scripts/report-jobs*", ".github/workflows/report-jobs.yml"]
+  push:
+    branches: [main]
+    paths: ["report-jobs/**", "charts/report-jobs/**", "scripts/report-jobs*", ".github/workflows/report-jobs.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+      - run: report-jobs/integration.sh
+      - run: helm lint charts/report-jobs
+      - run: bash -n scripts/report-jobs.sh report-jobs/integration.sh
+      - run: sh -n report-jobs/entrypoint.sh
+      - run: python3 -m unittest discover -s report-jobs/tests
+      - run: docker build -t mall-report-jobs:ci report-jobs

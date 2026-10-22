@@ -26,7 +26,7 @@ flowchart LR
 
 更多细节见 [架构与数据流](docs/architecture.md)、[可观测信号与字段](docs/observability.md)、[React Native 移动端 RUM Demo](docs/mobile-rum.md) 和 [真实 Android Emulator 网页接入](docs/android-emulator-webrtc.md)。
 
-数据可观测演示通过独立定时作业清洗真实订单并生成每日销售汇总，使用 OpenLineage 展示作业运行、数据目录和血缘，支持失败、变慢与恢复。安装与演示步骤见 [订单清洗与销售汇总](docs/data-observability.md)。
+数据可观测演示通过独立定时作业清洗真实订单并生成每日销售汇总，使用 OpenLineage 展示作业运行、数据目录和血缘，支持失败、变慢与恢复。安装与演示步骤见 [订单清洗与销售汇总](docs/data-observability.md)。在此基础上，[Java 经营日报与 Spark 销售趋势](docs/report-jobs.md) 将真实汇总数据接入商城经营报表，并展示 Python → Java → Spark 跨引擎血缘。
 
 ## 本地预览（Docker Compose）
 

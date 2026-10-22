@@ -41,6 +41,7 @@
       <nav class="store-nav" aria-label="书城导航" data-i18n-aria-label="shopNavLabel">
         <a class="active" href="?page=home" data-store-route="home"><span data-store-copy="navHome">首页</span></a>
         <a href="?page=path" data-store-route="path"><span data-store-copy="navPath">阅读路径</span></a>
+        <a id="reportsLink" href="reports.html" target="_blank" rel="noopener"><span data-store-copy="navReports">经营报表</span></a>
       </nav>
       <label class="store-search" for="storeSearch">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4 4"></path></svg>
@@ -1724,6 +1725,7 @@
 
     function renderStoreCopy() {
       document.title = s('brandTitle');
+      document.getElementById('reportsLink').href = `reports.html?lang=${state.language}`;
       if (els.brandTitle) els.brandTitle.textContent = s('brandTitle');
       if (els.brandSubtitle) els.brandSubtitle.textContent = s('brandSubtitle');
       document.querySelectorAll('[data-store-copy]').forEach((node) => {

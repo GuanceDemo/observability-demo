@@ -146,3 +146,5 @@ scripts/data-observability.sh uninstall
 线上版本、故障回滚、自动调度和控制台证据见 [2026-10-22 部署验收记录](deployments/data-observability-20261022.md)。
 
 官方接口说明：[观测云 OpenLineage 集成](https://docs.guance.com/integrations/openlineage/)。
+
+扩展演示见 [Java 经营日报、Spark 销售趋势与商城报表](report-jobs.md)，沿用本 pipeline 的输出和调度。

@@ -9,6 +9,17 @@ class PublicRoutePolicyTest {
   private final PublicRoutePolicy policy = new PublicRoutePolicy();
 
   @Test
+  void reportsAreReadOnlyAndUseExactRoutes() {
+    for (String path : List.of("/reports.html", "/assets/reports.css", "/assets/reports.js", "/api/reports/sales")) {
+      assertThat(policy.evaluate("GET", path).forwardsDownstream()).isTrue();
+      assertThat(policy.evaluate("HEAD", path).forwardsDownstream()).isTrue();
+      assertThat(policy.evaluate("POST", path).forwardsDownstream()).isFalse();
+      assertThat(policy.evaluate("GET", path + ".bak").forwardsDownstream()).isFalse();
+    }
+    assertThat(policy.evaluate("GET", "/api/reports/admin").forwardsDownstream()).isFalse();
+  }
+
+  @Test
   void everyGameResourceHasAnExplicitGameRoute() throws Exception {
     var root = java.nio.file.Path.of("../game-service/src/main/resources/static");
     PublicRoutePolicy policy = new PublicRoutePolicy();
