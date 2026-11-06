@@ -39,6 +39,52 @@ test('late config does not override a scene already selected by the user', async
   await vm.runInContext('loadDemoConfig()', ctx);
   assert.equal(ctx.state.selectedSceneId, 'webgl-game');
 });
+
+function sceneSwitcher(resetFaultsForSceneChange) {
+  const ctx = host({});
+  const effects = [];
+  ctx.state.activeGameId = 'active-game';
+  ctx.resetFaultsForSceneChange = resetFaultsForSceneChange;
+  ctx.updateFrameUrls = () => effects.push('navigate');
+  ctx.renderControlSidebarMode = () => effects.push('controls');
+  ctx.syncPreviewContext = () => effects.push('sync');
+  vm.runInContext(html.slice(html.indexOf('    async function selectBusinessScene('),
+    html.indexOf('    function setPreviewMode(')), ctx);
+  return {ctx, effects};
+}
+
+test('scene switching waits for fault cleanup before changing state or navigating', async () => {
+  // Existing mall cleanup returns undefined; vehicle cleanup can return true.
+  for (const result of [undefined, true]) {
+    let finishCleanup;
+    const {ctx, effects} = sceneSwitcher(() => new Promise(resolve => { finishCleanup = resolve; }));
+    const switching = vm.runInContext('selectBusinessScene("webgl-game")', ctx);
+    assert.equal(ctx.state.selectedSceneId, 'bookstore');
+    assert.equal(ctx.state.activeGameId, 'active-game');
+    assert.deepEqual(effects, []);
+    finishCleanup(result);
+    await switching;
+    assert.equal(ctx.state.selectedSceneId, 'webgl-game');
+    assert.equal(ctx.state.activeGameId, null);
+    assert.deepEqual(effects, ['navigate', 'sync']);
+  }
+});
+
+test('scene switching retains the current scene when cleanup declines the switch', async () => {
+  const {ctx, effects} = sceneSwitcher(async () => false);
+  await vm.runInContext('selectBusinessScene("webgl-game")', ctx);
+  assert.equal(ctx.state.selectedSceneId, 'bookstore');
+  assert.equal(ctx.state.activeGameId, 'active-game');
+  assert.deepEqual(effects, []);
+});
+
+test('selecting the active scene preserves its faults and iframe', async () => {
+  const {ctx, effects} = sceneSwitcher(() => assert.fail('active scene must not reset faults'));
+  await vm.runInContext('selectBusinessScene("bookstore")', ctx);
+  assert.equal(ctx.state.activeGameId, 'active-game');
+  assert.deepEqual(effects, ['controls', 'sync']);
+});
+
 test('fault action fetches the current backend token after restart without a login', async () => {
   const source = fs.readFileSync('scripts/vehicle-demo/local/web/workbench.js', 'utf8');
   const action = source.slice(source.indexOf('  async function act(action)'), source.indexOf("  $('scenario').addEventListener"));

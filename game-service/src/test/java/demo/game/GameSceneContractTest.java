@@ -184,7 +184,7 @@ class GameSceneContractTest {
         .contains(".scenario-tab-list .tab-button")
         .contains("place-items: center;")
         .contains("text-align: center;")
-        .contains("await resetFaultsForSceneChange();")
+        .contains("await resetFaultsForSceneChange()")
         .contains("state.activeGameId = null;")
         .contains("if (!els.shopFrame.getAttribute('src') || frameChanged)");
     assertThat(gameIcon.length).isGreaterThan(10_000);
