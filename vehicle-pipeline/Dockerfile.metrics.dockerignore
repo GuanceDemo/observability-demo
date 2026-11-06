@@ -1,0 +1,11 @@
+**
+!vehicle-pipeline/
+!vehicle-pipeline/metrics/
+!vehicle-pipeline/metrics/pyproject.toml
+!vehicle-pipeline/metrics/uv.lock
+!vehicle-pipeline/metrics/vehicle_metrics/
+!vehicle-pipeline/metrics/vehicle_metrics/*.py
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache

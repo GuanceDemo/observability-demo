@@ -1,0 +1,10 @@
+# Overlay on the existing vehicle-pipeline release values, not a fresh cluster installer.
+workbench:
+  enabled: true
+  image: "" # Set the new published image with --set-string workbench.image=...
+  publicOrigin: https://demo.example.com # Main Demo HTTPS origin, no trailing slash.
+  remoteOrigin: https://35.241.68.75.nip.io
+  secretName: vehicle-workbench
+  workspace: "" # Target Guance Demo workspace ID.
+  gatewayNamespace: observability-demo
+  gatewayRelease: demo

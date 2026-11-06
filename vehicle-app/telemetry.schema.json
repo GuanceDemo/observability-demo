@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Vehicle telemetry v1",
+  "type": "object",
+  "dependentRequired": {"sampleMonotonicMs": ["producerRunId"], "producerRunId": ["sampleMonotonicMs"]},
+  "required": ["schemaVersion", "eventId", "vehicleId", "tripId", "sequence", "eventTime", "speedKph", "odometerKm", "batterySocPct", "batteryTempC", "mode"],
+  "properties": {
+    "schemaVersion": {"const": 1},
+    "eventId": {"type": "string", "pattern": "^demo-vehicle-001:[1-9][0-9]*$"},
+    "vehicleId": {"const": "demo-vehicle-001"},
+    "tripId": {"type": "string", "minLength": 1},
+    "sequence": {"type": "integer", "minimum": 1},
+    "eventTime": {"type": "integer", "minimum": 1, "description": "Unix epoch milliseconds at Android sampling time"},
+    "sampleMonotonicMs": {"type": "integer", "minimum": 0, "description": "Elapsed realtime milliseconds; compare only within the same producerRunId"},
+    "producerRunId": {"type": "string", "minLength": 1, "description": "Random identifier of the application process, renewed on every process start"},
+    "speedKph": {"type": "number", "minimum": 0, "maximum": 120},
+    "odometerKm": {"type": "number", "minimum": 0},
+    "batterySocPct": {"type": "number", "minimum": 0, "maximum": 100},
+    "batteryTempC": {"type": "number", "minimum": -40, "maximum": 120},
+    "mode": {"enum": ["DRIVE", "PARK", "CHARGE"]}
+  },
+  "allOf": [{"if": {"properties": {"mode": {"enum": ["PARK", "CHARGE"]}}}, "then": {"properties": {"speedKph": {"const": 0}}}}]
+}

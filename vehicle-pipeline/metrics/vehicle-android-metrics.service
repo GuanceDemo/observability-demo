@@ -1,0 +1,24 @@
+[Unit]
+Description=Vehicle Android aggregate metrics
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/vehicle-demo/metrics
+ExecStart=/usr/bin/python3 /opt/vehicle-demo/metrics/android_metrics.py
+Restart=on-failure
+RestartSec=10
+MemoryMax=96M
+CPUQuota=10%
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/root/.android
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

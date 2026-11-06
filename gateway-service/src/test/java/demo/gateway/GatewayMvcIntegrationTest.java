@@ -90,14 +90,18 @@ class GatewayMvcIntegrationTest {
   }
   @Test
   void preservesBusinessTagsAndOnlyTrustsVerifiedResponseIdentity() throws Exception {
-    var recorded = new GatewaySpanTagsTest.RecordingSpan();
+    var root = new GatewaySpanTagsTest.RecordingSpan();
+    var recorded = new GatewaySpanTagsTest.SpanWithLocalRoot(root);
     try (var tags = org.mockito.Mockito.mockStatic(GatewaySpanTags.class)) {
       tags.when(() -> GatewaySpanTags.apply(org.mockito.ArgumentMatchers.anyMap()))
           .thenAnswer(invocation -> {
-            GatewaySpanTags.applyToSpan(recorded, invocation.getArgument(0));
+            GatewaySpanTags.applyToRequestSpans(recorded, invocation.getArgument(0));
             return null;
           });
       // Use the actual tag writer while replacing only the optional Agent lookup.
+      tags.when(() -> GatewaySpanTags.applyToRequestSpans(
+          org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyMap()))
+          .thenCallRealMethod();
       tags.when(() -> GatewaySpanTags.applyToSpan(
           org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyMap()))
           .thenCallRealMethod();
@@ -128,6 +132,8 @@ class GatewayMvcIntegrationTest {
           .containsEntry("auth_state", "authenticated")
           .containsEntry("user_agent", "route-tag-test")
           .doesNotContainKey("http.route");
+      org.assertj.core.api.Assertions.assertThat(root.tags)
+          .containsExactlyInAnyOrderEntriesOf(recorded.tags);
       downstream.verify();
     }
   }

@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-kafka}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: vehicle-kafka}
+  template:
+    metadata:
+      labels: {app: vehicle-kafka}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.storageNode | quote }}
+      automountServiceAccountToken: false
+      securityContext: {fsGroup: 1000}
+      containers:
+        - name: kafka
+          image: {{ .Values.kafkaImage | quote }}
+          command: [/bin/bash, -ec]
+          args:
+            - |
+              /opt/kafka/bin/kafka-storage.sh format --ignore-formatted -t "$CLUSTER_ID" -c /config/server.properties
+              exec /opt/kafka/bin/kafka-server-start.sh /config/server.properties
+          env:
+            - {name: KAFKA_HEAP_OPTS, value: "-Xms256m -Xmx256m"}
+            - name: CLUSTER_ID
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: kafka-cluster-id}}
+          ports: [{containerPort: 9092}, {containerPort: 9094}]
+          resources:
+            requests: {cpu: 100m, memory: 384Mi}
+            limits: {cpu: "1", memory: 640Mi}
+          readinessProbe:
+            tcpSocket: {port: 9092}
+            initialDelaySeconds: 15
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/kafka/data}
+            - {name: config, mountPath: /config, readOnly: true}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: vehicle-kafka}
+        - name: config
+          secret:
+            secretName: {{ .Values.secretName }}
+            items:
+              - {key: kafka-server-properties, path: server.properties}
+              - {key: kafka-admin-properties, path: admin.properties}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-lake}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: vehicle-lake}
+  template:
+    metadata:
+      labels: {app: vehicle-lake}
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.storageNode | quote }}
+      automountServiceAccountToken: false
+      containers:
+        - name: lake
+          image: {{ .Values.lakeImage | quote }}
+          args:
+            - mini
+            - -dir=/data
+            - -bucket=vehicle-lake
+            - -s3.config=/config/s3.json
+            - -admin.ui=false
+            - -webdav=false
+            - -s3.port.iceberg=0
+            - -s3.port.lance=0
+            - -s3.readerCacheSizeMB=32
+            - -volume.max=40
+            - -master.volumeSizeLimitMB=128
+          env: [{name: GOMEMLIMIT, value: 320MiB}]
+          ports: [{containerPort: 8333}]
+          resources:
+            requests: {cpu: 100m, memory: 192Mi}
+            limits: {cpu: "1", memory: 512Mi}
+          readinessProbe:
+            tcpSocket: {port: 8333}
+            initialDelaySeconds: 10
+          volumeMounts:
+            - {name: data, mountPath: /data}
+            - {name: config, mountPath: /config, readOnly: true}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: vehicle-lake}
+        - name: config
+          secret:
+            secretName: {{ .Values.secretName }}
+            items: [{key: s3-config, path: s3.json}]

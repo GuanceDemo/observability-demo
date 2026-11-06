@@ -1,0 +1,41 @@
+name: vehicle-local
+services:
+  workbench:
+    image: observability-demo-vehicle-workbench:local
+    build:
+      context: .
+      dockerfile: scripts/vehicle-demo/local/Dockerfile
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+    ports:
+      - "127.0.0.1:8767:8767"
+    environment:
+      VEHICLE_MALL_ORIGIN: http://gateway-service:8080
+      VEHICLE_REMOTE_ORIGIN: ${VEHICLE_REMOTE_ORIGIN:-https://35.241.68.75.nip.io}
+      VEHICLE_PLAYER_CONFIG: /run/vehicle-player/config.json
+      VEHICLE_PLAYER_ASSETS: /run/vehicle-player/web
+      VEHICLE_KUBECONFIG: /run/vehicle-kube/config
+      VEHICLE_KUBE_CONTEXT: ${VEHICLE_KUBE_CONTEXT:-}
+      GUANCE_WORKSPACE_ID: ${GUANCE_WORKSPACE_ID:-}
+    volumes:
+      - type: bind
+        source: ${VEHICLE_KUBE_DIR:-./.local-work/vehicle-demo/kube}
+        target: /run/vehicle-kube
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${VEHICLE_PLAYER_DIR:-./.local-work/vehicle-demo/player}
+        target: /run/vehicle-player
+        read_only: true
+        bind:
+          create_host_path: false
+    networks: [demo]
+networks:
+  demo:
+    external: true
+    name: observability-demo_default

@@ -14,6 +14,15 @@ public class GatewayServiceApplication {
   }
 
   @Bean
+  RestTemplate vehicleRestTemplate(RestTemplateBuilder builder) {
+    return builder
+        .connectTimeout(Duration.ofSeconds(3))
+        .readTimeout(Duration.ofSeconds(90))
+        .errorHandler(new PassthroughResponseErrorHandler())
+        .build();
+  }
+
+  @Bean
   RestTemplate gatewayRestTemplate(RestTemplateBuilder builder) {
     return builder
         .connectTimeout(Duration.ofSeconds(3))

@@ -1,0 +1,13 @@
+FROM python:3.12-slim@sha256:e70237b264442328526ff29d6b3c43bd8abcf6cbab78a949322fb69b7d91d6b6 AS build
+RUN pip install --no-cache-dir uv==0.9.5
+WORKDIR /src
+COPY data-pipeline ./data-pipeline
+COPY vehicle-pipeline/control ./vehicle-pipeline/control
+RUN cd vehicle-pipeline/control && uv sync --frozen --no-dev --no-editable
+FROM python:3.12-slim@sha256:e70237b264442328526ff29d6b3c43bd8abcf6cbab78a949322fb69b7d91d6b6
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.version="0.1.0" org.opencontainers.image.revision=$SOURCE_REVISION
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+COPY --from=build /src/vehicle-pipeline/control/.venv /src/vehicle-pipeline/control/.venv
+USER 10001:10001
+ENTRYPOINT ["/src/vehicle-pipeline/control/.venv/bin/vehicle-pipeline-control"]

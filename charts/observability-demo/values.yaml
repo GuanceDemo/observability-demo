@@ -139,3 +139,9 @@ reports:
   user: mall_reports_reader
   secretName: mall-report-reader
   passwordKey: mysql-password
+
+# Optional vehicle scene; backend is installed separately in vehicle-pipeline.
+vehicleWorkbench:
+  enabled: false
+  url: http://vehicle-workbench.vehicle-pipeline.svc.cluster.local:8767
+  gatewaySecretName: vehicle-workbench-gateway

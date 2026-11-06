@@ -56,6 +56,14 @@ class OrderControllerTest {
           .build();
 
   @Test
+  void vehicleSceneIsExplicitRuntimeConfiguration() {
+    DemoController controller = newDemoController();
+    assertThat(controller.config()).containsEntry("vehicleEnabled", false);
+    org.springframework.test.util.ReflectionTestUtils.setField(controller, "vehicleEnabled", true);
+    assertThat(controller.config()).containsEntry("vehicleEnabled", true);
+  }
+
+  @Test
   void demoOrderConfirmsOrderAndReturnsBusinessFields() throws Exception {
     mockMvc
         .perform(

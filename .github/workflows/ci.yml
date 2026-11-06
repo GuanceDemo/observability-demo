@@ -244,3 +244,25 @@ jobs:
           fi
           kubectl auth can-i get pods/log --as system:serviceaccount:observability-demo:demo-observability-demo-log-reader -n observability-demo | grep -q yes
           kubectl auth can-i get secrets --as system:serviceaccount:observability-demo:demo-observability-demo-log-reader -n observability-demo | grep -q no
+
+  vehicle-workbench:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.9.5"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.17.3
+      - name: Verify workbench API and ACK chart boundaries offline
+        run: uv run --python 3.12 --with-requirements scripts/vehicle-demo/local/requirements.txt python -m unittest discover -s scripts/vehicle-demo/local/tests -p 'test_*.py'
+      - name: Verify scene, token renewal, reports and player recovery
+        run: node --test scripts/tests/vehicle-ack-scene.test.cjs scripts/vehicle-demo/local/tests/*.mjs
+      - name: Build workbench with bundled vehicle player
+        run: docker build -f scripts/vehicle-demo/local/Dockerfile.ack -t vehicle-workbench:ci .
+      - name: Verify image startup and packaged player without cluster access
+        run: python3 scripts/vehicle-demo/test-ack-image.py vehicle-workbench:ci

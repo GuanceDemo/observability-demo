@@ -1,0 +1,96 @@
+{{- if .Values.emqxEnabled }}
+{{- if not (or (eq (int .Values.emqxReplicas) 0) (eq (int .Values.emqxReplicas) 1)) }}
+{{- fail "The retained single-node EMQX deployment supports only 0 or 1 replica" }}
+{{- end }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: vehicle-emqx
+  annotations: {helm.sh/resource-policy: keep}
+spec:
+  capacity: {storage: 2Gi}
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: vehicle-local
+  local: {path: /var/lib/vehicle-pipeline/emqx}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: [{{ .Values.storageNode | quote }}]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vehicle-emqx
+  annotations: {helm.sh/resource-policy: keep}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: vehicle-local
+  volumeName: vehicle-emqx
+  resources:
+    requests: {storage: 2Gi}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: vehicle-emqx}
+spec:
+  type: ClusterIP
+  selector: {app: vehicle-emqx}
+  ports:
+    - {name: mqtt, port: 1883, targetPort: 1883}
+    - {name: mqtt-ws, port: 8083, targetPort: 8083}
+    - {name: management, port: 18083, targetPort: 18083}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-emqx}
+spec:
+  replicas: {{ .Values.emqxReplicas }}
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: vehicle-emqx}
+  template:
+    metadata:
+      labels: {app: vehicle-emqx}
+    spec:
+      hostname: vehicle-emqx
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.storageNode | quote }}
+      securityContext: {runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000, fsGroupChangePolicy: OnRootMismatch}
+      terminationGracePeriodSeconds: 90
+      containers:
+        - name: emqx
+          image: {{ .Values.emqxImage | quote }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - {name: EMQX_NODE__NAME, value: "emqx@vehicle-emqx"}
+          ports: [{containerPort: 1883}, {containerPort: 8083}, {containerPort: 18083}]
+          resources:
+            requests: {cpu: 100m, memory: 384Mi}
+            limits: {cpu: "1", memory: 1Gi}
+          startupProbe:
+            tcpSocket: {port: 1883}
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            tcpSocket: {port: 1883}
+            periodSeconds: 5
+          volumeMounts:
+            - {name: data, mountPath: /opt/emqx/data}
+            - {name: config, mountPath: /opt/emqx/etc/emqx.conf, subPath: emqx.conf, readOnly: true}
+            - {name: config, mountPath: /opt/emqx/etc/vehicle-acl.conf, subPath: acl.conf, readOnly: true}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: vehicle-emqx}
+        - name: config
+          secret:
+            secretName: {{ .Values.emqxSecretName }}
+            defaultMode: 0444
+            items:
+              - {key: emqx.conf, path: emqx.conf}
+              - {key: acl.conf, path: acl.conf}
+{{- end }}

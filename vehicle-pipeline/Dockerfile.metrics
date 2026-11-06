@@ -1,0 +1,12 @@
+FROM python:3.12-slim@sha256:e70237b264442328526ff29d6b3c43bd8abcf6cbab78a949322fb69b7d91d6b6 AS build
+RUN pip install --no-cache-dir uv==0.9.5
+WORKDIR /src
+COPY vehicle-pipeline/metrics ./metrics
+RUN cd metrics && uv sync --frozen --no-dev --no-editable
+FROM python:3.12-slim@sha256:e70237b264442328526ff29d6b3c43bd8abcf6cbab78a949322fb69b7d91d6b6
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.version="0.1.0" org.opencontainers.image.revision=$SOURCE_REVISION
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
+COPY --from=build /src/metrics/.venv /src/metrics/.venv
+USER 10001:10001
+ENTRYPOINT ["/src/metrics/.venv/bin/python", "-m", "vehicle_metrics.collector"]

@@ -1,0 +1,10 @@
+{
+  "apiVersion": "v1",
+  "kind": "ConfigMap",
+  "metadata": {
+    "name": "vehicle-demo-fault-state",
+    "namespace": "vehicle-pipeline",
+    "labels": {"app.kubernetes.io/managed-by": "vehicle-demo-api-control"}
+  },
+  "data": {"operation": "{\"phase\":\"idle\"}", "lease": "{}"}
+}

@@ -27,6 +27,82 @@ import org.springframework.web.servlet.HandlerMapping;
 
 class GatewayProxyHandlerTest {
   @Test
+  void vehicleRoutesAreDisabledUntilConfigured() throws Exception {
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    handle(new GatewayProxyHandler(new RestTemplate(), "http://order.test", "http://game.test"),
+        new MockHttpServletRequest("GET", "/api/vehicle/config"), response);
+    assertThat(response.getStatus()).isEqualTo(404);
+  }
+
+  @Test
+  void vehicleRoutesUsePrivateBackendWithoutForwardingClientHopCredential() throws Exception {
+    String token = "test-only-gateway-hop-token-0000000000";
+    for (String path : java.util.List.of("/api/vehicle/config", "/vehicle-demo/workbench.html",
+        "/vehicle-demo/controls.html", "/vehicle-demo/player/",
+        "/vehicle-demo/player/assets/index-a12b34cd.js", "/vehicle-demo/api/report")) {
+      RestTemplate rest = new RestTemplate();
+      MockRestServiceServer server = MockRestServiceServer.bindTo(rest).build();
+      server.expect(requestTo("http://vehicle.test" + path))
+          .andExpect(header("X-Vehicle-Gateway-Token", token))
+          .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON)
+              .header("X-Vehicle-Gateway-Token", token));
+      MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
+      request.addHeader("X-Vehicle-Gateway-Token", "browser-forged-value");
+      MockHttpServletResponse response = new MockHttpServletResponse();
+      handle(new GatewayProxyHandler(rest, "http://order.test", "http://game.test", "http://vehicle.test", token), request, response);
+      assertThat(response.getStatus()).isEqualTo(200);
+      assertThat(response.getHeader("X-Vehicle-Gateway-Token")).isNull();
+      server.verify();
+    }
+  }
+
+  @Test
+  void vehiclePostKeepsOriginCsrfAndBodyButDoesNotRequireMallLogin() throws Exception {
+    String token = "test-only-gateway-hop-token-0000000000";
+    RestTemplate rest = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(rest).build();
+    server.expect(requestTo("http://vehicle.test/api/vehicle/faults/inject"))
+        .andExpect(method(HttpMethod.POST))
+        .andExpect(header("Origin", "https://demo.test"))
+        .andExpect(header("X-Vehicle-Token", "browser-csrf"))
+        .andExpect(header("X-Vehicle-Gateway-Token", token))
+        .andExpect(headerDoesNotExist("Cookie"))
+        .andRespond(withStatus(HttpStatus.ACCEPTED));
+    MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/vehicle/faults/inject");
+    request.addHeader("Origin", "https://demo.test");
+    request.addHeader("X-Vehicle-Token", "browser-csrf");
+    request.setContent("{}".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    handle(new GatewayProxyHandler(rest, "http://order.test", "http://game.test", "http://vehicle.test", token), request, response);
+    assertThat(response.getStatus()).isEqualTo(202);
+    server.verify();
+  }
+
+  @Test
+  void privateHopCredentialCannotReachMallAndVehicleAssetsStayAllowlisted() throws Exception {
+    String token = "test-only-gateway-hop-token-0000000000";
+    RestTemplate rest = new RestTemplate();
+    MockRestServiceServer server = MockRestServiceServer.bindTo(rest).build();
+    server.expect(requestTo("http://order.test/api/demo/config"))
+        .andExpect(headerDoesNotExist("X-Vehicle-Gateway-Token"))
+        .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
+    GatewayProxyHandler handler = new GatewayProxyHandler(rest, "http://order.test", "http://game.test", "http://vehicle.test", token);
+    MockHttpServletRequest mall = new MockHttpServletRequest("GET", "/api/demo/config");
+    mall.addHeader("X-Vehicle-Gateway-Token", token);
+    handle(handler, mall, new MockHttpServletResponse());
+    server.verify();
+    for (String path : java.util.List.of("/vehicle-demo/server.py", "/api/vehicle/exec",
+        "/vehicle-demo/player/assets/index-a12b34cd.js.map", "/vehicle-demo/player/%2e%2e/server.py")) {
+      MockHttpServletResponse response = new MockHttpServletResponse();
+      handle(handler, new MockHttpServletRequest("GET", path), response);
+      assertThat(response.getStatus()).isEqualTo(404);
+    }
+    MockHttpServletResponse response = new MockHttpServletResponse();
+    handle(handler, new MockHttpServletRequest("POST", "/vehicle-demo/api/live"), response);
+    assertThat(response.getStatus()).isEqualTo(404);
+  }
+
+  @Test
   void gameRoutesUseIndependentBackendAndAuthRemainsShared() throws Exception {
     for (String path : java.util.List.of("/game-hub.html", "/plants-game.html", "/webgl-replay-game.html",
         "/assets/game-runtime.js", "/assets/pvz/pvz.css", "/assets/pvz-clock.js",

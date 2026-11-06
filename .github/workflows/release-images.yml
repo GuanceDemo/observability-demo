@@ -20,7 +20,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [gateway, order, inventory, payment, game]
+        include:
+          - {service: gateway, image: gateway-service, dockerfile: gateway-service/Dockerfile}
+          - {service: order, image: order-service, dockerfile: order-service/Dockerfile}
+          - {service: inventory, image: inventory-service, dockerfile: inventory-service/Dockerfile}
+          - {service: payment, image: payment-service, dockerfile: payment-service/Dockerfile}
+          - {service: game, image: game-service, dockerfile: game-service/Dockerfile}
+          - {service: vehicle-workbench, image: vehicle-workbench, dockerfile: scripts/vehicle-demo/local/Dockerfile.ack}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -50,8 +56,8 @@ jobs:
         id: image
         shell: bash
         run: |
-          echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/observability-demo-${{ matrix.service }}-service" >> "$GITHUB_OUTPUT"
-          echo "harbor_name=${HARBOR_REGISTRY}/${HARBOR_PROJECT}/observability-demo-${{ matrix.service }}-service" >> "$GITHUB_OUTPUT"
+          echo "name=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/observability-demo-${{ matrix.image }}" >> "$GITHUB_OUTPUT"
+          echo "harbor_name=${HARBOR_REGISTRY}/${HARBOR_PROJECT}/observability-demo-${{ matrix.image }}" >> "$GITHUB_OUTPUT"
       - id: meta
         uses: docker/metadata-action@v5
         with:
@@ -65,7 +71,7 @@ jobs:
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.service }}-service/Dockerfile
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}

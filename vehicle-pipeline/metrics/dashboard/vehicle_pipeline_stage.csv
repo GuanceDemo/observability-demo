@@ -1,0 +1,13 @@
+measurement,metric_name,data_type,unit,tag_key
+vehicle_pipeline_stage,available,float,-,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,backlog,float,-,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,collected_at_seconds,float,s,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,committed_bytes,float,B,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,committed_files,float,-,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,data_delay_seconds,float,s,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,input_1m,float,-,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,output_1m,float,-,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,output_rows,float,-,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,read_rows,float,-,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,report_updated_at_seconds,float,s,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"
+vehicle_pipeline_stage,updated_at_seconds,float,s,"__input_source,cluster,component,consumer_group,pipeline,stage,topic"

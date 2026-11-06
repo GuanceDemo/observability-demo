@@ -167,6 +167,15 @@ spec:
               value: http://{{ include "observability-demo.fullname" $ }}-order-service:8080
             - name: GAME_URL
               value: http://{{ include "observability-demo.fullname" $ }}-game-service:8084
+            {{- if $.Values.vehicleWorkbench.enabled }}
+            - name: VEHICLE_WORKBENCH_URL
+              value: {{ required "vehicleWorkbench.url is required" $.Values.vehicleWorkbench.url | quote }}
+            - name: VEHICLE_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ required "vehicleWorkbench.gatewaySecretName is required" $.Values.vehicleWorkbench.gatewaySecretName | quote }}
+                  key: gateway-token
+            {{- end }}
             {{- else if eq $service.name "game-service" }}
             - name: RUM_ENABLED
               value: {{ $.Values.rum.enabled | quote }}
@@ -186,6 +195,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "observability-demo.secretName" $ }}
                   key: {{ $.Values.secretKeys.mysqlPassword }}
+            - name: VEHICLE_WORKBENCH_ENABLED
+              value: {{ $.Values.vehicleWorkbench.enabled | quote }}
             - name: REPORTS_ENABLED
               value: {{ $.Values.reports.enabled | quote }}
             {{- if $.Values.reports.enabled }}

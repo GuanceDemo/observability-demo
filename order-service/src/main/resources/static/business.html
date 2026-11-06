@@ -757,6 +757,39 @@
       .trace-link { width: 100%; }
       .observability-link-actions { flex-direction: column; }
     }
+    /* The vehicle scene is registered only by the loopback development gateway. */
+    html[data-vehicle-scene="true"] #activityHistoryPanel,
+    html[data-vehicle-scene="true"] #previewToggle,
+    html[data-vehicle-scene="true"] .simulator-head { display: none !important; }
+    html[data-vehicle-scene="true"] .simulator-pane {
+      grid-template-rows: minmax(0, 1fr);
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+    .preview-stage[data-view="web"][data-scene="vehicle-telemetry"] {
+      grid-template-rows: minmax(0, 1fr);
+      padding: 0;
+      gap: 0;
+    }
+    .preview-stage[data-view="web"][data-scene="vehicle-telemetry"] .preview-browser-chrome { display: none; }
+    .preview-stage[data-view="web"][data-scene="vehicle-telemetry"] .preview-shell.phone-shell {
+      grid-template-rows: minmax(0, 1fr);
+      border-radius: 0;
+      isolation: auto;
+    }
+    .preview-stage[data-view="web"][data-scene="vehicle-telemetry"] .preview-shell.phone-shell::after { content: none; }
+    .preview-stage[data-view="web"][data-scene="vehicle-telemetry"] .phone-screen,
+    .preview-stage[data-view="web"][data-scene="vehicle-telemetry"] .phone-frame-wrap {
+      border-radius: 0;
+      background: #fff;
+    }
+    .preview-stage[data-scene="vehicle-telemetry"] .shop-frame-canvas,
+    .preview-stage[data-scene="vehicle-telemetry"] .shop-frame { width: 100%; height: 100%; }
+    #vehicleControlFrame { display: block; width: 100%; height: 100%; min-height: 0; border: 0; }
+    #vehicleControlFrame[hidden] { display: none; }
+    html[data-vehicle-scene="true"] .control-sidebar .sidebar-content { overflow: hidden; }
   </style>
   <style id="workbench-v2">
     html,
@@ -822,6 +855,13 @@
 
     .service-icon svg { width: 100%; height: 100%; display: block; }
     .service-icon path { fill: currentColor; }
+    .service-icon-vehicle-telemetry path {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     .service-icon-android-storefront,
     .service-icon-webgl-game {
       overflow: hidden;
@@ -2446,6 +2486,7 @@
             <button class="collapse-button" id="rightCollapseBtn" type="button" aria-expanded="true" aria-label="收起故障控制台" data-i18n-aria-label="collapseFaults"></button>
           </div>
           <div class="sidebar-content">
+            <iframe id="vehicleControlFrame" title="车机故障与数据观测" hidden></iframe>
             <section class="panel" id="faultControlPanel" aria-label="多层级故障配置" data-i18n-aria-label="parentFaultPanel">
             <div class="panel-head">
               <h2 data-i18n="parentFaultPanel">多层级故障配置</h2>
@@ -2709,6 +2750,14 @@
         statusKey: 'sceneRunning',
       },
     ];
+    function addVehicleScene() {
+      if (BUSINESS_SCENARIOS.some(scene => scene.id === 'vehicle-telemetry')) return;
+      BUSINESS_SCENARIOS.push({id: 'vehicle-telemetry', titleKey: 'sceneVehicleTitle',
+        descriptionKey: 'sceneVehicleDescription', frameUrl: 'vehicle-demo/workbench.html',
+        supportedViews: ['web'], statusKey: 'sceneRunning'});
+    }
+    if (window.VEHICLE_LOCAL_ENABLED === true && ['127.0.0.1', 'localhost'].includes(location.hostname)) addVehicleScene();
+    let sceneSelectedByUser = false;
     const compactViewport = window.matchMedia('(max-width: 1199px)');
     const initialUrl = new URL(window.location.href);
     const FAULT_LAYER_GROUPS = [
@@ -3484,6 +3533,12 @@
 
     function renderControlSidebarMode() {
       const androidMode = usesAndroidDeviceFrame();
+      const vehicleMode = state.selectedSceneId === 'vehicle-telemetry';
+      document.documentElement.dataset.vehicleScene = String(vehicleMode);
+      const vehicleControls = document.getElementById('vehicleControlFrame');
+      vehicleControls.hidden = !vehicleMode;
+      if (vehicleMode && !vehicleControls.getAttribute('src')) vehicleControls.src = '/vehicle-demo/controls.html';
+      if (!vehicleMode) vehicleControls.removeAttribute('src');
       if (els.controlSidebar) {
         els.controlSidebar.dataset.mode = androidMode ? 'android-debug' : 'faults';
         els.controlSidebar.setAttribute('aria-label', t('faultConsoleTitle'));
@@ -3491,8 +3546,8 @@
       if (els.controlSidebarTitle) {
         els.controlSidebarTitle.textContent = t('faultConsoleTitle');
       }
-      if (els.faultControlPanel) els.faultControlPanel.hidden = androidMode;
-      if (els.observabilityPanel) els.observabilityPanel.hidden = androidMode;
+      if (els.faultControlPanel) els.faultControlPanel.hidden = androidMode || vehicleMode;
+      if (els.observabilityPanel) els.observabilityPanel.hidden = androidMode || vehicleMode;
       if (els.androidDebugPanel) els.androidDebugPanel.hidden = !androidMode;
       if (!androidMode && els.lastRefresh) {
         els.lastRefresh.textContent = state.lastStatusRefreshedAt
@@ -3508,6 +3563,7 @@
       renderAndroidDebug();
       renderFaultHistory();
       renderLayoutState();
+      if (vehicleMode && els.lastRefresh) els.lastRefresh.textContent = t('sceneVehicleControls');
     }
 
     function activeFrameSource(options = {}) {
@@ -3601,7 +3657,9 @@
       svg.setAttribute('viewBox', '0 0 40 40');
       svg.setAttribute('focusable', 'false');
       const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      path.setAttribute('d', 'M8.5 11.5c4.2 0 7.5 1.1 10.5 3.5v13.5c-3-2.3-6.3-3.5-10.5-3.5V11.5Zm23 0c-4.2 0-7.5 1.1-10.5 3.5v13.5c3-2.3 6.3-3.5 10.5-3.5V11.5Z');
+      path.setAttribute('d', sceneId === 'vehicle-telemetry'
+        ? 'M8 25V17l4-7h16l4 7v8M8 17h24M8 25h24M11 25v5M29 25v5M12 21h3M25 21h3'
+        : 'M8.5 11.5c4.2 0 7.5 1.1 10.5 3.5v13.5c-3-2.3-6.3-3.5-10.5-3.5V11.5Zm23 0c-4.2 0-7.5 1.1-10.5 3.5v13.5c3-2.3 6.3-3.5 10.5-3.5V11.5Z');
       svg.append(path);
       mark.append(svg);
       return mark;
@@ -3735,6 +3793,26 @@
     }
 
     async function resetFaultsForSceneChange() {
+      if (state.selectedSceneId === 'vehicle-telemetry') {
+        setBusy(true);
+        try {
+          const configResponse = await fetch('/api/vehicle/config', {cache: 'no-store'});
+          const operationResponse = await fetch('/api/vehicle/faults', {cache: 'no-store'});
+          if (!configResponse.ok || !operationResponse.ok) throw new Error('车机控制暂不可用，请恢复后重试切换');
+          const config = await configResponse.json(), current = await operationResponse.json();
+          if (current.operation?.id && !['idle', 'recovered'].includes(current.operation.phase)) {
+            const response = await fetch('/api/vehicle/faults/recover', {method: 'POST',
+              headers: {'Content-Type': 'application/json', 'X-Vehicle-Token': config.token},
+              body: JSON.stringify({operationId: current.operation.id})});
+            if (!response.ok) throw new Error('车机恢复请求未成功，请在右侧重试');
+          }
+          return true;
+        } catch (error) {
+          log(error.message, {status: 'error'});
+          // The remote worker retains its recovery deadline even if this frame leaves.
+          return true;
+        } finally { setBusy(false); }
+      }
       setBusy(true);
       try {
         const { response } = await requestJson('/api/demo/faults/off', { method: 'POST' });
@@ -3755,11 +3833,12 @@
     }
 
     async function selectBusinessScene(sceneId) {
+      sceneSelectedByUser = true;
       const scene = BUSINESS_SCENARIOS.find((item) => item.id === sceneId);
       if (!scene) return;
       const changed = state.selectedSceneId !== scene.id;
       if (changed) {
-        await resetFaultsForSceneChange();
+        if (await resetFaultsForSceneChange() === false) return;
         state.activeGameId = null;
       }
       state.selectedSceneId = scene.id;
@@ -4348,6 +4427,16 @@
         const { response, body } = await requestJson('/api/demo/config');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.demoConfig = body && typeof body === 'object' ? body : {};
+        if (state.demoConfig.vehicleEnabled === true) {
+          addVehicleScene();
+          if (!sceneSelectedByUser && initialUrl.searchParams.get('scene') === 'vehicle-telemetry') {
+            state.selectedSceneId = 'vehicle-telemetry';
+            state.previewMode = 'web';
+          }
+          renderBusinessScenes();
+          renderPreviewMode();
+          updateWorkbenchUrl();
+        }
         updateFrameUrls({ preserveStoreState: true });
         renderFaultCatalog();
         updateObservabilityRumViewLink();
@@ -4625,6 +4714,7 @@
     }
 
     async function refreshStatus() {
+      if (state.selectedSceneId === 'vehicle-telemetry') return;
       try {
         const { response, body } = await requestJson('/api/demo/status');
         if (!response.ok) throw new Error(`HTTP ${response.status}`);

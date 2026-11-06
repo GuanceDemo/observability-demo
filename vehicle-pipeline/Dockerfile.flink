@@ -1,0 +1,5 @@
+FROM flink:1.20.3-scala_2.12-java17@sha256:6a2b771c073b523e43d72b46e338ce6cef25e969965444f6afe1b0bb15fa9772
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.version="0.1.0" org.opencontainers.image.revision=$SOURCE_REVISION
+RUN mkdir -p /opt/flink/plugins/s3-fs-hadoop /opt/flink/usrlib && cp /opt/flink/opt/flink-s3-fs-hadoop-*.jar /opt/flink/plugins/s3-fs-hadoop/
+COPY vehicle-pipeline/flink-job/target/vehicle-flink-job-0.1.0.jar /opt/flink/usrlib/vehicle.jar

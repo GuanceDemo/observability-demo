@@ -1,0 +1,12 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>车机数据 · Vehicle Lab</title><link rel="stylesheet" href="/vehicle-demo/reports.css"></head>
+<body><main>
+<header><div><a class="eyebrow" href="/vehicle-demo/">VEHICLE LAB / DATA</a><h1>从每秒遥测，到运行洞察</h1><p>查看车机实时处理状态、五分钟趋势与每日汇总。</p></div><a class="button" href="/vehicle-demo/">打开车机 ↗</a></header>
+<div id="notice" role="status">正在读取报表…</div>
+<section aria-labelledby="flow-title"><div class="section-head"><h2 id="flow-title">数据处理链路</h2><span id="updated">—</span></div><div class="flow"><span>Android<br><small>1 Hz 遥测</small></span><b>→</b><span>EMQX<br><small>原生 Kafka Sink</small></span><b>→</b><span>Kafka<br><small>持久消息</small></span><b>→</b><span>Flink<br><small>校验 · 去重 · 异常</small></span><b>→</b><span>Parquet<br><small>已提交数据</small></span><b>→</b><span>Spark SQL<br><small>五分钟 · 每日汇总</small></span></div><div id="jobs" class="jobs"></div><p class="hint">运行状态来自实际引擎。报表展示最近一次成功结果；各阶段处理计数可能包含尚未提交的检查点数据。</p></section>
+<section id="report" hidden><div class="section-head"><h2>今天</h2><span id="freshness"></span></div><div class="metrics"><article><small>唯一遥测样本</small><strong id="samples">—</strong></article><article><small>行驶里程</small><strong id="distance">—</strong></article><article><small>最高电池温度</small><strong id="temperature">—</strong></article><article><small>高温样本</small><strong id="anomalies">—</strong></article></div>
+<div class="chart-card"><h3>五分钟平均速度 <small>km/h · 最近 24 小时内最多 288 个窗口</small></h3><svg id="chart" viewBox="0 0 1000 180" role="img" aria-label="五分钟平均速度趋势"></svg><div class="axis"><span id="chart-start">—</span><span id="chart-end">—</span></div></div>
+<div class="table-wrap"><table><caption>每日汇总（北京时间）</caption><thead><tr><th>日期</th><th>样本</th><th>平均速度</th><th>里程</th><th>最低电量</th><th>最高温度</th><th>高温样本</th><th>充电样本</th></tr></thead><tbody id="days"></tbody></table></div>
+<details><summary>查看本批次依据</summary><dl><dt>Spark Run ID</dt><dd id="run-id"></dd><dt>输入快照 SHA256</dt><dd id="snapshot"></dd><dt>已提交 Parquet 文件数</dt><dd id="objects"></dd><dt>最新源事件</dt><dd id="last-event"></dd><dt>血缘事件待发送</dt><dd id="pending"></dd></dl></details></section>
+<footer>每 20 秒刷新 · 高温 ≥ 55°C · 低电量 ≤ 15% · 充电样本数不等同于持续秒数</footer>
+</main><script src="/vehicle-demo/reports.js"></script></body></html>

@@ -1,0 +1,5 @@
+measurement,metric_name,data_type,unit,tag_key
+vehicle_pipeline_flow,available,float,-,"__input_source,cluster,component,consumer_group,level,pipeline,source,stage,target,topic"
+vehicle_pipeline_flow,updated_at_seconds,float,s,"__input_source,cluster,component,consumer_group,level,pipeline,source,stage,target,topic"
+vehicle_pipeline_flow,value,float,-,"__input_source,cluster,component,consumer_group,level,pipeline,source,stage,target,topic"
+vehicle_pipeline_flow,window_start_seconds,float,s,"__input_source,cluster,component,consumer_group,level,pipeline,source,stage,target,topic"

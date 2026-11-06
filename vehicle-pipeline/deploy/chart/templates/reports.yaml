@@ -1,0 +1,42 @@
+{{- if .Values.processingEnabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: vehicle-summary}
+spec:
+  schedule: "*/5 * * * *"
+  timeZone: Asia/Shanghai
+  suspend: {{ .Values.reportsSuspended }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  startingDeadlineSeconds: 180
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 600
+      ttlSecondsAfterFinished: 3600
+      template:
+        metadata:
+          labels: {app: vehicle-summary}
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          nodeSelector:
+            kubernetes.io/hostname: {{ .Values.computeNode | quote }}
+          containers:
+            - name: spark
+              image: {{ .Values.sparkImage | quote }}
+              env:
+                - {name: MYSQL_HOST, value: {{ .Values.mysqlHost | quote }}}
+                - {name: MYSQL_USER, value: vehicle_writer}
+                - {name: S3_ENDPOINT, value: "http://vehicle-lake:8333"}
+                - name: MYSQL_PASSWORD
+                  valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: mysql-writer}}
+                - name: S3_ACCESS_KEY
+                  valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: s3-reader-key}}
+                - name: S3_SECRET_KEY
+                  valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: s3-reader-secret}}
+              resources:
+                requests: {cpu: 250m, memory: 1024Mi}
+                limits: {cpu: "2", memory: 1536Mi}
+{{- end }}

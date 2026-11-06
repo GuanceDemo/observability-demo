@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>车机数据实验室</title><link rel="stylesheet" href="/vehicle-demo/prototype.css"><link rel="stylesheet" href="/vehicle-demo/workbench.css"><script type="module" src="/vehicle-demo/workbench.js"></script></head>
+<body data-panel="scene"><svg class="icon-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+  <symbol id="i-car" viewBox="0 0 24 24"><path d="m5 8 2-5h10l2 5M4 8h16l1 4v6H3v-6l1-4Z"/><path d="M3 13h18M6 18v3m12-3v3M6 10v1m12-1v1"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C8 2 4 2 2 3v16c4-1 7 0 10 2 3-2 6-3 10-2V3c-3-1-7 0-10 2Zm0 0v16"/></symbol>
+  <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="3"/><path d="M10 5h4m-3 14h2"/></symbol>
+  <symbol id="i-game" viewBox="0 0 24 24"><path d="M7 7h10c3 0 4 3 5 8s-2 6-5 1H7c-3 5-6 4-5-1S4 7 7 7Z"/><path d="M7 10v5m-2.5-2.5h5M15 11h.01M18 14h.01"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 3h7v7m0-7L10 14M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m14 6-6 6 6 6"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 6 0c0 2-3 2-3 4m0 4h.01"/></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="m13 2-9 12h7l-1 8 10-13h-8l1-7Z"/></symbol>
+  <symbol id="i-data" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 4 18 4 18 0V5M3 12c0 4 18 4 18 0"/></symbol>
+  <symbol id="i-flow" viewBox="0 0 24 24"><rect x="2" y="8" width="6" height="7" rx="1"/><rect x="16" y="2" width="6" height="7" rx="1"/><rect x="16" y="16" width="6" height="7" rx="1"/><path d="M8 12h4V6h4m-4 6v7h4"/></symbol>
+</defs></svg>
+<main class="main-column live-workbench"><section class="preview-panel panel">      <div class="panel-heading preview-heading"><div><h2 id="preview-title">车机数据实验室</h2><p>车机遥测与数据处理</p></div><div class="tabs" role="tablist" aria-label="车机内容"><button role="tab" id="car-tab" aria-selected="true" aria-controls="car" tabindex="0" data-view="car"><svg><use href="#i-car"/></svg>车机画面</button><button role="tab" id="reports-tab" aria-selected="false" aria-controls="reports" tabindex="-1" data-view="reports"><svg><use href="#i-data"/></svg>数据报表</button></div></div>
+<section id="car" class="view" role="tabpanel" aria-labelledby="car-tab">
+<div class="device-toolbar"><span>Android 车机 · demo-vehicle-001</span></div>
+<div class="live-vehicle-screen"><iframe id="player" title="真实 Android 车机" allow="autoplay; fullscreen" allowfullscreen referrerpolicy="no-referrer"></iframe></div>
+<div class="player-caption"><span id="player-status" role="status">正在连接车机画面…</span><button id="reconnect" class="button secondary">重新连接</button></div><p class="vehicle-report-footnote">直接点击车机画面切换驾驶场景。</p></section>
+      <div id="reports" class="view report-view" role="tabpanel" aria-labelledby="reports-tab" hidden>
+        <div class="report-intro"><div><span class="eyebrow">VEHICLE INSIGHTS</span><h3>车辆数据报表</h3><p>上报情况 · 车辆状态 · 运行统计</p></div><div class="period-label">统计范围<strong>今天</strong></div></div>
+        <div class="report-notice" id="report-notice-wrap"><span id="report-notice" role="status">正在读取报表…</span><span id="snapshot-time">等待成功批次</span></div>
+        <section class="vehicle-report-overview" aria-labelledby="vehicle-report-title">
+          <div class="section-heading"><h4 id="vehicle-report-title">车辆上报概览</h4><span>实时接收 · 每 5 秒刷新</span></div>
+          <div class="vehicle-report-metrics">
+            <article><span>今日有数据车辆</span><strong id="seen">—</strong><small>今日收到遥测的去重车辆</small></article>
+            <article><span>近 1 分钟上报车辆</span><strong id="vehicle-report-active">—</strong><small>按最近一次接收时间判断</small></article>
+            <article><span>超过 1 分钟未上报</span><strong id="vehicle-report-missing">—</strong><small>按最近一次接收时间判断</small></article>
+            <article><span>近 1 分钟接收样本</span><strong id="vehicle-report-received">—</strong><small>实际接收并去重的遥测样本</small></article>
+          </div>
+          <p id="live-notice" class="vehicle-report-footnote" role="status">正在读取实时接收记录…</p><div class="vehicle-report-mode-summary"><div id="vehicle-mode-bar" class="vehicle-report-mode-bar" aria-hidden="true"></div><div class="vehicle-report-mode-legend"><span><i class="mode-drive"></i>行驶 <span id="count-drive">—</span></span><span><i class="mode-park"></i>停车 <span id="count-park">—</span></span><span><i class="mode-charge"></i>充电 <span id="count-charge">—</span></span></div><p>场景分布仅统计近 1 分钟内采样且收到上报的车辆；未上报不等同于车辆离线。</p></div>
+        </section>
+        <section class="vehicle-report-list-section" aria-labelledby="vehicle-report-list-title">
+          <div class="vehicle-report-table-heading"><h4 id="vehicle-report-list-title">车辆上报明细</h4><div class="vehicle-report-table-controls"><input id="vehicle-search" type="search" placeholder="搜索车辆 ID" aria-label="搜索车辆 ID"><select id="vehicle-status" aria-label="上报状态筛选"><option value="all">全部状态</option><option value="reporting">近 1 分钟有上报</option><option value="silent">超过 1 分钟未上报</option><option value="unknown">状态待确认</option><option value="waiting">等待首次上报</option></select></div></div>
+          <div class="vehicle-report-table-scroll"><table><thead><tr><th>车辆 ID</th><th>上报状态</th><th>最近接收</th><th>最近场景</th><th>电量</th><th>温度</th><th>今日汇总样本</th></tr></thead><tbody id="vehicle-report-rows"></tbody></table></div>
+          <p class="vehicle-report-footnote" id="vehicle-report-count"></p>
+        </section>
+        <div class="section-heading history-heading"><h4 id="history-title">今日运行统计</h4><span id="report-batch-label">等待成功批次</span></div>
+        <div class="report-metrics"><article><span>唯一遥测样本</span><strong id="samples">—</strong><small>按事件 ID 去重</small></article><article><span>行驶里程</span><strong><span id="distance">—</span> <em>km</em></strong><small>按累计里程增量计算</small></article><article><span>最高电池温度</span><strong><span id="temperature">—</span> <em>°C</em></strong><small>今日采样最高值</small></article><article><span>高温样本</span><strong id="anomalies">—</strong><small>温度 ≥ 55 °C</small></article></div>
+        <div class="chart-card"><div class="section-heading"><h4>五分钟平均速度</h4><span><i class="legend"></i>车速 · km/h</span></div><svg id="speed-chart" viewBox="0 0 780 170" role="img" aria-label="成功批次的五分钟平均车速"></svg><div class="chart-axis" id="chart-axis"></div><p class="vehicle-report-footnote" id="chart-range">等待窗口数据</p></div>
+        <div class="report-table-wrap"><div class="section-heading"><h4>今日汇总</h4><span>北京时间</span></div><table><thead><tr><th>日期</th><th>车辆</th><th>样本数</th><th>里程 km</th><th>最低电量 %</th><th>最高温度 °C</th><th>高温样本</th><th>充电样本</th></tr></thead><tbody id="report-rows"></tbody></table></div><p class="vehicle-report-footnote">充电样本数不代表充电时长。趋势最多展示接口返回的最近 288 条窗口记录。</p><div class="batch-line"><span>成功批次</span><code id="batch-id">—</code><span id="batch-time"></span></div>
+      </div>
+</section>    <section class="pipeline-panel panel" aria-labelledby="pipeline-title"><div class="section-heading"><h2 id="pipeline-title">数据流向</h2><span>点击节点查看数据职责</span></div><div class="pipeline" id="pipeline"></div><div class="pipeline-detail" id="pipeline-detail"><svg><use href="#i-flow"/></svg><span id="pipeline-description"></span></div></section>
+</main></body></html>

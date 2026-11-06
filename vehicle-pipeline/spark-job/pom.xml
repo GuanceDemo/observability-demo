@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>demo.observability</groupId><artifactId>vehicle-pipeline</artifactId><version>0.1.0</version></parent>
+  <artifactId>vehicle-spark-job</artifactId>
+  <dependencies>
+    <dependency><groupId>org.apache.spark</groupId><artifactId>spark-sql_2.12</artifactId><version>${spark.version}</version></dependency>
+    <dependency><groupId>org.apache.hadoop</groupId><artifactId>hadoop-aws</artifactId><version>3.3.4</version></dependency>
+    <dependency><groupId>io.openlineage</groupId><artifactId>openlineage-java</artifactId><version>${openlineage.version}</version></dependency>
+    <dependency><groupId>com.mysql</groupId><artifactId>mysql-connector-j</artifactId><version>9.7.0</version></dependency>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
+  </dependencies>
+  <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.8.1</version><executions><execution><id>runtime</id><phase>package</phase><goals><goal>copy-dependencies</goal></goals><configuration><includeScope>runtime</includeScope><outputDirectory>${project.build.directory}/lib</outputDirectory></configuration></execution></executions></plugin></plugins></build>
+</project>

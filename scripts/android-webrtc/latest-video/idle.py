@@ -61,7 +61,7 @@ def has_active_anr(output, package):
 async def android_command(action):
     adb = os.environ.get('ANDROID_ADB', '/home/cherry/android-sdk/platform-tools/adb')
     serial = os.environ.get('ANDROID_SERIAL', 'emulator-5554')
-    package = 'com.malldemomobile.safe'
+    package = os.environ.get('ANDROID_PACKAGE', 'com.malldemomobile.safe')
     args = {'home': ['input', 'keyevent', 'KEYCODE_HOME'],
             'stop': ['am', 'force-stop', package],
             'anr': ['dumpsys', 'activity', 'processes'],

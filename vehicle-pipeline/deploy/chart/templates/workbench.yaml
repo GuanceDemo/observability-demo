@@ -1,0 +1,139 @@
+{{- if .Values.workbench.enabled }}
+{{- if or (ne .Release.Namespace "vehicle-pipeline") (ne .Release.Name "vehicle-pipeline") }}
+{{- fail "workbench requires release vehicle-pipeline in namespace vehicle-pipeline" }}
+{{- end }}
+{{- if not .Values.processingEnabled }}
+{{- fail "workbench requires processingEnabled=true" }}
+{{- end }}
+{{- $image := required "workbench.image must specify a published tag or digest" .Values.workbench.image }}
+{{- if or (not (regexMatch ":.+$" $image)) (regexMatch ":(latest|main)$" $image) }}
+{{- fail "workbench.image must use an explicit version or digest" }}
+{{- end }}
+{{- if not (regexMatch "^https://[A-Za-z0-9.-]+(:[0-9]+)?$" .Values.workbench.publicOrigin) }}
+{{- fail "workbench.publicOrigin must be an HTTPS origin without a trailing slash" }}
+{{- end }}
+{{- $secret := required "workbench.secretName is required" .Values.workbench.secretName }}
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: vehicle-workbench}
+automountServiceAccountToken: false
+---
+# Client controls only the fixed operation record and creates bounded worker Jobs.
+# The existing recovery worker account/permissions/state remain independently owned.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: vehicle-workbench}
+rules:
+  - apiGroups: [apps]
+    resources: [deployments]
+    resourceNames: [vehicle-control, vehicle-kafka, vehicle-flink-taskmanager]
+    verbs: [get]
+  - apiGroups: [batch]
+    resources: [cronjobs]
+    resourceNames: [vehicle-summary]
+    verbs: [get]
+  - apiGroups: ['']
+    resources: [serviceaccounts]
+    resourceNames: [vehicle-demo-fault-worker]
+    verbs: [get]
+  - apiGroups: ['']
+    resources: [configmaps]
+    resourceNames: [vehicle-demo-fault-state]
+    verbs: [get, update]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [get, list, create]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: vehicle-workbench}
+subjects:
+  - {kind: ServiceAccount, name: vehicle-workbench, namespace: vehicle-pipeline}
+roleRef: {kind: Role, name: vehicle-workbench, apiGroup: rbac.authorization.k8s.io}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-workbench}
+spec:
+  # One browser token/cache owner; durable operation state lives in Kubernetes.
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: vehicle-workbench}
+  template:
+    metadata:
+      labels: {app: vehicle-workbench}
+    spec:
+      serviceAccountName: vehicle-workbench
+      automountServiceAccountToken: true
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile: {type: RuntimeDefault}
+      {{- with .Values.workbench.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: workbench
+          image: {{ $image | quote }}
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 8767}]
+          env:
+            - {name: VEHICLE_MODE, value: cluster}
+            - {name: VEHICLE_PUBLIC_ORIGIN, value: {{ .Values.workbench.publicOrigin | quote }}}
+            - {name: VEHICLE_REMOTE_ORIGIN, value: {{ .Values.workbench.remoteOrigin | quote }}}
+            - {name: VEHICLE_REPORT_URL, value: "http://vehicle-control.vehicle-pipeline.svc.cluster.local:8080/api/report"}
+            - {name: GUANCE_WORKSPACE_ID, value: {{ .Values.workbench.workspace | quote }}}
+            - name: VEHICLE_GATEWAY_TOKEN
+              valueFrom:
+                secretKeyRef: {name: {{ $secret | quote }}, key: gateway-token}
+          resources:
+            {{- toYaml .Values.workbench.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            periodSeconds: 15
+          volumeMounts:
+            - {name: player-config, mountPath: /etc/vehicle-workbench, readOnly: true}
+      volumes:
+        - name: player-config
+          secret:
+            secretName: {{ $secret | quote }}
+            defaultMode: 0440
+            items: [{key: player-config.json, path: player-config.json}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: vehicle-workbench}
+spec:
+  type: ClusterIP
+  selector: {app: vehicle-workbench}
+  ports: [{name: http, port: 8767, targetPort: http}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: vehicle-workbench-gateway}
+spec:
+  podSelector:
+    matchLabels: {app: vehicle-workbench}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ required "workbench.gatewayNamespace is required" .Values.workbench.gatewayNamespace | quote }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/component: gateway-service
+              app.kubernetes.io/instance: {{ required "workbench.gatewayRelease is required" .Values.workbench.gatewayRelease | quote }}
+      ports: [{protocol: TCP, port: 8767}]
+{{- end }}

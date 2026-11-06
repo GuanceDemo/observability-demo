@@ -1,0 +1,73 @@
+{{- if .Values.metrics.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-metrics}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: vehicle-metrics}
+  template:
+    metadata:
+      labels: {app: vehicle-metrics}
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.computeNode | quote }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+        - name: collector
+          image: {{ required "metrics.image must be pinned" .Values.metrics.image | quote }}
+          env:
+            - name: HOST_IP
+              valueFrom: {fieldRef: {fieldPath: status.hostIP}}
+            - {name: METRIC_WRITE_URL, value: "http://$(HOST_IP):9529/v1/write/metric?precision=n&ignore_global_host_tags=true&input=vehicle-pipeline-metrics"}
+            - {name: GUANCE_WORKSPACE, value: {{ required "metrics.workspace is required when metrics are enabled" .Values.metrics.workspace | quote }}}
+            - {name: MYSQL_HOST, value: {{ .Values.mysqlHost | quote }}}
+            - name: MYSQL_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: mysql-reader}}
+            - {name: EMQX_URL, value: "http://vehicle-emqx:18083"}
+            - name: EMQX_API_KEY
+              valueFrom: {secretKeyRef: {name: vehicle-metrics-reader, key: api-key}}
+            - name: EMQX_API_SECRET
+              valueFrom: {secretKeyRef: {name: vehicle-metrics-reader, key: api-secret}}
+            - {name: KAFKA_EXPORTER_URL, value: "http://127.0.0.1:9308/metrics"}
+            - {name: S3_ENDPOINT, value: "http://vehicle-lake:8333"}
+            - name: S3_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: s3-reader-key}}
+            - name: S3_SECRET_KEY
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: s3-reader-secret}}
+          resources:
+            requests: {cpu: 30m, memory: 80Mi}
+            limits: {cpu: 250m, memory: 192Mi}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          readinessProbe:
+            exec:
+              command: [/src/metrics/.venv/bin/python, -c, "import os,time; assert time.time()-os.stat('/tmp/metrics-ready').st_mtime<120"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+        - name: kafka-exporter
+          image: {{ required "metrics.kafkaExporterImage must be pinned" .Values.metrics.kafkaExporterImage | quote }}
+          args:
+            - --kafka.server=vehicle-kafka:9092
+            - --kafka.version=4.0.0
+            - --sasl.enabled
+            - --sasl.mechanism=plain
+            - --sasl.username=$(SASL_USER_NAME)
+            - --sasl.password=$(SASL_USER_PASSWORD)
+            - --topic.filter=^vehicle\.telemetry\.raw\.v1$
+            - --group.filter=^vehicle-flink-clean-v1$
+            - --topic.workers=1
+            - --web.listen-address=127.0.0.1:9308
+          env:
+            - {name: SASL_USER_NAME, value: flink}
+            - name: SASL_USER_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: kafka-flink}}
+          resources:
+            requests: {cpu: 10m, memory: 32Mi}
+            limits: {cpu: 150m, memory: 96Mi}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+{{- end }}

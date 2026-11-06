@@ -1,0 +1,28 @@
+name: vehicle-demo
+services:
+  emqx:
+    image: emqx/emqx-enterprise@sha256:135116400e11b25224350b2e55c874f4e224d357b593fb554ca1b1f398c631ac
+    hostname: vehicle-emqx
+    container_name: vehicle-emqx
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    environment:
+      EMQX_NODE__NAME: emqx@vehicle-emqx
+    ports:
+      - "127.0.0.1:1883:1883"
+      - "127.0.0.1:8083:8083"
+      - "127.0.0.1:18083:18083"
+    volumes:
+      - /etc/vehicle-demo/emqx.conf:/opt/emqx/etc/emqx.conf:ro
+      - /etc/vehicle-demo/acl.conf:/opt/emqx/etc/vehicle-acl.conf:ro
+      - emqx-data:/opt/emqx/data
+      - emqx-log:/opt/emqx/log
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+volumes:
+  emqx-data:
+  emqx-log:

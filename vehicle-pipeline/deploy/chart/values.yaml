@@ -1,0 +1,37 @@
+# Existing ACK capacity only. Local volumes remain bound to the storage node.
+storageNode: cn-shenzhen.10.182.137.32
+computeNode: cn-shenzhen.10.187.217.80
+mysqlHost: demo-observability-demo-mysql.observability-demo.svc.cluster.local
+secretName: vehicle-pipeline
+kafkaImage: pubrepo.jiagouyun.com/demo/vehicle-kafka:4.1.2@sha256:5b861a170fa186969e12021dffdec4a81b7b9da80ca9fdb08ce545de9eea8653
+lakeImage: pubrepo.jiagouyun.com/demo/vehicle-lake:4.51@sha256:796e60b3d10d6f219c6d7d9bd0ba20fd3ba3220271cf93d1d099305df639016e
+flinkImage: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-flink:0.1.0-r2@sha256:3645af9b985772f77c47aa53e1d8bf53bf57ef356ea7a279331d264388801e7b
+sparkImage: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-spark:0.1.0-details-be30b2f2842f@sha256:5a96741451c49a370a62cbeeabd3eb9cd46f9da23e682b6f0970fbebd1c0fe0b
+controlImage: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-control:0.1.0-attempts-af622e0437f6@sha256:ab712066b9e149edb695d099f2d4f82a8f345ee47677274fed3e1d5b3d0e8f24
+processingEnabled: false
+reportsSuspended: true
+# Provision with replicas=0, copy stopped broker data, then start one broker.
+emqxEnabled: false
+emqxReplicas: 1
+emqxSecretName: vehicle-emqx
+emqxImage: pubrepo.jiagouyun.com/demo/vehicle-emqx:6.3.2@sha256:135116400e11b25224350b2e55c874f4e224d357b593fb554ca1b1f398c631ac
+metrics:
+  enabled: false
+  workspace: "" # Required when metrics.enabled=true; set in a private deployment overlay.
+  image: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-metrics:0.1.0-flow-7936b9987b71@sha256:518d2200a2b9502c2a890562242b701e2e2c057e974ed37136d2d292a7eb02e4
+  kafkaExporterImage: pubrepo.jiagouyun.com/demo/vehicle-kafka-exporter:1.9.0@sha256:4150e46b2e9697ac30e4be8de03ec1704b4bdc7037577b83b8d35a32be298c16
+
+# Opt in after configuring the existing pipeline and fault executor.
+workbench:
+  enabled: false
+  image: "" # Explicit published tag or digest containing the bundled vehicle player.
+  imagePullSecrets: []
+  secretName: vehicle-workbench # gateway-token + player-config.json
+  publicOrigin: "" # Exact HTTPS origin of the main Demo Gateway.
+  remoteOrigin: https://35.241.68.75.nip.io
+  workspace: ""
+  gatewayNamespace: observability-demo
+  gatewayRelease: demo
+  resources:
+    requests: {cpu: 50m, memory: 64Mi}
+    limits: {cpu: 500m, memory: 192Mi}

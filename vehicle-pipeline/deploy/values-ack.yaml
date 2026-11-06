@@ -1,0 +1,5 @@
+# Current deployment on the existing ACK cluster; contains no credentials.
+processingEnabled: true
+reportsSuspended: false
+emqxEnabled: true
+emqxReplicas: 1

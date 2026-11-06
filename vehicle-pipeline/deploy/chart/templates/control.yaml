@@ -1,0 +1,37 @@
+{{- if .Values.processingEnabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-control}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: vehicle-control}
+  template:
+    metadata:
+      labels: {app: vehicle-control}
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: {{ .Values.storageNode | quote }}
+      containers:
+        - name: control
+          image: {{ .Values.controlImage | quote }}
+          env:
+            - {name: MYSQL_HOST, value: {{ .Values.mysqlHost | quote }}}
+            - {name: MYSQL_USER, value: vehicle_control}
+            - name: MYSQL_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: mysql-control}}
+            - name: MYSQL_READER_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: mysql-reader}}
+            - name: OPENLINEAGE_TOKEN
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: openlineage-token}}
+            - name: BRIDGE_TOKEN
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: bridge-token}}
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 300m, memory: 192Mi}
+          readinessProbe:
+            httpGet: {path: /healthz, port: 8080}
+            initialDelaySeconds: 5
+{{- end }}

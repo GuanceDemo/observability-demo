@@ -16,6 +16,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -62,7 +64,8 @@ class GatewayProxyHandler implements HttpRequestHandler {
           "transfer-encoding",
           "upgrade",
           "host",
-          "content-length");
+          "content-length",
+          "x-vehicle-gateway-token");
   private static final Set<String> TRACE_PROPAGATION_HEADERS =
       Set.of(
           "traceparent",
@@ -91,15 +94,38 @@ class GatewayProxyHandler implements HttpRequestHandler {
   private final RestTemplate restTemplate;
   private final String orderUrl;
   private final String gameUrl;
+  private final RestTemplate vehicleRestTemplate;
+  private final String vehicleUrl;
+  private final String vehicleToken;
   private final PublicRoutePolicy publicRoutePolicy;
 
+  GatewayProxyHandler(RestTemplate rest, String orderUrl, String gameUrl) {
+    this(rest, orderUrl, gameUrl, "", "");
+  }
+
+  GatewayProxyHandler(RestTemplate rest, String orderUrl, String gameUrl,
+      String vehicleUrl, String vehicleToken) {
+    this(rest, rest, orderUrl, gameUrl, vehicleUrl, vehicleToken);
+  }
+
+  @Autowired
   GatewayProxyHandler(
-      RestTemplate gatewayRestTemplate,
+      @Qualifier("gatewayRestTemplate") RestTemplate gatewayRestTemplate,
+      @Qualifier("vehicleRestTemplate") RestTemplate vehicleRestTemplate,
       @Value("${gateway.order-url:http://127.0.0.1:8083}") String orderUrl,
-      @Value("${gateway.game-url:http://127.0.0.1:8084}") String gameUrl) {
+      @Value("${gateway.game-url:http://127.0.0.1:8084}") String gameUrl,
+      @Value("${gateway.vehicle-url:}") String vehicleUrl,
+      @Value("${gateway.vehicle-token:}") String vehicleToken) {
     this.restTemplate = gatewayRestTemplate;
     this.orderUrl = trimTrailingSlash(orderUrl);
     this.gameUrl = trimTrailingSlash(gameUrl);
+    this.vehicleRestTemplate = vehicleRestTemplate;
+    this.vehicleUrl = vehicleUrl == null || vehicleUrl.isBlank() ? "" : trimTrailingSlash(vehicleUrl);
+    this.vehicleToken = vehicleToken;
+    if (!this.vehicleUrl.isBlank() && (vehicleToken.length() < 32
+        || !vehicleToken.matches("[A-Za-z0-9_-]+"))) {
+      throw new IllegalArgumentException("Vehicle upstream requires a private Gateway token");
+    }
     this.publicRoutePolicy = new PublicRoutePolicy();
   }
 
@@ -121,6 +147,11 @@ class GatewayProxyHandler implements HttpRequestHandler {
         return;
       }
 
+      boolean vehicleRoute = route.routeId().startsWith("vehicle.");
+      if (vehicleRoute && vehicleUrl.isBlank()) {
+        response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        return;
+      }
       URI downstream = downstreamUri(request, route);
       long startedAt = System.nanoTime();
       log.info(
@@ -129,7 +160,7 @@ class GatewayProxyHandler implements HttpRequestHandler {
               "Gateway request received: method={} path={} downstream={} public_route={} route_class={} traffic_type={} client_ip={} peer_ip={} forwarded_for={} host={} user_agent={} referer={} key_request={} biz_request_id={}"),
           request.getMethod(),
           request.getRequestURI(),
-          downstream,
+          vehicleRoute ? downstream.getPath() : downstream,
           route.routeId(),
           route.routeClass(),
           route.trafficType(),
@@ -143,6 +174,7 @@ class GatewayProxyHandler implements HttpRequestHandler {
           businessRequestId);
       try {
         HttpHeaders headers = requestHeaders(request, visitorId);
+        if (vehicleRoute) headers.set("X-Vehicle-Gateway-Token", vehicleToken);
         byte[] requestBody = request.getInputStream().readNBytes(MAX_REQUEST_BODY_BYTES + 1);
         if (requestBody.length > MAX_REQUEST_BODY_BYTES) {
           response.sendError(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
@@ -151,7 +183,7 @@ class GatewayProxyHandler implements HttpRequestHandler {
         HttpEntity<byte[]> entity =
             new HttpEntity<>(requestBody.length == 0 ? null : requestBody, headers);
         ResponseEntity<byte[]> downstreamResponse =
-            restTemplate.exchange(
+            (vehicleRoute ? vehicleRestTemplate : restTemplate).exchange(
                 downstream, HttpMethod.valueOf(request.getMethod()), entity, byte[].class);
         VerifiedIdentity identity = VerifiedIdentity.from(downstreamResponse.getHeaders());
         applyVerifiedIdentity(identity);
@@ -184,8 +216,8 @@ class GatewayProxyHandler implements HttpRequestHandler {
             route.trafficType(),
             keyRequest,
             businessRequestId,
-            exception.getMessage(),
-            exception);
+            vehicleRoute ? exception.getClass().getSimpleName() : exception.getMessage(),
+            vehicleRoute ? null : exception);
         response.sendError(HttpServletResponse.SC_BAD_GATEWAY, "gateway downstream request failed");
       }
     } finally {
@@ -252,7 +284,8 @@ class GatewayProxyHandler implements HttpRequestHandler {
   }
 
   private URI downstreamUri(HttpServletRequest request, PublicRoutePolicy.Decision route) {
-    String targetUrl = route.routeId().startsWith("game.") ? gameUrl : orderUrl;
+    String targetUrl = route.routeId().startsWith("vehicle.") ? vehicleUrl
+        : route.routeId().startsWith("game.") ? gameUrl : orderUrl;
     String query = request.getQueryString();
     return URI.create(
         targetUrl + request.getRequestURI() + (query == null || query.isBlank() ? "" : "?" + query));
@@ -312,7 +345,8 @@ class GatewayProxyHandler implements HttpRequestHandler {
       DemoLanguage language, PublicRoutePolicy.Decision route, RequestSource source) {
     Map<String, String> tags = new java.util.LinkedHashMap<>();
     tags.put("gateway.target", route.forwardsDownstream()
-        ? (route.routeId().startsWith("game.") ? "game-service" : "order-service")
+        ? (route.routeId().startsWith("vehicle.") ? "vehicle-workbench"
+            : route.routeId().startsWith("game.") ? "game-service" : "order-service")
         : "gateway-service");
     tags.put("key_request", keyRequest);
     tags.put("biz_request_id", businessRequestId);

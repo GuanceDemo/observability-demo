@@ -1,0 +1,20 @@
+# No public listeners; host ingress is needed only for the restricted SSH forwards.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: vehicle-ingress}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}
+    - from:
+        - ipBlock: {cidr: 10.182.137.32/32}
+      ports:
+        - {protocol: TCP, port: 9094}
+        - {protocol: TCP, port: 8080}
+{{- if .Values.emqxEnabled }}
+        - {protocol: TCP, port: 1883}
+        - {protocol: TCP, port: 8083}
+        - {protocol: TCP, port: 18083}
+{{- end }}

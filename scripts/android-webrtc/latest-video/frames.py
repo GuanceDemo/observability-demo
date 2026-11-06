@@ -13,7 +13,10 @@ class Picture:
 
 
 class LatestSource:
-    def __init__(self, capture, convert, clock=time.monotonic):
+    def __init__(self, capture, convert, clock=time.monotonic, fps=30):
+        if not 1 <= fps <= 30:
+            raise ValueError('fps must be between 1 and 30')
+        self.fps = fps
         self.capture = capture
         self.convert = convert
         self.clock = clock
@@ -71,7 +74,7 @@ class LatestSource:
                 self.latest = self.raw = None
                 self.changed.clear()
                 await asyncio.sleep(.25)
-            interval = 1 / 30 if self.clock() < self.active_until else .1
+            interval = 1 / self.fps if self.clock() < self.active_until else max(.1, 1 / self.fps)
             try:
                 await asyncio.wait_for(self.wake.wait(), max(.001, interval - (self.clock() - started)))
             except asyncio.TimeoutError:

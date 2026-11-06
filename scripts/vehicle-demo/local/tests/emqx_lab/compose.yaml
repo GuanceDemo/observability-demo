@@ -1,0 +1,24 @@
+services:
+  kafka:
+    image: pubrepo.jiagouyun.com/demo/vehicle-kafka:4.1.2@sha256:5b861a170fa186969e12021dffdec4a81b7b9bda80ca9fdb08ce545de9eea8653
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    mem_limit: 768m
+  emqx:
+    image: pubrepo.jiagouyun.com/demo/vehicle-emqx:6.3.2@sha256:135116400e11b25224350b2e55c874f4e224d357b593fb554ca1b1f398c631ac
+    environment:
+      EMQX_NODE__NAME: emqx@emqx-lab
+      EMQX_DASHBOARD__DEFAULT_PASSWORD: ${EMQX_LAB_PASSWORD:?Set a temporary isolated lab password}
+    hostname: emqx-lab
+    ports: ['127.0.0.1:18183:18083','127.0.0.1:19183:1883']
+    mem_limit: 768m

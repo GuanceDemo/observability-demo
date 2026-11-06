@@ -1,0 +1,14 @@
+{{- range $name, $ports := dict "kafka" (list 9092 9094) "lake" (list 8333) "control" (list 8080) "flink" (list 8081 6123 6124) }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vehicle-{{ $name }}
+spec:
+  type: ClusterIP
+  selector: {app: vehicle-{{ $name }}}
+  ports:
+    {{- range $ports }}
+    - {name: tcp-{{ . }}, port: {{ . }}, targetPort: {{ . }}}
+    {{- end }}
+{{- end }}

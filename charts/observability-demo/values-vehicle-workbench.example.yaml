@@ -1,0 +1,8 @@
+# Overlay on the existing main Demo release values. Both Gateway and Order need
+# images built from the ACK workbench change; set image.tag to the new release.
+vehicleWorkbench:
+  enabled: true
+  url: http://vehicle-workbench.vehicle-pipeline.svc.cluster.local:8767
+  gatewaySecretName: vehicle-workbench-gateway
+# Reuse the existing HTTPS ingress. If deploying a new NGINX ingress, configure
+# ingress.hosts / ingress.tls and allow >=95s upstream read timeout; see the guide.

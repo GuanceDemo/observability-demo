@@ -36,6 +36,24 @@ final class PublicRoutePolicy {
    */
   private static final List<RouteRule> ROUTES =
       List.of(
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/workbench.html", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/controls.html", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/workbench.js", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/report-model.mjs", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/guance-links.mjs", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/player-connection.mjs", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/prototype.css", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/workbench.css", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/controls.css", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/player/", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/player/index.html", Action.FORWARD, "vehicle.asset", "static_asset"),
+          RouteRule.exact(READ_METHODS, "/api/vehicle/config", Action.FORWARD, "vehicle.read", "public_demo"),
+          RouteRule.exact(READ_METHODS, "/api/vehicle/player", Action.FORWARD, "vehicle.read", "public_demo"),
+          RouteRule.exact(READ_METHODS, "/api/vehicle/faults", Action.FORWARD, "vehicle.read", "public_demo"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/api/report", Action.FORWARD, "vehicle.read", "public_demo"),
+          RouteRule.exact(READ_METHODS, "/vehicle-demo/api/live", Action.FORWARD, "vehicle.read", "public_demo"),
+          RouteRule.exact(Set.of("POST"), "/api/vehicle/faults/inject", Action.FORWARD, "vehicle.inject", "public_demo"),
+          RouteRule.exact(Set.of("POST"), "/api/vehicle/faults/recover", Action.FORWARD, "vehicle.recover", "public_demo"),
           RouteRule.exact(READ_METHODS, "/reports.html", Action.FORWARD, "storefront.reports", "storefront_page"),
           RouteRule.exact(READ_METHODS, "/assets/reports.css", Action.FORWARD, "asset.reports-css", "static_asset"),
           RouteRule.exact(READ_METHODS, "/assets/reports.js", Action.FORWARD, "asset.reports-js", "static_asset"),
@@ -391,6 +409,12 @@ final class PublicRoutePolicy {
       return UNMATCHED;
     }
     String normalizedMethod = method == null ? "" : method.toUpperCase(Locale.ROOT);
+    // Only hashed JavaScript bundles from the pinned vehicle-player build.
+    if (READ_METHODS.contains(normalizedMethod)
+        && requestPath.matches("/vehicle-demo/player/assets/index-[A-Za-z0-9_-]{8,}\\.js")) {
+      return new Decision(Action.FORWARD, "vehicle.player-bundle", "static_asset",
+          "public_demo", "/vehicle-demo/player/assets/{bundle}.js");
+    }
     if (READ_METHODS.contains(normalizedMethod) && PVZ_ASSETS.contains(requestPath)) {
       String pathPattern =
           requestPath.startsWith("/assets/pvz/") ? "/assets/pvz/{assetPath}" : requestPath;

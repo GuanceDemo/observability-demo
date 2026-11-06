@@ -1,0 +1,86 @@
+{{- if .Values.processingEnabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: vehicle-flink}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: vehicle-flink}
+rules:
+  - apiGroups: [""]
+    resources: [configmaps]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: vehicle-flink}
+subjects: [{kind: ServiceAccount, name: vehicle-flink}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: vehicle-flink}
+{{- range $role := list "jobmanager" "taskmanager" }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-flink-{{ $role }}}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: vehicle-flink{{ if eq $role "taskmanager" }}-taskmanager{{ end }}}
+  template:
+    metadata:
+      labels: {app: vehicle-flink{{ if eq $role "taskmanager" }}-taskmanager{{ end }}}
+    spec:
+      serviceAccountName: vehicle-flink
+      nodeSelector:
+        kubernetes.io/hostname: {{ $.Values.computeNode | quote }}
+      containers:
+        - name: flink
+          image: {{ $.Values.flinkImage | quote }}
+          {{- if eq $role "jobmanager" }}
+          args: [standalone-job, --job-classname, demo.vehicle.flink.VehicleJob]
+          {{- else }}
+          args: [taskmanager]
+          {{- end }}
+          env:
+            - name: FLINK_PROPERTIES
+              value: |
+                jobmanager.rpc.address: vehicle-flink
+                jobmanager.rpc.port: 6123
+                blob.server.port: 6124
+                taskmanager.numberOfTaskSlots: 1
+                taskmanager.memory.process.size: 1536m
+                # HashMap state needs heap; no RocksDB or managed-memory operators are used.
+                taskmanager.memory.managed.fraction: 0.0
+                jobmanager.memory.process.size: 640m
+                parallelism.default: 1
+                high-availability.type: kubernetes
+                high-availability.storageDir: s3://vehicle-lake/ha
+                kubernetes.cluster-id: vehicle-flink-v1
+                kubernetes.namespace: {{ $.Release.Namespace }}
+                state.checkpoints.num-retained: 3
+                restart-strategy.type: fixed-delay
+                restart-strategy.fixed-delay.attempts: 1000
+                restart-strategy.fixed-delay.delay: 10s
+                s3.endpoint: http://vehicle-lake:8333
+                s3.path.style.access: true
+                s3.connection.ssl.enabled: false
+                s3.aws.credentials.provider: com.amazonaws.auth.EnvironmentVariableCredentialsProvider
+            - {name: KAFKA_BOOTSTRAP_SERVERS, value: "vehicle-kafka:9092"}
+            - {name: KAFKA_USER, value: flink}
+            - {name: CHECKPOINT_INTERVAL_MS, value: "60000"}
+            - name: KAFKA_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ $.Values.secretName }}, key: kafka-flink}}
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom: {secretKeyRef: {name: {{ $.Values.secretName }}, key: s3-writer-key}}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom: {secretKeyRef: {name: {{ $.Values.secretName }}, key: s3-writer-secret}}
+          resources:
+            requests: {cpu: 200m, memory: {{ if eq $role "jobmanager" }}640Mi{{ else }}1536Mi{{ end }}}
+            limits: {cpu: {{ if eq $role "jobmanager" }}"1"{{ else }}"2"{{ end }}, memory: {{ if eq $role "jobmanager" }}768Mi{{ else }}1792Mi{{ end }}}
+          {{- if eq $role "jobmanager" }}
+          readinessProbe:
+            httpGet: {path: /overview, port: 8081}
+            initialDelaySeconds: 15
+          {{- end }}
+{{- end }}
+{{- end }}

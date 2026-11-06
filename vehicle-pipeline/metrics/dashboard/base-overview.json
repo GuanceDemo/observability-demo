@@ -1,0 +1,1774 @@
+{
+  "url": null,
+  "icon": "",
+  "main": {
+    "type": "template",
+    "vars": [],
+    "charts": [
+      {
+        "pos": {
+          "h": 7,
+          "w": 6,
+          "x": 6,
+          "y": 0
+        },
+        "name": "已结束运行数",
+        "type": "singlestat",
+        "uuid": "chrt_51e16756226846e1b46964e8d27f92a6",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [],
+            "colors": [],
+            "levels": [],
+            "bgColor": "#F0FAFB",
+            "density": "medium",
+            "mappings": [],
+            "showLine": false,
+            "unitType": "global",
+            "fixedTime": "",
+            "fontColor": "#126A73",
+            "lineColor": "",
+            "precision": "2",
+            "showTitle": true,
+            "titleDesc": "结束的运行数量，包含成功、失败和中止的运行。",
+            "downsample": "last",
+            "globalUnit": [],
+            "isSampling": true,
+            "labelColor": "var(--color-text-secondary)",
+            "rangeColor": "",
+            "showLegend": true,
+            "themeColor": {
+              "key": "overview-deep-lake-blue",
+              "kind": "overview",
+              "colors": [
+                "#F0FAFB",
+                "#ADE1E5",
+                "#126A73"
+              ],
+              "custom": false,
+              "labelKey": "chart.theme_palette_deep_lake_blue",
+              "overview": {
+                "cardBg": "#F0FAFB",
+                "chartColor": "#ADE1E5",
+                "labelColor": "var(--color-text-secondary)",
+                "schemeTone": "light",
+                "titleColor": "#222222",
+                "valueColor": "#126A73",
+                "borderColor": "#C5EAED",
+                "chartOpacity": "0.34",
+                "previewOpacity": "0.78"
+              }
+            },
+            "titleColor": "#222222",
+            "valueColor": "#06B6D4",
+            "borderColor": "#E5E7EB",
+            "compareType": "",
+            "openCompare": false,
+            "chartOpacity": "",
+            "showLineAxis": false,
+            "timeInterval": "auto",
+            "decimalPlaces": 2,
+            "overviewTheme": {
+              "cardBg": "#F0FAFB",
+              "chartColor": "#ADE1E5",
+              "labelColor": "var(--color-text-secondary)",
+              "schemeTone": "light",
+              "titleColor": "#222222",
+              "valueColor": "#126A73",
+              "borderColor": "#C5EAED",
+              "chartOpacity": "0.34",
+              "cardBackground": "linear-gradient(135deg, #F2FBFB 0%, #F5FCFC 100%)",
+              "previewOpacity": "0.78"
+            },
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "openRepeatChart": false,
+            "currentChartType": "singlestat",
+            "showFieldMapping": false,
+            "sequenceChartType": "line",
+            "overviewSchemeTone": "light",
+            "scientificNotation": true,
+            "overviewBorderColor": "#C5EAED",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "openThousandsSeparator": true,
+            "overviewCardBackground": "linear-gradient(135deg, #F2FBFB 0%, #F5FCFC 100%)",
+            "overviewPreviewOpacity": "0.78",
+            "enablePreflightEstimate": false,
+            "overviewCustomBaseColor": "",
+            "overviewCustomTextColor": "",
+            "mainMeasurementQueryCode": "A",
+            "overviewCustomChartColor": ""
+          },
+          "fixedTime": "",
+          "isRefresh": false
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`run_id`) AS `run_count`) { `is_terminal` = true and `lineage_record_type` = 'event' }",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "run_count",
+              "field": "run_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "run_count",
+                  "field": "run_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "is_terminal",
+                  "type": "bool",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "datasource": "dataflux",
+            "queryGroup": "A"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 7,
+          "w": 6,
+          "x": 12,
+          "y": 0
+        },
+        "name": "未成功运行数",
+        "type": "singlestat",
+        "uuid": "chrt_9edead7dd52344c8a779f33b2c5eb42b",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [],
+            "colors": [],
+            "levels": [],
+            "bgColor": "#FFF3F2",
+            "density": "medium",
+            "mappings": [],
+            "showLine": false,
+            "unitType": "custom",
+            "fixedTime": "",
+            "fontColor": "#A72E2B",
+            "lineColor": "",
+            "precision": "2",
+            "showTitle": true,
+            "titleDesc": "以失败或中止状态结束的运行数量，不包含仍在运行或缺少明确结束状态的运行。",
+            "downsample": "last",
+            "globalUnit": [],
+            "isSampling": true,
+            "labelColor": "var(--color-text-secondary)",
+            "rangeColor": "",
+            "showLegend": true,
+            "themeColor": {
+              "key": "overview-deep-coral-red",
+              "kind": "overview",
+              "colors": [
+                "#FFF3F2",
+                "#F6B4B0",
+                "#A72E2B"
+              ],
+              "custom": false,
+              "labelKey": "chart.theme_palette_deep_coral_red",
+              "overview": {
+                "cardBg": "#FFF3F2",
+                "chartColor": "#F6B4B0",
+                "labelColor": "var(--color-text-secondary)",
+                "schemeTone": "light",
+                "titleColor": "#222222",
+                "valueColor": "#A72E2B",
+                "borderColor": "#F6C7C3",
+                "chartOpacity": "0.34",
+                "previewOpacity": "0.78"
+              }
+            },
+            "titleColor": "#222222",
+            "valueColor": "#10B981",
+            "borderColor": "#E5E7EB",
+            "compareType": "",
+            "openCompare": false,
+            "chartOpacity": "",
+            "showLineAxis": false,
+            "timeInterval": "auto",
+            "decimalPlaces": 2,
+            "overviewTheme": {
+              "cardBg": "#FFF3F2",
+              "chartColor": "#F6B4B0",
+              "labelColor": "var(--color-text-secondary)",
+              "schemeTone": "light",
+              "titleColor": "#222222",
+              "valueColor": "#A72E2B",
+              "borderColor": "#F6C7C3",
+              "chartOpacity": "0.34",
+              "cardBackground": "linear-gradient(135deg, #FFF4F3 0%, #FFF7F6 100%)",
+              "previewOpacity": "0.78"
+            },
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "openRepeatChart": false,
+            "currentChartType": "singlestat",
+            "showFieldMapping": false,
+            "sequenceChartType": "line",
+            "overviewSchemeTone": "light",
+            "scientificNotation": true,
+            "overviewBorderColor": "#F6C7C3",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "openThousandsSeparator": true,
+            "overviewCardBackground": "linear-gradient(135deg, #FFF4F3 0%, #FFF7F6 100%)",
+            "overviewPreviewOpacity": "0.78",
+            "enablePreflightEstimate": false,
+            "overviewCustomBaseColor": "",
+            "overviewCustomTextColor": "",
+            "mainMeasurementQueryCode": "A",
+            "overviewCustomChartColor": ""
+          },
+          "fixedTime": "",
+          "isRefresh": false
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`run_id`) AS `run_count`) { `is_success` = false and `is_terminal` = true  and `lineage_record_type` = 'event'  }",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "run_count",
+              "field": "run_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "run_count",
+                  "field": "run_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "is_success",
+                  "type": "bool",
+                  "logic": "and",
+                  "value": "false",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "is_terminal",
+                  "type": "bool",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "disabled": false,
+            "datasource": "dataflux",
+            "queryGroup": "B"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 7,
+          "w": 6,
+          "x": 0,
+          "y": 0
+        },
+        "name": "观测作业数",
+        "type": "singlestat",
+        "uuid": "chrt_c58fec45e16d4ca6805af4dd92eaf37e",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [],
+            "colors": [],
+            "levels": [],
+            "bgColor": "#F0F8FF",
+            "density": "medium",
+            "mappings": [],
+            "showLine": false,
+            "unitType": "custom",
+            "fixedTime": "",
+            "fontColor": "#0F5C9F",
+            "lineColor": "",
+            "precision": "2",
+            "showTitle": true,
+            "titleDesc": "观察到的作业数量，包含独立上报元数据、正在运行及已经结束运行的作业。",
+            "downsample": "last",
+            "globalUnit": [],
+            "isSampling": true,
+            "labelColor": "var(--color-text-secondary)",
+            "rangeColor": "",
+            "showLegend": true,
+            "themeColor": {
+              "key": "overview-deep-sky-blue",
+              "kind": "overview",
+              "colors": [
+                "#F0F8FF",
+                "#A9D6F4",
+                "#0F5C9F"
+              ],
+              "custom": false,
+              "labelKey": "chart.theme_palette_deep_sky_blue",
+              "overview": {
+                "cardBg": "#F0F8FF",
+                "chartColor": "#A9D6F4",
+                "labelColor": "var(--color-text-secondary)",
+                "schemeTone": "light",
+                "titleColor": "#222222",
+                "valueColor": "#0F5C9F",
+                "borderColor": "#C7E5F8",
+                "chartOpacity": "0.34",
+                "previewOpacity": "0.78"
+              }
+            },
+            "titleColor": "#222222",
+            "valueColor": "#EAB308",
+            "borderColor": "#E5E7EB",
+            "compareType": "",
+            "openCompare": false,
+            "chartOpacity": "",
+            "showLineAxis": false,
+            "timeInterval": "auto",
+            "decimalPlaces": 2,
+            "overviewTheme": {
+              "cardBg": "#F0F8FF",
+              "chartColor": "#A9D6F4",
+              "labelColor": "var(--color-text-secondary)",
+              "schemeTone": "light",
+              "titleColor": "#222222",
+              "valueColor": "#0F5C9F",
+              "borderColor": "#C7E5F8",
+              "chartOpacity": "0.34",
+              "cardBackground": "linear-gradient(135deg, #F2F9FF 0%, #F5FAFF 100%)",
+              "previewOpacity": "0.78"
+            },
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "openRepeatChart": false,
+            "currentChartType": "singlestat",
+            "showFieldMapping": false,
+            "sequenceChartType": "line",
+            "overviewSchemeTone": "light",
+            "scientificNotation": true,
+            "overviewBorderColor": "#C7E5F8",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "openThousandsSeparator": true,
+            "overviewCardBackground": "linear-gradient(135deg, #F2F9FF 0%, #F5FAFF 100%)",
+            "overviewPreviewOpacity": "0.78",
+            "enablePreflightEstimate": false,
+            "overviewCustomBaseColor": "",
+            "overviewCustomTextColor": "",
+            "mainMeasurementQueryCode": "A",
+            "overviewCustomChartColor": ""
+          },
+          "fixedTime": "",
+          "isRefresh": false
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`job_id`)) { `lineage_record_type` = 'event' }",
+              "code": "A",
+              "fill": null,
+              "type": "simple",
+              "alias": "",
+              "field": "job_id",
+              "limit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "id": "f29e2830-cb66-11f1-b7e1-c572540f9fca",
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "keyword",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [],
+              "labelOp": "",
+              "funcList": [],
+              "fieldFunc": "count_distinct",
+              "fieldType": "keyword",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": ""
+            },
+            "datasource": "dataflux",
+            "queryGroup": "A"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 12,
+          "w": 24,
+          "x": 0,
+          "y": 7
+        },
+        "name": "运行次数趋势",
+        "type": "sequence",
+        "uuid": "chrt_85e2424ea6824b4eab3cad26b0b87ace",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "运行次数{event_type: COMPLETE}",
+                "name": "运行次数{event_type: COMPLETE}",
+                "alias": "成功",
+                "queryCode": "A"
+              },
+              {
+                "key": "运行次数{event_type: FAIL}",
+                "name": "运行次数{event_type: FAIL}",
+                "alias": "失败",
+                "queryCode": "A"
+              },
+              {
+                "key": "运行次数{event_type: ABORT}",
+                "name": "运行次数{event_type: ABORT}",
+                "alias": "中止",
+                "queryCode": "A"
+              }
+            ],
+            "units": [],
+            "colors": [
+              {
+                "key": "运行次数{event_type: COMPLETE}",
+                "name": "运行次数{event_type: COMPLETE}",
+                "color": "#00B36B",
+                "queryCode": "A"
+              },
+              {
+                "key": "运行次数{event_type: FAIL}",
+                "name": "运行次数{event_type: FAIL}",
+                "color": "#F0525D",
+                "queryCode": "A"
+              },
+              {
+                "key": "运行次数{event_type: ABORT}",
+                "name": "运行次数{event_type: ABORT}",
+                "color": "#FF6512",
+                "queryCode": "A"
+              }
+            ],
+            "levels": [],
+            "slimit": 20,
+            "density": null,
+            "lineType": "linear",
+            "showLine": false,
+            "unitType": "global",
+            "chartType": "bar",
+            "fixedTime": "",
+            "isPercent": false,
+            "openStack": true,
+            "precision": "2",
+            "showLabel": false,
+            "showTitle": true,
+            "stackType": "time",
+            "titleDesc": "",
+            "globalUnit": [],
+            "isSampling": true,
+            "rangeColor": "",
+            "showLegend": true,
+            "themeColor": {
+              "key": "custom",
+              "kind": "bar",
+              "colors": [
+                "#00B36B",
+                "#F0525D",
+                "#FF6512"
+              ],
+              "custom": true,
+              "labelKey": "chart.theme_palette_custom"
+            },
+            "compareType": [],
+            "openCompare": false,
+            "yAxixMaxVal": null,
+            "yAxixMinVal": null,
+            "aliasVersion": 2,
+            "connectNulls": true,
+            "legendValues": "",
+            "timeInterval": "auto",
+            "decimalPlaces": 0,
+            "legendPostion": "bottom",
+            "maxPointCount": 120,
+            "sorderByOrder": "desc",
+            "xAxisShowType": "time",
+            "isCombineChart": false,
+            "isTimeInterval": true,
+            "showStackTotal": true,
+            "changeWorkspace": false,
+            "openRepeatChart": false,
+            "currentChartType": "sequence",
+            "showFieldMapping": false,
+            "onlyShowGroupName": false,
+            "showCompareLegend": false,
+            "scientificNotation": true,
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "yAxixOpenIncludeZero": true,
+            "openThousandsSeparator": true,
+            "enablePreflightEstimate": false,
+            "mainMeasurementQueryCode": "A"
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "sequence",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`run_id`) AS `运行次数`) { `lineage_record_type` = 'event'\n  and `is_terminal` = true  and `lineage_record_type` = 'event'  } BY `event_type`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "运行次数",
+              "field": "run_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "运行次数",
+                  "field": "run_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "is_terminal",
+                  "type": "bool",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [
+                "event_type"
+              ],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "datasource": "dataflux",
+            "queryGroup": "A"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 20,
+          "w": 8,
+          "x": 0,
+          "y": 19
+        },
+        "name": "作业运行次数 TOP10",
+        "type": "toplist",
+        "uuid": "chrt_6fd6c38ce13249baad2e36257ecd8261",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "bar": {
+              "direction": "horizontal",
+              "xAxisShowType": "groupBy"
+            },
+            "alias": [],
+            "color": "#06B6D4",
+            "table": {
+              "queryMode": "toGroupColumn"
+            },
+            "units": [],
+            "colors": [
+              {
+                "key": "平均耗时",
+                "name": "平均耗时",
+                "color": "#06B6D4"
+              }
+            ],
+            "levels": [],
+            "slimit": 20,
+            "density": "medium",
+            "topSize": 10,
+            "unitType": "global",
+            "chartType": "bar",
+            "fixedTime": "",
+            "precision": "2",
+            "showTitle": true,
+            "titleDesc": "展示已结束运行次数最多的 10 个作业，包含成功、失败和中止运行，用于识别高频执行作业。",
+            "globalUnit": [],
+            "isSampling": true,
+            "rangeColor": "",
+            "showLegend": true,
+            "themeColor": null,
+            "openCompare": false,
+            "showTopSize": true,
+            "aliasVersion": 2,
+            "decimalPlaces": 0,
+            "showTableHead": true,
+            "tableSortType": "top",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "openRepeatChart": false,
+            "currentChartType": "toplist",
+            "showFieldMapping": false,
+            "scientificNotation": true,
+            "mainMeasurementSort": "top",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "tableSortMetricName": "",
+            "mainMeasurementLimit": 10,
+            "openThousandsSeparator": true,
+            "enablePreflightEstimate": false,
+            "mainMeasurementQueryCode": "A"
+          },
+          "fixedTime": "",
+          "isRefresh": false
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "toplist",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`run_id`)) { `is_terminal` = true  and `lineage_record_type` = 'event' } BY `job_name`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "run_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "",
+                  "field": "run_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "is_terminal",
+                  "type": "bool",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [
+                "job_name"
+              ],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "datasource": "dataflux",
+            "queryGroup": "A"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 7,
+          "w": 6,
+          "x": 18,
+          "y": 0
+        },
+        "name": "运行成功率",
+        "type": "singlestat",
+        "uuid": "chrt_addecf7f3905407983f2701afae268bd",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [
+              {
+                "key": "a / b",
+                "name": "a / b",
+                "unit": "",
+                "units": []
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "bgColor": "#F3FBF7",
+            "density": "medium",
+            "mappings": [],
+            "showLine": false,
+            "unitType": "global",
+            "fixedTime": "",
+            "fontColor": "#216D45",
+            "lineColor": "",
+            "precision": "1",
+            "showTitle": true,
+            "titleDesc": "成功运行占已结束运行的比例。计算公式为成功运行数 ÷（成功运行数＋失败运行数＋中止运行数）。仍在运行及状态未知的运行不参与计算。",
+            "downsample": "last",
+            "globalUnit": [
+              "percent",
+              "percent_decimal"
+            ],
+            "isSampling": true,
+            "labelColor": "var(--color-text-secondary)",
+            "rangeColor": "",
+            "showLegend": true,
+            "themeColor": {
+              "key": "overview-deep-mint-green",
+              "kind": "overview",
+              "colors": [
+                "#F3FBF7",
+                "#B6E7CE",
+                "#216D45"
+              ],
+              "custom": false,
+              "labelKey": "chart.theme_palette_deep_mint_green",
+              "overview": {
+                "cardBg": "#F3FBF7",
+                "chartColor": "#B6E7CE",
+                "labelColor": "var(--color-text-secondary)",
+                "schemeTone": "light",
+                "titleColor": "#222222",
+                "valueColor": "#216D45",
+                "borderColor": "#C9E9D7",
+                "chartOpacity": "0.34",
+                "previewOpacity": "0.78"
+              }
+            },
+            "titleColor": "#222222",
+            "valueColor": "#EAB308",
+            "borderColor": "#E5E7EB",
+            "compareType": "",
+            "openCompare": false,
+            "chartOpacity": "",
+            "showLineAxis": false,
+            "timeInterval": "auto",
+            "decimalPlaces": 2,
+            "overviewTheme": {
+              "cardBg": "#F3FBF7",
+              "chartColor": "#B6E7CE",
+              "labelColor": "var(--color-text-secondary)",
+              "schemeTone": "light",
+              "titleColor": "#222222",
+              "valueColor": "#216D45",
+              "borderColor": "#C9E9D7",
+              "chartOpacity": "0.34",
+              "cardBackground": "linear-gradient(135deg, #F4FBF8 0%, #F7FCFA 100%)",
+              "previewOpacity": "0.78"
+            },
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "openRepeatChart": false,
+            "currentChartType": "singlestat",
+            "showFieldMapping": false,
+            "sequenceChartType": "line",
+            "overviewSchemeTone": "light",
+            "scientificNotation": true,
+            "overviewBorderColor": "#C9E9D7",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "openThousandsSeparator": true,
+            "overviewCardBackground": "linear-gradient(135deg, #F4FBF8 0%, #F7FCFA 100%)",
+            "overviewPreviewOpacity": "0.78",
+            "enablePreflightEstimate": false,
+            "overviewCustomBaseColor": "",
+            "overviewCustomTextColor": "",
+            "mainMeasurementQueryCode": "A",
+            "overviewCustomChartColor": ""
+          },
+          "fixedTime": "",
+          "isRefresh": false
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`run_id`) ) { `is_success` = true and `is_terminal` = true  and `lineage_record_type` = 'event' }",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "run_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "",
+                  "field": "run_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "is_success",
+                  "type": "bool",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "is_terminal",
+                  "type": "",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "disabled": true,
+            "datasource": "dataflux",
+            "queryGroup": "A"
+          },
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`run_id`)) {`is_terminal` = true  and `lineage_record_type` = 'event'  }",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "run_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "",
+                  "field": "run_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "is_terminal",
+                  "type": "",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "disabled": true,
+            "datasource": "dataflux",
+            "queryGroup": "B"
+          },
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "eval(a/b, a=\"LN::run_event:(count_distinct(`run_id`) ) { `is_success` = true and `is_terminal` = true  and `lineage_record_type` = 'event' }\", b=\"LN::run_event:(count_distinct(`run_id`)) {`is_terminal` = true  and `lineage_record_type` = 'event'  }\")",
+              "code": "C",
+              "type": "expression",
+              "alias": "",
+              "children": [],
+              "funcList": [],
+              "expression": "a/b"
+            },
+            "disabled": false,
+            "datasource": "dataflux",
+            "queryGroup": "C"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 18,
+          "w": 24,
+          "x": 0,
+          "y": 39
+        },
+        "name": "未成功运行",
+        "type": "table",
+        "uuid": "chrt_a1375c7fea4e495591cfd784144b31c4",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "links": [
+            {
+              "url": "/data-observability/jobs?time=#{TR}&viewType=view&lak=DataObservability&job=#{Value.last(job_id)}&jobTab=runs&run=#{T.run_id}",
+              "open": "newWin",
+              "show": true,
+              "type": "custom",
+              "alias": "查看作业详情"
+            },
+            {
+              "url": "/logIndi/log/all?time=#{TR}&query=#{T}",
+              "open": "newWin",
+              "show": false,
+              "type": "logging",
+              "showChanged": false
+            },
+            {
+              "url": "/objectadmin/docker_containers?routerTabActive=ObjectadminDocker&time=#{TR}&query=#{T}",
+              "open": "newWin",
+              "show": false,
+              "type": "container",
+              "showChanged": false
+            },
+            {
+              "url": "/objectadmin/host_processes?routerTabActive=ObjectadminProcesses&time=#{TR}&query=#{T}",
+              "open": "newWin",
+              "show": false,
+              "type": "processes",
+              "showChanged": false
+            },
+            {
+              "url": "/tracing/link/all?time=#{TR}&query=#{T}",
+              "open": "newWin",
+              "show": false,
+              "type": "tracing",
+              "showChanged": false
+            },
+            {
+              "url": "/scene/builtinview/detail?time=#{TR}&query=#{T}",
+              "open": "newWin",
+              "show": false,
+              "type": "host",
+              "showChanged": false
+            }
+          ],
+          "settings": {
+            "alias": [
+              {
+                "key": "last(job_name)",
+                "name": "last(job_name)",
+                "alias": "作业名称",
+                "queryCode": "B"
+              },
+              {
+                "key": "run_id",
+                "name": "run_id",
+                "alias": "运行ID",
+                "queryCode": ""
+              },
+              {
+                "key": "last(date)",
+                "name": "last(date)",
+                "alias": "运行时间",
+                "queryCode": "B"
+              },
+              {
+                "key": "last(event_type)",
+                "name": "last(event_type)",
+                "alias": "状态",
+                "queryCode": "B"
+              },
+              {
+                "key": "last(error_message)",
+                "name": "last(error_message)",
+                "alias": "错误摘要",
+                "queryCode": "B"
+              }
+            ],
+            "units": [
+              {
+                "key": "last(date)",
+                "name": "last(date)",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "ms"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "slimit": 20,
+            "pageSize": 0,
+            "unitType": "custom",
+            "fixedTime": "",
+            "precision": "2",
+            "queryMode": "toGroupColumn",
+            "showTitle": true,
+            "titleDesc": "",
+            "globalUnit": [],
+            "isSampling": true,
+            "pageEnable": false,
+            "showColumns": [
+              {
+                "name": "last(job_name)",
+                "queryCode": "B"
+              },
+              {
+                "name": "run_id"
+              },
+              {
+                "name": "last(date)",
+                "queryCode": "B"
+              },
+              {
+                "name": "last(event_type)",
+                "queryCode": "B"
+              },
+              {
+                "name": "last(error_message)",
+                "queryCode": "B"
+              }
+            ],
+            "valMappings": [],
+            "aliasVersion": 2,
+            "columnsWidth": [
+              {
+                "field": "0_last(job_name)",
+                "width": 321
+              },
+              {
+                "field": "run_id",
+                "width": 289
+              },
+              {
+                "field": "0_last(date)",
+                "width": 179
+              },
+              {
+                "field": "0_last(event_type)",
+                "width": 80
+              },
+              {
+                "field": "0_last(error_message)",
+                "width": 333
+              }
+            ],
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "openRepeatChart": false,
+            "currentChartType": "table",
+            "showFieldMapping": false,
+            "valColorMappings": [
+              {
+                "field": "last(event_type)",
+                "value": [
+                  "FAIL"
+                ],
+                "bgColor": "",
+                "fontColor": "#D13D52",
+                "operation": "=",
+                "queryCode": "B"
+              },
+              {
+                "field": "last(event_type)",
+                "value": [
+                  "ABORT"
+                ],
+                "bgColor": "",
+                "fontColor": "#F8B24A",
+                "operation": "=",
+                "queryCode": "B"
+              }
+            ],
+            "scientificNotation": true,
+            "mainMeasurementSort": "top",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "mainMeasurementField": "last(date)",
+            "mainMeasurementLimit": 10,
+            "openThousandsSeparator": false,
+            "enablePreflightEstimate": false,
+            "mainMeasurementQueryCode": "B"
+          },
+          "fixedTime": "",
+          "isRefresh": false
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(last(`job_name`),last(`job_id`),last(`event_type`), last(`date`), last(event_type), last(`error_message`)) { `lineage_record_type` = 'event'\n  and `is_terminal` = true and `is_success` = false } BY `run_id`",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "job_name",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "",
+                  "field": "job_name",
+                  "fieldFunc": "last"
+                },
+                {
+                  "alias": "",
+                  "field": "job_id",
+                  "fieldFunc": "last"
+                },
+                {
+                  "alias": "",
+                  "field": "event_type",
+                  "fieldFunc": "last"
+                },
+                {
+                  "alias": "",
+                  "field": "date",
+                  "fieldFunc": "last"
+                },
+                {
+                  "alias": "",
+                  "field": "event_type",
+                  "fieldFunc": "last"
+                },
+                {
+                  "alias": "",
+                  "field": "error_message",
+                  "fieldFunc": "last"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "is_terminal",
+                  "type": "",
+                  "logic": "and",
+                  "value": "true",
+                  "values": []
+                },
+                {
+                  "op": "=",
+                  "name": "is_success",
+                  "type": "",
+                  "logic": "and",
+                  "value": false,
+                  "values": []
+                }
+              ],
+              "groupBy": [
+                "run_id"
+              ],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "last",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "disabled": false,
+            "datasource": "dataflux",
+            "queryGroup": "B"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 20,
+          "w": 8,
+          "x": 16,
+          "y": 19
+        },
+        "name": "数据平台分布",
+        "type": "pie",
+        "uuid": "chrt_bf31dc4a8ef347bfb15eafa5a081d898",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "count_distinct(dataset_id)",
+                "name": "count_distinct(dataset_id)",
+                "alias": "{{data_platform}}",
+                "queryCode": "A"
+              }
+            ],
+            "units": [],
+            "colors": [
+              {
+                "key": "count_distinct(dataset_id){data_platform: SNOWFLAKE}",
+                "name": "count_distinct(dataset_id){data_platform: SNOWFLAKE}",
+                "color": "#4B3FC4",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(dataset_id){data_platform: KAFKA}",
+                "name": "count_distinct(dataset_id){data_platform: KAFKA}",
+                "color": "#7779FF",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(dataset_id){data_platform: CLICKHOUSE}",
+                "name": "count_distinct(dataset_id){data_platform: CLICKHOUSE}",
+                "color": "#FFD23F",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(dataset_id){data_platform: S3}",
+                "name": "count_distinct(dataset_id){data_platform: S3}",
+                "color": "#FF9A00",
+                "queryCode": "A"
+              }
+            ],
+            "levels": [],
+            "slimit": 20,
+            "unitType": "global",
+            "chartType": "doughnut",
+            "fixedTime": "",
+            "precision": "2",
+            "showTitle": true,
+            "titleDesc": "",
+            "globalUnit": [],
+            "isSampling": true,
+            "otherColor": "#F56610",
+            "themeColor": {
+              "key": "pie-vivid",
+              "kind": "pie",
+              "colors": [
+                "#4B3FC4",
+                "#7779FF",
+                "#FFD23F",
+                "#FF9A00",
+                "#1197E5",
+                "#2AB6FF",
+                "#FF338B",
+                "#F38AC1"
+              ],
+              "custom": false,
+              "labelKey": "chart.theme_palette_vivid_8"
+            },
+            "aliasVersion": 2,
+            "timeInterval": "auto",
+            "legendPostion": "bottom",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "legendValueOpen": true,
+            "openRepeatChart": false,
+            "currentChartType": "pie",
+            "showFieldMapping": false,
+            "onlyShowGroupName": false,
+            "scientificNotation": true,
+            "mainMeasurementSort": "top",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "mainMeasurementLimit": 20,
+            "legendValuePercentOpen": true,
+            "openThousandsSeparator": true,
+            "enablePreflightEstimate": false,
+            "chartCombineDefaultColor": "#F56610",
+            "mainMeasurementQueryCode": "A"
+          },
+          "fixedTime": "",
+          "isRefresh": false,
+          "fixedGroupByTime": null
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "pie",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::dataset_event:(count_distinct(`dataset_id`)) {`lineage_record_type` = 'event' } BY `data_platform`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "dataset_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "",
+                  "field": "dataset_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [
+                "data_platform"
+              ],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "dataset_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "disabled": false,
+            "datasource": "dataflux",
+            "queryGroup": "A"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      },
+      {
+        "pos": {
+          "h": 20,
+          "w": 8,
+          "x": 8,
+          "y": 19
+        },
+        "name": "作业集成分布",
+        "type": "pie",
+        "uuid": "chrt_9edbc440ba934f7e9777576b7729aaf0",
+        "group": {
+          "name": null
+        },
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "count_distinct(job_id)",
+                "name": "count_distinct(job_id)",
+                "alias": "{{integration}}",
+                "queryCode": "A"
+              }
+            ],
+            "units": [],
+            "colors": [
+              {
+                "key": "count_distinct(job_id){integration: SPARK}",
+                "name": "count_distinct(job_id){integration: SPARK}",
+                "color": "#4B3FC4",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(job_id){integration: AIRFLOW}",
+                "name": "count_distinct(job_id){integration: AIRFLOW}",
+                "color": "#7779FF",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(job_id){integration: PYTHON}",
+                "name": "count_distinct(job_id){integration: PYTHON}",
+                "color": "#FFD23F",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(job_id){integration: DEBEZIUM}",
+                "name": "count_distinct(job_id){integration: DEBEZIUM}",
+                "color": "#FF9A00",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(job_id){integration: DBT}",
+                "name": "count_distinct(job_id){integration: DBT}",
+                "color": "#1197E5",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(job_id){integration: LOOKER}",
+                "name": "count_distinct(job_id){integration: LOOKER}",
+                "color": "#2AB6FF",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(job_id){integration: SNOWFLAKE}",
+                "name": "count_distinct(job_id){integration: SNOWFLAKE}",
+                "color": "#FF338B",
+                "queryCode": "A"
+              },
+              {
+                "key": "count_distinct(job_id){integration: FLINK}",
+                "name": "count_distinct(job_id){integration: FLINK}",
+                "color": "#F38AC1",
+                "queryCode": "A"
+              }
+            ],
+            "levels": [],
+            "slimit": 20,
+            "unitType": "global",
+            "chartType": "doughnut",
+            "fixedTime": "",
+            "precision": "2",
+            "showTitle": true,
+            "titleDesc": "",
+            "globalUnit": [],
+            "isSampling": true,
+            "otherColor": "#F56610",
+            "themeColor": {
+              "key": "pie-vivid",
+              "kind": "pie",
+              "colors": [
+                "#4B3FC4",
+                "#7779FF",
+                "#FFD23F",
+                "#FF9A00",
+                "#1197E5",
+                "#2AB6FF",
+                "#FF338B",
+                "#F38AC1"
+              ],
+              "custom": false,
+              "labelKey": "chart.theme_palette_vivid_8"
+            },
+            "aliasVersion": 2,
+            "timeInterval": "auto",
+            "legendPostion": "bottom",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "legendValueOpen": true,
+            "openRepeatChart": false,
+            "currentChartType": "pie",
+            "showFieldMapping": false,
+            "onlyShowGroupName": false,
+            "scientificNotation": true,
+            "mainMeasurementSort": "top",
+            "repeatChartRowLimit": 3,
+            "repeatChartVariable": "",
+            "mainMeasurementLimit": 20,
+            "legendValuePercentOpen": true,
+            "openThousandsSeparator": true,
+            "enablePreflightEstimate": false,
+            "chartCombineDefaultColor": "#F56610",
+            "mainMeasurementQueryCode": "A"
+          },
+          "fixedTime": "",
+          "isRefresh": false,
+          "fixedGroupByTime": null
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "pie",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "query": {
+              "q": "LN::run_event:(count_distinct(`job_id`)) {`lineage_record_type` = 'event' } BY `integration`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "job_id",
+              "index": "",
+              "limit": null,
+              "fields": [
+                {
+                  "alias": "",
+                  "field": "job_id",
+                  "fieldFunc": "count_distinct"
+                }
+              ],
+              "slimit": null,
+              "fillNum": null,
+              "filters": [
+                {
+                  "op": "=",
+                  "name": "lineage_record_type",
+                  "type": "",
+                  "logic": "and",
+                  "value": "event",
+                  "values": []
+                }
+              ],
+              "groupBy": [
+                "integration"
+              ],
+              "indexes": [],
+              "labelOp": "",
+              "funcList": [],
+              "interval": "",
+              "fieldFunc": "count_distinct",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "withLabels": [],
+              "groupByTime": "",
+              "dataSourceFunc": ""
+            },
+            "disabled": false,
+            "datasource": "dataflux",
+            "queryGroup": "A"
+          }
+        ],
+        "prevGroupName": null,
+        "chartGroupUUID": "default"
+      }
+    ],
+    "groups": [],
+    "chartGroupPos": [
+      "default"
+    ]
+  },
+  "tags": [
+    "数据可观测"
+  ],
+  "title": "数据可观测概览",
+  "iconSet": {
+    "url": null,
+    "icon": null
+  },
+  "summary": "基于核心作业 worker 运行日志，监控数据作业/任务的运行次数、失败情况、运行耗时与失败明细。",
+  "thumbnail": "",
+  "identifier": "",
+  "dashboardType": "CUSTOM",
+  "dashboardExtend": {
+    "groupUnfoldStatus": {
+      "排名定位": true,
+      "排障明细": true,
+      "运行总览": true,
+      "运行趋势": true
+    }
+  },
+  "dashboardBindSet": [],
+  "dashboardMapping": [],
+  "dashboardOwnerType": "node",
+  "tagInfo": [
+    {
+      "name": "数据可观测",
+      "colour": "default"
+    }
+  ],
+  "desc": "基于核心作业 worker 运行日志，监控数据作业/任务的运行次数、失败情况、运行耗时与失败明细。",
+  "resolvedLanguage": "zh",
+  "resolvedPath": "/dataflux-template/dashboard/zh/data_observability_overview"
+}

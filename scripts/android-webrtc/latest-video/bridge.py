@@ -21,9 +21,11 @@ from idle import IdlePolicy, android_command, run_policy
 from frames import LatestSource
 from discovery import wait_for_emulator
 from playout import PLAYOUT_URI, install
+from config import VideoConfig
 
 LABELS = ('mouse', 'keyboard', 'touch')
-WIDTH, HEIGHT = 720, 1600
+CONFIG = VideoConfig.from_env()
+WIDTH, HEIGHT = CONFIG.width, CONFIG.height
 MAX_PEERS = 4
 
 
@@ -59,7 +61,7 @@ class NativeControl:
     async def run(self):
         try:
             async with ClientSession() as session:
-                async with session.ws_connect('http://127.0.0.1:8080/api/v1/emulator/ws-jsep',
+                async with session.ws_connect(f'http://127.0.0.1:{CONFIG.gateway_port}/api/v1/emulator/ws-jsep',
                                               max_msg_size=65536, heartbeat=20) as ws:
                     async for message in ws:
                         if message.type != WSMsgType.TEXT:
@@ -136,7 +138,7 @@ class LatestTrack(VideoStreamTrack):
     async def recv(self):
         # Keep RTP cadence stable even for a static screen. Every encoding gets
         # its own mutable AVFrame; only immutable pixel planes are shared.
-        await asyncio.sleep(max(0, 1 / 30 - (time.monotonic() - self.last)))
+        await asyncio.sleep(max(0, 1 / CONFIG.fps - (time.monotonic() - self.last)))
         picture = await asyncio.wait_for(self.source.picture(), 3)
         self.last = time.monotonic()
         if picture.revision == self.seen:
@@ -163,7 +165,8 @@ def create_app(source, servers):
     tracks = set()
     last_peer = {}
     app = web.Application(client_max_size=65536)
-    install_control(app, idle.activity)
+    if CONFIG.mall_controls:
+        install_control(app, idle.activity)
 
     async def handler(request):
         if request.query:
@@ -286,7 +289,8 @@ def create_app(source, servers):
 
     async def startup(_app):
         nonlocal idle_task
-        idle_task = asyncio.create_task(run_policy(idle))
+        if CONFIG.idle_enabled:
+            idle_task = asyncio.create_task(run_policy(idle))
 
     async def shutdown(_app):
         if idle_task:
@@ -310,7 +314,7 @@ async def main():
     import emulator_controller_pb2_grpc as ec_grpc
 
     runtime = Path(os.environ.get('XDG_RUNTIME_DIR', '/run/user/1002'))
-    props = await wait_for_emulator(runtime / 'avd/running')
+    props = await wait_for_emulator(runtime / 'avd/running', grpc_port=CONFIG.grpc_port)
     channel = grpc.aio.insecure_channel('127.0.0.1:' + props['grpc.port'],
                                        options=[('grpc.max_receive_message_length', 8 * 1024 * 1024)])
     stub = ec_grpc.EmulatorControllerStub(channel)
@@ -326,7 +330,7 @@ async def main():
     async def convert(raw):
         return await asyncio.to_thread(convert_picture, raw)
 
-    source = LatestSource(capture, convert)
+    source = LatestSource(capture, convert, fps=CONFIG.fps)
     servers = json.loads(Path('/etc/mall-demo-webrtc/turn.json').read_text())['iceServers']
     app = create_app(source, servers)
 
@@ -339,4 +343,4 @@ async def main():
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING)
-    web.run_app(main(), host='127.0.0.1', port=8091, access_log=None, print=None)
+    web.run_app(main(), host='127.0.0.1', port=CONFIG.port, access_log=None, print=None)

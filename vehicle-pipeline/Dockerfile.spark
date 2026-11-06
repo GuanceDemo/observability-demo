@@ -1,0 +1,12 @@
+FROM eclipse-temurin:17-jre-jammy@sha256:131f924767c0cde364fd7d3739dd3be79afd4e92d434bedc76b60ebd2ccb48f0
+ARG SOURCE_REVISION=unknown
+LABEL org.opencontainers.image.version="0.1.0" org.opencontainers.image.revision=$SOURCE_REVISION
+WORKDIR /app
+COPY vehicle-pipeline/spark-job/target/vehicle-spark-job-0.1.0.jar ./app.jar
+COPY vehicle-pipeline/spark-job/target/lib ./lib
+COPY vehicle-pipeline/scripts/spark-entrypoint.sh ./entrypoint.sh
+RUN groupadd --system app && useradd --system --gid app --uid 10001 app && chmod 0555 /app/entrypoint.sh
+USER 10001:10001
+ENV SPARK_LOCAL_IP=127.0.0.1
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["normal"]

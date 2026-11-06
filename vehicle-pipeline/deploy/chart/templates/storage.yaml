@@ -1,0 +1,35 @@
+{{- range $name, $size := dict "kafka" "2Gi" "lake" "5Gi" }}
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: vehicle-{{ $name }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  capacity: {storage: {{ $size }}}
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: vehicle-local
+  local: {path: /var/lib/vehicle-pipeline/{{ $name }}}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values: [{{ $.Values.storageNode | quote }}]
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vehicle-{{ $name }}
+  annotations:
+    helm.sh/resource-policy: keep
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: vehicle-local
+  volumeName: vehicle-{{ $name }}
+  resources:
+    requests: {storage: {{ $size }}}
+{{- end }}

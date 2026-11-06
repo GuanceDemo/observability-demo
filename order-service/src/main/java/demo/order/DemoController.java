@@ -338,6 +338,8 @@ class DemoController {
   private final String mobileDevicePlayerVersion;
   private final String mobileDeviceApkVersion;
   private final String mobileDeviceApkMinAndroidVersion;
+  @Value("${demo.vehicle.enabled:false}")
+  private boolean vehicleEnabled;
   private final boolean kubernetesLogReaderEnabled;
   private final BackendLogReader backendLogReader;
 
@@ -429,6 +431,7 @@ class DemoController {
     if (!observabilityWorkspaceId.isBlank()) {
       response.put("workspaceId", observabilityWorkspaceId);
     }
+    response.put("vehicleEnabled", vehicleEnabled);
     response.put("mobileDeviceEnabled", !mobileDevicePlayerUrl.isBlank());
     if (!mobileDevicePlayerUrl.isBlank()) {
       response.put("mobileDevicePlayerUrl", mobileDevicePlayerUrl);

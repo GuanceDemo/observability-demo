@@ -1,0 +1,51 @@
+/* Only the center scene uses the approved prototype design. The host and
+   controls sidebar retain the shared business-workbench appearance. */
+[hidden] { display: none !important; }
+body { min-width: 0; }
+.live-workbench { gap: 14px; }
+.live-workbench .panel-heading { padding: 16px; }
+.live-workbench .preview-panel { overflow: hidden; }
+.live-workbench .view { padding: 20px; }
+.live-workbench .report-intro { flex-wrap: nowrap; }
+.live-workbench .report-metrics strong { font-size: 23px; }
+.live-workbench .vehicle-report-metrics { gap: 9px; }
+.live-workbench .vehicle-report-metrics article { padding: 11px 10px; }
+.live-workbench .vehicle-report-metrics article>span { font-size: 9px; }
+.live-workbench .vehicle-report-metrics small { font-size: 8px; }
+.live-workbench .pipeline { gap: 15px; }
+.live-workbench .pipeline-node:not(:last-child)::after { right: -14px; }
+.live-vehicle-screen { aspect-ratio: 16 / 9; background: #0d1722; border-radius: 9px; border: 1px solid #dce3ed; overflow: hidden; }
+.live-vehicle-screen iframe { display: block; width: 100%; height: 100%; border: 0; }
+.player-caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; font-size: 11px; color: #8794a7; }
+.player-caption button { font-size: 10px; height: 30px; }
+.report-notice.warn { background: #fff5ed; border-color: #f0e4d3; color: #a47b49; }
+.report-notice.error { background: #fff0ed; border-color: #f3dfd9; color: #ad6758; }
+.mode-drive { background: #80a9df; }
+.mode-park { background: #c2cbd9; }
+.mode-charge { background: #8cc9b4; }
+#speed-chart { height: auto; width: 100%; display: block; margin-top: 13px; overflow: visible; }
+#speed-chart text { font: 9px var(--mono); fill: #9baabd; stroke: none; }
+#speed-chart .chart-line { stroke: #8aacd4; stroke-width: 2; }
+#speed-chart .chart-area { fill: #edf4fc; stroke: none; }
+.batch-line { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; font-size: 8px; color: #97a7bc; overflow-wrap: anywhere; }
+.batch-line code { font: 8px var(--mono); }
+@media (max-width: 700px) {
+  .live-workbench .view { padding: 14px; }
+  .live-workbench .panel-heading { padding: 14px; flex-wrap: wrap; }
+  .live-workbench .report-intro { flex-wrap: wrap; }
+  .live-workbench .vehicle-report-metrics, .live-workbench .report-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .live-workbench .vehicle-report-metrics article>span { font-size: 10px; }
+  .live-workbench .report-metrics article:nth-child(2) { border-right: 0; }
+}
+@media (max-width: 480px) {
+  .preview-heading .tabs { width: 100%; }
+  .preview-heading .tabs button { flex: 1; justify-content: center; }
+  .live-workbench .pipeline { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 9px; }
+  .live-workbench .pipeline-node:nth-child(3)::after { display: none; }
+  .report-notice { flex-wrap: wrap; }
+  .player-caption { flex-wrap: wrap; }
+}
+
+.live-workbench .report-notice { flex-wrap: wrap; gap: 6px; }
+.live-workbench .report-notice>span:last-child { white-space: normal; }
+.live-workbench .live-unavailable { color: #ad6758; }

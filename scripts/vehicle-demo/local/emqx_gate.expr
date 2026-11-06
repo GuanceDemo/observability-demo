@@ -1,0 +1,99 @@
+%% Pinned demo instrumentation; not an EMQX public configuration API.
+%% Only the single owned Kafka producer's send window changes. Never replace replayq.
+begin
+  Op = <<"__OP__">>, Action = __ACTION__, Deadline = __DEADLINE__,
+  ExpectedProducer = <<"__PRODUCER__">>,
+  Result = try
+    "6.3.2" = emqx_release:version(),
+    {ok, "4.2.1"} = application:get_key(wolff, vsn),
+    <<75,116,240,140,223,242,188,252,249,99,24,247,129,146,107,128>> = wolff_producer:module_info(md5),
+    Client = <<"connector:kafka_producer:vehicle_kafka">>,
+    Group = <<"action:kafka_producer:vehicle_telemetry:connector:kafka_producer:vehicle_kafka">>,
+    Topic = <<"vehicle.telemetry.raw.v1">>,
+    [{0, Pid}] = wolff_producers:find_producers_by_client_topic(Client, Group, Topic),
+    Validate = fun(S) ->
+      #{client_id := Client, topic := Topic, partition := 0, config := C, replayq := Q} = S,
+      Group = maps:get(group, C),
+      true = replayq:is_writing_to_disk(Q),
+      true = is_process_alive(Pid),
+      S
+    end,
+    Restore = fun(Strict) ->
+      Restored = sys:replace_state(Pid, fun(S0) ->
+        S = Validate(S0),
+        case maps:get(vehicle_demo_gate, S, none) of
+          #{operation := Op, original := Original} ->
+            C = maps:get(config, S),
+            case maps:get(max_send_ahead, C) of
+              -1 -> maps:remove(vehicle_demo_gate, S#{config := C#{max_send_ahead := Original}});
+              Original -> maps:remove(vehicle_demo_gate, S);
+              _ -> error(gate_configuration_conflict)
+            end;
+          none -> S;
+          _ when Strict -> error(gate_owned_by_another_operation);
+          _ -> S
+        end
+      end, 2000),
+      %% sys must have returned a state map, not an error response.
+      #{config := RestoredConfig} = Restored,
+      case maps:get(vehicle_demo_gate, Restored, none) of
+        #{operation := Op} -> error(gate_not_restored);
+        _ -> true = maps:is_key(max_send_ahead, RestoredConfig)
+      end,
+      %% Native handler drains existing queued data even when no new MQTT arrives.
+      Pid ! linger_expire,
+      ok
+    end,
+    case Action of
+      inject ->
+        ExpectedProducer = list_to_binary(pid_to_list(Pid)),
+        Now = erlang:system_time(millisecond),
+        true = Deadline > Now andalso Deadline =< Now + 60000,
+        Initial = Validate(sys:get_state(Pid, 2000)),
+        case maps:get(vehicle_demo_gate, Initial, none) of
+          none -> 0 = maps:get(max_send_ahead, maps:get(config, Initial));
+          #{operation := Op, deadline := Deadline} -> ok;
+          _ -> error(gate_owned_by_another_operation)
+        end,
+        %% Independent watchdog is armed BEFORE closing the window. The timeout
+        %% is monotonic; repeat/lost-response retries cannot extend the deadline.
+        _ = spawn(fun() ->
+          Remaining = erlang:max(0, Deadline - erlang:system_time(millisecond)),
+          receive after Remaining -> ok end,
+          Retry = fun Loop() ->
+            case is_process_alive(Pid) of
+              false -> ok;
+              true ->
+                try Restore(false) catch _:_ -> receive after 1000 -> Loop() end end
+            end
+          end,
+          Retry()
+        end),
+        _ = sys:replace_state(Pid, fun(S0) ->
+          S = Validate(S0), C = maps:get(config, S),
+          true = erlang:system_time(millisecond) < Deadline,
+          case maps:get(vehicle_demo_gate, S, none) of
+            none ->
+              0 = maps:get(max_send_ahead, C),
+              S#{config := C#{max_send_ahead := -1},
+                 vehicle_demo_gate => #{operation => Op, original => 0, deadline => Deadline}};
+            #{operation := Op, deadline := Deadline} ->
+              -1 = maps:get(max_send_ahead, C), S;
+            _ -> error(gate_owned_by_another_operation)
+          end
+        end, 2000);
+      restore -> Restore(true);
+      status -> ok
+    end,
+    S1 = Validate(sys:get_state(Pid, 2000)), C1 = maps:get(config, S1),
+    Gate = maps:get(vehicle_demo_gate, S1, #{}),
+    #{ok => true, gated => maps:get(max_send_ahead, C1) =:= -1,
+      operation => maps:get(operation, Gate, <<>>),
+      deadline => maps:get(deadline, Gate, 0),
+      queued => replayq:count(maps:get(replayq, S1)),
+      window => maps:get(max_send_ahead, C1), producer => list_to_binary(pid_to_list(Pid))}
+  catch _:_ -> #{ok => false, error => <<"EMQX_GATE_CONTRACT_FAILED">>}
+  end,
+  io:format("VEHICLE_EMQX_GATE=~s~n", [emqx_utils_json:encode(Result)]),
+  ok
+end.

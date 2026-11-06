@@ -1,0 +1,38 @@
+[project]
+name = "vehicle-pipeline-control"
+version = "0.1.0"
+description = "Vehicle pipeline runtime evidence, durable OpenLineage delivery and reports"
+requires-python = ">=3.12"
+dependencies = ["mall-data-pipeline==0.1.1"]
+
+[tool.uv.sources]
+mall-data-pipeline = { path = "../../data-pipeline" }
+
+[project.scripts]
+vehicle-pipeline-control = "vehicle_control.service:main"
+
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/vehicle_control"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "jsonschema>=4,<5", "ruff>=0.12,<1", "mypy>=1.15,<2", "types-requests", "types-PyMySQL", "PyYAML>=6,<7"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+mypy_path = "$MYPY_CONFIG_FILE_DIR/../../data-pipeline/src"
+check_untyped_defs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

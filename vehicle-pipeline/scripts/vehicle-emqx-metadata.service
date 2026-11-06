@@ -1,0 +1,17 @@
+[Unit]
+Description=Vehicle EMQX runtime metadata observer
+After=vehicle-pipeline-tunnel.service docker.service
+Wants=vehicle-pipeline-tunnel.service
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/vehicle-demo/emqx-metadata.py
+Restart=always
+RestartSec=10
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/vehicle-demo
+MemoryMax=64M
+[Install]
+WantedBy=multi-user.target
