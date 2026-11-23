@@ -30,6 +30,12 @@ spec:
                 - {name: MYSQL_HOST, value: {{ .Values.mysqlHost | quote }}}
                 - {name: MYSQL_USER, value: vehicle_writer}
                 - {name: S3_ENDPOINT, value: "http://vehicle-lake:8333"}
+                {{- if .Values.apm.enabled }}
+                - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+                  value: {{ required "apm.otlpHttpEndpoint is required" .Values.apm.otlpHttpEndpoint | quote }}
+                - name: VEHICLE_CLUSTER
+                  value: {{ required "apm.cluster is required" .Values.apm.cluster | quote }}
+                {{- end }}
                 - name: MYSQL_PASSWORD
                   valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: mysql-writer}}
                 - name: S3_ACCESS_KEY

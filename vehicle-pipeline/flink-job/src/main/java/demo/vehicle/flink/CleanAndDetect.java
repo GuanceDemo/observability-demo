@@ -1,6 +1,8 @@
 package demo.vehicle.flink;
 
 import java.time.Duration;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.StatusCode;
 import org.apache.flink.api.common.state.*;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.configuration.Configuration;
@@ -18,9 +20,11 @@ public final class CleanAndDetect extends KeyedProcessFunction<String, RawEvent,
   public static final OutputTag<RejectedRecord> REJECTED = new OutputTag<>("quarantine", org.apache.flink.api.common.typeinfo.TypeInformation.of(RejectedRecord.class));
   private transient MapState<String, String> seen;
   private transient ListState<long[]> checkpointCounters;
+  private transient VehicleTracing tracing;
   private volatile long inputCount, cleanCount, duplicateCount, invalidCount, anomalyCount;
 
   @Override public void open(Configuration ignored) {
+    tracing = VehicleTracing.configured(System.getenv(), getRuntimeContext().getJobInfo().getJobId().toHexString());
     var descriptor = new MapStateDescriptor<>("event-fingerprints-v1", Types.STRING, Types.STRING);
     descriptor.enableTimeToLive(StateTtlConfig.newBuilder(Duration.ofDays(8))
         .setUpdateType(StateTtlConfig.UpdateType.OnCreateAndWrite)
@@ -34,21 +38,37 @@ public final class CleanAndDetect extends KeyedProcessFunction<String, RawEvent,
     metrics.gauge("anomalyCount", () -> anomalyCount);
   }
   @Override public synchronized void processElement(RawEvent raw, Context context, Collector<TelemetryRecord> output) throws Exception {
+    Span span = tracing.start(raw);
+    try {
+      process(raw, context, output, span);
+    } catch (Exception failure) {
+      span.setStatus(StatusCode.ERROR, "processing_failed");
+      span.setAttribute("error.type", failure.getClass().getName());
+      throw failure;
+    } finally { span.end(); }
+  }
+  private void process(RawEvent raw, Context context, Collector<TelemetryRecord> output, Span span) throws Exception {
     inputCount++;
     final TelemetryRecord record;
     try { record = TelemetryParser.parse(raw); }
     catch (IllegalArgumentException e) {
+      span.setStatus(StatusCode.ERROR, "invalid_telemetry");
+      span.setAttribute("vehicle.result", "quarantine");
       invalidCount++; context.output(REJECTED, new RejectedRecord(raw, e.getMessage())); return;
     }
     String hash = TelemetryParser.fingerprint(record), previous = seen.get(record.eventId);
     if (previous != null) {
+      span.setAttribute("vehicle.result", previous.equals(hash) ? "duplicate" : "conflict");
       if (previous.equals(hash)) duplicateCount++;
       else { invalidCount++; context.output(REJECTED, new RejectedRecord(raw, "conflicting_event_id")); }
       return;
     }
     seen.put(record.eventId, hash); cleanCount++; output.collect(record);
+    span.setAttribute("messaging.message.id", record.eventId);
+    span.setAttribute("vehicle.result", "clean");
     if (record.anomaly) { anomalyCount++; context.output(ANOMALIES, record); }
   }
+  @Override public void close() { if (tracing != null) tracing.close(); }
   synchronized String countSnapshot() {
     // One metric sample is atomic; independently sampled gauges can disagree by a poll interval.
     return "{\"input\":" + inputCount + ",\"clean\":" + cleanCount + ",\"duplicates\":" + duplicateCount

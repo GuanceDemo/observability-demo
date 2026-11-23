@@ -9,7 +9,18 @@ flinkImage: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-flink:0.1.0-r2
 sparkImage: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-spark:0.1.0-details-be30b2f2842f@sha256:5a96741451c49a370a62cbeeabd3eb9cd46f9da23e682b6f0970fbebd1c0fe0b
 controlImage: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-control:0.1.0-attempts-af622e0437f6@sha256:ab712066b9e149edb695d099f2d4f82a8f345ee47677274fed3e1d5b3d0e8f24
 processingEnabled: false
+flinkClusterId: vehicle-flink-v1
+flinkRestorePath: "" # Used only for an explicitly verified savepoint migration.
 reportsSuspended: true
+apm:
+  enabled: false
+  datakitImage: pubrepo.guance.com/datakit/datakit:2.14.3@sha256:e66f2c71390f1280f3c349ebc29b122a85fb259590bdb1c1ee271ec35f7c92b6
+  datawayEndpoint: https://openway.guance.com
+  tunnelSourceCidr: 10.182.137.32/32 # Exact ACK management host used by the SSH forward.
+  # Private trace-only receiver preserves SDK service.name.
+  otlpHttpEndpoint: http://vehicle-apm:9529/otel/v1/traces
+  cluster: ""
+  correlationEnabled: false # Read-only execution-interval lookup in the private receiver.
 # Provision with replicas=0, copy stopped broker data, then start one broker.
 emqxEnabled: false
 emqxReplicas: 1

@@ -32,6 +32,9 @@ folder = Path(entry.pw_dir) / ".ssh"
 folder.mkdir(mode=0o700, exist_ok=True)
 key = folder / "authorized_keys"
 destinations = [(cfg["control_ip"], 8080)]
+if cfg.get("apm_http_host"):
+    ipaddress.IPv4Address(cfg["apm_http_host"])
+    destinations.append((cfg["apm_http_host"], 9529))
 if cfg.get("broker_ip"):
     destinations.extend((cfg["broker_ip"], port) for port in (1883, 8083, 18083))
 else:

@@ -61,7 +61,11 @@ public final class VehicleJob {
   }
   public static final class RawDecoder implements KafkaRecordDeserializationSchema<RawEvent> {
     @Override public void deserialize(ConsumerRecord<byte[], byte[]> value, Collector<RawEvent> out) {
-      out.collect(new RawEvent(value.value() == null ? "" : new String(value.value(), StandardCharsets.UTF_8), value.partition(), value.offset(), value.timestamp()));
+      var raw = new RawEvent(value.value() == null ? "" : new String(value.value(), StandardCharsets.UTF_8), value.partition(), value.offset(), value.timestamp());
+      var header = value.headers().lastHeader("traceparent");
+      if (header != null && header.value() != null && header.value().length <= 55)
+        raw.traceparent = new String(header.value(), StandardCharsets.US_ASCII);
+      out.collect(raw);
     }
     @Override public TypeInformation<RawEvent> getProducedType() { return TypeInformation.of(RawEvent.class); }
   }

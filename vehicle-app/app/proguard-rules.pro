@@ -20,6 +20,8 @@
 -dontwarn org.apache.log4j.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.conscrypt.**
+# Optional desktop-only OkHttp TLS provider; Android uses its platform provider.
+-dontwarn org.openjsse.**
 -dontwarn org.apache.logging.log4j.**
 -dontwarn org.slf4j.**
 -dontwarn reactor.blockhound.**

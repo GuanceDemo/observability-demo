@@ -4,6 +4,10 @@
   <parent><groupId>demo.observability</groupId><artifactId>vehicle-pipeline</artifactId><version>0.1.0</version></parent>
   <artifactId>vehicle-flink-job</artifactId>
   <dependencies>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-sdk</artifactId><version>1.54.0</version></dependency>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-exporter-otlp</artifactId><version>1.54.0</version><exclusions><exclusion><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-exporter-sender-okhttp</artifactId></exclusion></exclusions></dependency>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-exporter-sender-jdk</artifactId><version>1.54.0</version></dependency>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-sdk-testing</artifactId><version>1.54.0</version><scope>test</scope></dependency>
     <dependency><groupId>org.apache.flink</groupId><artifactId>flink-streaming-java</artifactId><version>${flink.version}</version><scope>provided</scope></dependency>
     <dependency><groupId>org.apache.flink</groupId><artifactId>flink-clients</artifactId><version>${flink.version}</version><scope>provided</scope></dependency>
     <dependency><groupId>org.apache.flink</groupId><artifactId>flink-connector-kafka</artifactId><version>3.4.0-1.20</version></dependency>
@@ -19,6 +23,7 @@
   <build><plugins>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>3.6.0</version><executions><execution><phase>package</phase><goals><goal>shade</goal></goals><configuration>
       <createDependencyReducedPom>false</createDependencyReducedPom><shadedArtifactAttached>false</shadedArtifactAttached>
+      <relocations><relocation><pattern>io.opentelemetry</pattern><shadedPattern>demo.vehicle.shaded.otel</shadedPattern></relocation></relocations>
       <artifactSet><excludes><exclude>org.slf4j:*</exclude><exclude>log4j:*</exclude><exclude>org.apache.logging.log4j:*</exclude></excludes></artifactSet>
       <filters><filter><artifact>*:*</artifact><excludes><exclude>META-INF/*.SF</exclude><exclude>META-INF/*.DSA</exclude><exclude>META-INF/*.RSA</exclude></excludes></filter></filters>
       <transformers><transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/><transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"><mainClass>demo.vehicle.flink.VehicleJob</mainClass></transformer></transformers>

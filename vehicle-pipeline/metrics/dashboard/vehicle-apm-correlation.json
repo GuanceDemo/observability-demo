@@ -1,0 +1,3973 @@
+{
+  "dashboardType": "CUSTOM",
+  "dashboardOwnerType": "inner",
+  "dashboardBindSet": [],
+  "dashboardMapping": [],
+  "thumbnail": "",
+  "iconSet": {
+    "url": null,
+    "icon": null
+  },
+  "tagInfo": [
+    {
+      "name": "数据可观测",
+      "colour": "default"
+    }
+  ],
+  "title": "车辆链路 · APM 关联分析",
+  "summary": "从当前 Span 关联链路指标、同 Trace 的服务和真实作业运行。",
+  "dashboardExtend": {
+    "groupUnfoldStatus": {
+      "链路总览": true,
+      "阶段明细": true,
+      "请求与运行关联": true
+    }
+  },
+  "main": {
+    "vars": [
+      {
+        "name": "链路",
+        "seq": 0,
+        "datasource": "dataflux",
+        "code": "pipeline",
+        "type": "QUERY",
+        "definition": {
+          "tag": "",
+          "field": "",
+          "value": "SHOW_TAG_VALUE(from=['vehicle_pipeline_stage'],keyin=['pipeline'])[1d]",
+          "metric": "",
+          "object": "",
+          "defaultVal": {
+            "label": "vehicle-telemetry",
+            "value": "vehicle-telemetry"
+          }
+        },
+        "valueSort": "default",
+        "hide": 1,
+        "isHiddenAsterisk": 1,
+        "multiple": false,
+        "includeStar": false,
+        "extend": {}
+      },
+      {
+        "name": "链路所属集群",
+        "seq": 1,
+        "datasource": "dataflux",
+        "code": "cluster",
+        "type": "QUERY",
+        "definition": {
+          "tag": "",
+          "field": "",
+          "value": "SHOW_TAG_VALUE(from=['vehicle_pipeline_stage'],keyin=['cluster'])[1d]",
+          "metric": "",
+          "object": "",
+          "defaultVal": {
+            "label": "c0eba4a54613c4adfb108e850e1c7c7d5",
+            "value": "c0eba4a54613c4adfb108e850e1c7c7d5"
+          }
+        },
+        "valueSort": "default",
+        "hide": 1,
+        "isHiddenAsterisk": 1,
+        "multiple": false,
+        "includeStar": false,
+        "extend": {}
+      },
+      {
+        "name": "Topic",
+        "seq": 2,
+        "datasource": "dataflux",
+        "code": "topic",
+        "type": "QUERY",
+        "definition": {
+          "tag": "",
+          "field": "",
+          "value": "SHOW_TAG_VALUE(from=['vehicle_pipeline_stage'],keyin=['topic'])[1d]",
+          "metric": "",
+          "object": "",
+          "defaultVal": {
+            "label": "vehicle.telemetry.raw.v1",
+            "value": "vehicle.telemetry.raw.v1"
+          }
+        },
+        "valueSort": "default",
+        "hide": 1,
+        "isHiddenAsterisk": 1,
+        "multiple": false,
+        "includeStar": false,
+        "extend": {}
+      },
+      {
+        "name": "消费组",
+        "seq": 3,
+        "datasource": "dataflux",
+        "code": "consumer_group",
+        "type": "QUERY",
+        "definition": {
+          "tag": "",
+          "field": "",
+          "value": "SHOW_TAG_VALUE(from=['vehicle_pipeline_stage'],keyin=['consumer_group'])[1d]",
+          "metric": "",
+          "object": "",
+          "defaultVal": {
+            "label": "vehicle-flink-clean-v1",
+            "value": "vehicle-flink-clean-v1"
+          }
+        },
+        "valueSort": "default",
+        "hide": 1,
+        "isHiddenAsterisk": 1,
+        "multiple": false,
+        "includeStar": false,
+        "extend": {}
+      },
+      {
+        "name": "当前 Trace",
+        "code": "trace_id",
+        "seq": 4,
+        "datasource": "dataflux",
+        "type": "QUERY",
+        "definition": {
+          "value": "T::*:(distinct(`trace_id`)) {service IN ['vehicle-android-producer','emqx','vehicle-flink-consumer','vehicle-spark-summary']} LIMIT 20",
+          "defaultVal": {
+            "label": "全部",
+            "value": "*"
+          }
+        },
+        "valueSort": "default",
+        "hide": 1,
+        "multiple": false,
+        "includeStar": true,
+        "isHiddenAsterisk": 0,
+        "extend": {}
+      },
+      {
+        "name": "作业",
+        "code": "job_name",
+        "seq": 5,
+        "datasource": "dataflux",
+        "type": "QUERY",
+        "definition": {
+          "value": "LN::run_event:(distinct(`job_name`)) {lineage_record_type='event' AND job_namespace='vehicle-demo.telemetry'}",
+          "defaultVal": {
+            "label": "全部",
+            "value": "*"
+          }
+        },
+        "valueSort": "default",
+        "hide": 1,
+        "multiple": false,
+        "includeStar": true,
+        "isHiddenAsterisk": 0,
+        "extend": {}
+      },
+      {
+        "name": "运行",
+        "code": "run_id",
+        "seq": 6,
+        "datasource": "dataflux",
+        "type": "QUERY",
+        "definition": {
+          "value": "LN::run_event:(distinct(`run_id`)) {lineage_record_type='event' AND job_namespace='vehicle-demo.telemetry' AND wildcard(job_name,'#{job_name}')}",
+          "defaultVal": {
+            "label": "全部",
+            "value": "*"
+          }
+        },
+        "valueSort": "default",
+        "hide": 1,
+        "multiple": false,
+        "includeStar": true,
+        "isHiddenAsterisk": 0,
+        "extend": {}
+      }
+    ],
+    "groups": [
+      {
+        "name": "链路总览",
+        "uuid": "grp_4671ed2875025272a75e82c3d093a880",
+        "extend": {
+          "bgColor": "#60A5FA",
+          "isExpanded": true
+        }
+      },
+      {
+        "name": "阶段明细",
+        "uuid": "grp_e02e2b634bae5665a6bc4e054d27b30f",
+        "extend": {
+          "bgColor": "#94A3B8",
+          "isExpanded": true
+        }
+      },
+      {
+        "uuid": "grp_d19b35174c975a03be81fc5abb1f4bbe",
+        "name": "请求与运行关联",
+        "extend": {
+          "bgColor": "#CBD5E1",
+          "isExpanded": true
+        }
+      }
+    ],
+    "charts": [
+      {
+        "uuid": "chrt_1794941f2c165f40bbda599ce3856462",
+        "chartGroupUUID": "grp_4671ed2875025272a75e82c3d093a880",
+        "name": "EMQX 待投递",
+        "type": "singlestat",
+        "group": {
+          "name": "链路总览"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 0,
+          "w": 4,
+          "h": 6
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`backlog`) AS `EMQX 待投递`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"emqx\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "EMQX 待投递",
+              "field": "backlog",
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_ca63c7f426a953f294884d7352249c0a",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "emqx"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [
+              {
+                "key": "EMQX 待投递",
+                "name": "EMQX 待投递",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "条"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "条"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "排队 + 发送中，原生队列指标",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "singlestat",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "downsample": "last",
+            "mappings": [
+              {
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              }
+            ],
+            "valueColor": "#0891B2",
+            "bgColor": "rgba(8,145,178,0.10)",
+            "borderColor": "#E5E7EB",
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_70046b1ce4835ec7afaaf68b212329ba",
+        "chartGroupUUID": "grp_4671ed2875025272a75e82c3d093a880",
+        "name": "Kafka 消费积压",
+        "type": "singlestat",
+        "group": {
+          "name": "链路总览"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 4,
+          "y": 0,
+          "w": 4,
+          "h": 6
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`backlog`) AS `Kafka 消费积压`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"kafka\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "Kafka 消费积压",
+              "field": "backlog",
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_93c721408b215d7ea90b560b245746db",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "kafka"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [
+              {
+                "key": "Kafka 消费积压",
+                "name": "Kafka 消费积压",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "条"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "条"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "Topic 末尾偏移量与消费组提交位置之差，含检查点提交延迟",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "singlestat",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "downsample": "last",
+            "mappings": [
+              {
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              }
+            ],
+            "valueColor": "#D97706",
+            "bgColor": "rgba(217,119,6,0.10)",
+            "borderColor": "#E5E7EB",
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_621fdcfc2b645ee8bd63ba6089632613",
+        "chartGroupUUID": "grp_4671ed2875025272a75e82c3d093a880",
+        "name": "Flink 近1分钟输入",
+        "type": "singlestat",
+        "group": {
+          "name": "链路总览"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 8,
+          "y": 0,
+          "w": 4,
+          "h": 6
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`input_1m`) AS `Flink 近1分钟输入`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"flink\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "Flink 近1分钟输入",
+              "field": "input_1m",
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_93cbcfdf78f852adac0107c8ce6ac50b",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "flink"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [
+              {
+                "key": "Flink 近1分钟输入",
+                "name": "Flink 近1分钟输入",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "条"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "条"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "近60秒输入记录增量；检查点回退或采集恢复后需重新积累窗口",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "singlestat",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "downsample": "last",
+            "mappings": [
+              {
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              }
+            ],
+            "valueColor": "#059669",
+            "bgColor": "rgba(5,150,105,0.10)",
+            "borderColor": "#E5E7EB",
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_4429fe3b68945e96bbc837ca8d092173",
+        "chartGroupUUID": "grp_4671ed2875025272a75e82c3d093a880",
+        "name": "Spark 最近成功读取",
+        "type": "singlestat",
+        "group": {
+          "name": "链路总览"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 12,
+          "y": 0,
+          "w": 4,
+          "h": 6
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`read_rows`) AS `Spark 最近成功读取`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "Spark 最近成功读取",
+              "field": "read_rows",
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [
+              {
+                "key": "Spark 最近成功读取",
+                "name": "Spark 最近成功读取",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "行"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "行"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "最近成功批次读取的原始记录数",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "singlestat",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "downsample": "last",
+            "mappings": [
+              {
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              }
+            ],
+            "valueColor": "#2563EB",
+            "bgColor": "rgba(37,99,235,0.10)",
+            "borderColor": "#E5E7EB",
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_90c79f2cf5ae58179302114ed5d44628",
+        "chartGroupUUID": "grp_4671ed2875025272a75e82c3d093a880",
+        "name": "Spark 最近成功产出",
+        "type": "singlestat",
+        "group": {
+          "name": "链路总览"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 16,
+          "y": 0,
+          "w": 4,
+          "h": 6
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`output_rows`) AS `Spark 最近成功产出`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "Spark 最近成功产出",
+              "field": "output_rows",
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [
+              {
+                "key": "Spark 最近成功产出",
+                "name": "Spark 最近成功产出",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "行"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "行"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "同一成功批次五分钟报表行数 + 日报表行数；不是去重后的输入行数",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "singlestat",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "downsample": "last",
+            "mappings": [
+              {
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              }
+            ],
+            "valueColor": "#7C3AED",
+            "bgColor": "rgba(124,58,237,0.10)",
+            "borderColor": "#E5E7EB",
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_542140da692d5d09888c35334ac37754",
+        "chartGroupUUID": "grp_4671ed2875025272a75e82c3d093a880",
+        "name": "Spark 数据延迟",
+        "type": "singlestat",
+        "group": {
+          "name": "链路总览"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 20,
+          "y": 0,
+          "w": 4,
+          "h": 6
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`data_delay_seconds`) AS `Spark 数据延迟`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "Spark 数据延迟",
+              "field": "data_delay_seconds",
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [],
+            "units": [
+              {
+                "key": "Spark 数据延迟",
+                "name": "Spark 数据延迟",
+                "unit": "",
+                "units": [
+                  "time",
+                  "s"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "time",
+              "s"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "当前采集时刻 − 最近成功批次覆盖的最新源事件时间",
+            "decimalPlaces": 2,
+            "precision": "2",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "singlestat",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "downsample": "last",
+            "mappings": [
+              {
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              }
+            ],
+            "valueColor": "#DC2626",
+            "bgColor": "rgba(220,38,38,0.10)",
+            "borderColor": "#E5E7EB",
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_528742f537a35338954ec3a14dcc25f3",
+        "chartGroupUUID": "grp_4671ed2875025272a75e82c3d093a880",
+        "name": "流式链路 · 投递与积压分流",
+        "type": "sankey",
+        "group": {
+          "name": "链路总览"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 6,
+          "w": 24,
+          "h": 18
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "sankey",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::(M::`vehicle_pipeline_flow`:(last(`value`) AS `amount`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `level` = \"0\" } BY regexp_replace(`source`, \"^\", \"\") AS `n0`, regexp_replace(`target`, \"^\", \"\") AS `n1` HAVING `amount` > 0):(last(`amount`)) BY `n0`, `n1`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "value",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_flow",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": "",
+              "fieldType": "float"
+            }
+          },
+          {
+            "name": "",
+            "type": "sankey",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "B",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::(M::`vehicle_pipeline_flow`:(last(`value`) AS `amount`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `level` = \"1\" } BY regexp_replace(`source`, \"^\", \"\") AS `n1`, regexp_replace(`target`, \"^\", \"\") AS `n2` HAVING `amount` > 0):(last(`amount`)) BY `n1`, `n2`",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "value",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_flow",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": "",
+              "fieldType": "float"
+            }
+          },
+          {
+            "name": "",
+            "type": "sankey",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "C",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::(M::`vehicle_pipeline_flow`:(last(`value`) AS `amount`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `level` = \"2\" } BY regexp_replace(`source`, \"^\", \"\") AS `n2`, regexp_replace(`target`, \"^\", \"\") AS `n3` HAVING `amount` > 0):(last(`amount`)) BY `n2`, `n3`",
+              "code": "C",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "value",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_flow",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": "",
+              "fieldType": "float"
+            }
+          },
+          {
+            "name": "",
+            "type": "sankey",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "D",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::(M::`vehicle_pipeline_flow`:(last(`value`) AS `amount`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `level` = \"3\" } BY regexp_replace(`source`, \"^\", \"\") AS `n3`, regexp_replace(`target`, \"^\", \"\") AS `n4` HAVING `amount` > 0):(last(`amount`)) BY `n3`, `n4`",
+              "code": "D",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "value",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_flow",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": "",
+              "fieldType": "float"
+            }
+          },
+          {
+            "name": "",
+            "type": "sankey",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "E",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::(M::`vehicle_pipeline_flow`:(last(`value`) AS `amount`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `level` = \"4\" } BY regexp_replace(`source`, \"^\", \"\") AS `n4`, regexp_replace(`target`, \"^\", \"\") AS `n5` HAVING `amount` > 0):(last(`amount`)) BY `n4`, `n5`",
+              "code": "E",
+              "fill": null,
+              "type": "dql",
+              "alias": "",
+              "field": "value",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_flow",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": "",
+              "fieldType": "float"
+            }
+          }
+        ],
+        "extend": {
+          "fixedTime": "",
+          "isRefresh": true,
+          "settings": {
+            "alias": [],
+            "units": [],
+            "colors": [
+              {
+                "key": "n0:近1分钟新生成",
+                "name": "n0:近1分钟新生成",
+                "color": "#2563EB"
+              },
+              {
+                "key": "n0:Android 期初积压",
+                "name": "n0:Android 期初积压",
+                "color": "#D97706"
+              },
+              {
+                "key": "n1:Android",
+                "name": "n1:Android",
+                "color": "#2563EB"
+              },
+              {
+                "key": "n1:EMQX 期初积压",
+                "name": "n1:EMQX 期初积压",
+                "color": "#D97706"
+              },
+              {
+                "key": "n2:EMQX",
+                "name": "n2:EMQX",
+                "color": "#0891B2"
+              },
+              {
+                "key": "n2:Android 本地积压",
+                "name": "n2:Android 本地积压",
+                "color": "#F59E0B"
+              },
+              {
+                "key": "n2:Android 丢弃",
+                "name": "n2:Android 丢弃",
+                "color": "#DC2626"
+              },
+              {
+                "key": "n2:Kafka 期初未提交",
+                "name": "n2:Kafka 期初未提交",
+                "color": "#D97706"
+              },
+              {
+                "key": "n3:Kafka",
+                "name": "n3:Kafka",
+                "color": "#0D9488"
+              },
+              {
+                "key": "n3:EMQX 转发积压",
+                "name": "n3:EMQX 转发积压",
+                "color": "#F59E0B"
+              },
+              {
+                "key": "n3:EMQX 投递失败",
+                "name": "n3:EMQX 投递失败",
+                "color": "#DC2626"
+              },
+              {
+                "key": "n3:EMQX 丢弃",
+                "name": "n3:EMQX 丢弃",
+                "color": "#DC2626"
+              },
+              {
+                "key": "n3:EMQX 迟到响应",
+                "name": "n3:EMQX 迟到响应",
+                "color": "#64748B"
+              },
+              {
+                "key": "n4:Flink",
+                "name": "n4:Flink",
+                "color": "#16A34A"
+              },
+              {
+                "key": "n4:Kafka 当前未提交",
+                "name": "n4:Kafka 当前未提交",
+                "color": "#F59E0B"
+              },
+              {
+                "key": "n5:Parquet 清洗写入",
+                "name": "n5:Parquet 清洗写入",
+                "color": "#059669"
+              },
+              {
+                "key": "n5:Parquet 隔离写入",
+                "name": "n5:Parquet 隔离写入",
+                "color": "#F97316"
+              },
+              {
+                "key": "n5:Flink 去重丢弃",
+                "name": "n5:Flink 去重丢弃",
+                "color": "#64748B"
+              }
+            ],
+            "levels": [],
+            "unitType": "global",
+            "globalUnit": [
+              "custom",
+              "条"
+            ],
+            "fixedTime": "",
+            "precision": "1",
+            "showTitle": true,
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isTimeInterval": false,
+            "disabledAlignTime": true,
+            "changeWorkspace": false,
+            "currentChartType": "sankey",
+            "showFieldMapping": false,
+            "scientificNotation": false,
+            "openThousandsSeparator": true,
+            "titleDesc": "各节点分出下游投递、当前积压及失败/丢弃；期初积压单独流入。Android 新生成60、期初35且投递0时，本地积压95。每个组件按自身60秒窗口核对收支，跨组件独立采样，不是同一批消息追踪。Kafka 输出为提交位点推进，Flink 输出为清洗/隔离写入及去重丢弃。0没有宽度；未知不绘制，见阶段明细。数值为真实观测的窗口估算，悬停查看。"
+          }
+        }
+      },
+      {
+        "uuid": "chrt_0a015b2d04c25fc795e97b1b9969ff8e",
+        "chartGroupUUID": "grp_e02e2b634bae5665a6bc4e054d27b30f",
+        "name": "流式阶段 · 近1分钟与当前积压",
+        "type": "table",
+        "group": {
+          "name": "阶段明细"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 10
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`input_1m`) AS `近1分钟输入`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` != \"spark\" AND `stage` != \"parquet\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "近1分钟输入",
+              "field": [
+                "input_1m"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                },
+                {
+                  "id": "chrt_dd4373484bbd527abf3a337a0e0e5f0a",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "parquet"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "B",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`output_1m`) AS `近1分钟输出`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` != \"spark\" AND `stage` != \"parquet\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "近1分钟输出",
+              "field": [
+                "output_1m"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                },
+                {
+                  "id": "chrt_dd4373484bbd527abf3a337a0e0e5f0a",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "parquet"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "C",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`backlog`) AS `当前积压`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` != \"spark\" AND `stage` != \"parquet\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "C",
+              "fill": null,
+              "type": "dql",
+              "alias": "当前积压",
+              "field": [
+                "backlog"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                },
+                {
+                  "id": "chrt_dd4373484bbd527abf3a337a0e0e5f0a",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "parquet"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "D",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`updated_at_seconds`) AS `源更新时间`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` != \"spark\" AND `stage` != \"parquet\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "D",
+              "fill": null,
+              "type": "dql",
+              "alias": "源更新时间",
+              "field": [
+                "updated_at_seconds"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                },
+                {
+                  "id": "chrt_dd4373484bbd527abf3a337a0e0e5f0a",
+                  "op": "!=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "parquet"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "stage",
+                "name": "stage",
+                "alias": "阶段",
+                "queryCode": ""
+              }
+            ],
+            "units": [
+              {
+                "key": "近1分钟输入",
+                "name": "近1分钟输入",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "条"
+                ]
+              },
+              {
+                "key": "近1分钟输出",
+                "name": "近1分钟输出",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "条"
+                ]
+              },
+              {
+                "key": "当前积压",
+                "name": "当前积压",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "条"
+                ]
+              },
+              {
+                "key": "源更新时间",
+                "name": "源更新时间",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "s"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "条"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "table",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "slimit": 20,
+            "pageEnable": false,
+            "queryMode": "toGroupColumn",
+            "mainMeasurementField": "近1分钟输入",
+            "showColumns": [
+              {
+                "name": "stage"
+              },
+              {
+                "name": "近1分钟输入",
+                "queryCode": "A"
+              },
+              {
+                "name": "近1分钟输出",
+                "queryCode": "B"
+              },
+              {
+                "name": "当前积压",
+                "queryCode": "C"
+              },
+              {
+                "name": "源更新时间",
+                "queryCode": "D"
+              }
+            ],
+            "valMappings": [
+              {
+                "field": "近1分钟输入",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "近1分钟输入",
+                "queryCode": "A",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "近1分钟输出",
+                "queryCode": "B",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "近1分钟输出",
+                "queryCode": "B",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "当前积压",
+                "queryCode": "C",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "当前积压",
+                "queryCode": "C",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "源更新时间",
+                "queryCode": "D",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "源更新时间",
+                "queryCode": "D",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Android",
+                "originalVal": [
+                  "android"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "EMQX",
+                "originalVal": [
+                  "emqx"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Kafka",
+                "originalVal": [
+                  "kafka"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Flink",
+                "originalVal": [
+                  "flink"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Spark SQL",
+                "originalVal": [
+                  "spark"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Parquet",
+                "originalVal": [
+                  "parquet"
+                ]
+              }
+            ],
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_63bab08f9b455e0a93f05fee9f227e77",
+        "chartGroupUUID": "grp_e02e2b634bae5665a6bc4e054d27b30f",
+        "name": "Spark · 最近成功批次",
+        "type": "table",
+        "group": {
+          "name": "阶段明细"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 10,
+          "w": 24,
+          "h": 8
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`read_rows`) AS `读取行数`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "读取行数",
+              "field": [
+                "read_rows"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "B",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`output_rows`) AS `产出行数`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "产出行数",
+              "field": [
+                "output_rows"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "C",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`data_delay_seconds`) AS `数据延迟`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "C",
+              "fill": null,
+              "type": "dql",
+              "alias": "数据延迟",
+              "field": [
+                "data_delay_seconds"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "D",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`report_updated_at_seconds`) AS `报表更新时间`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "D",
+              "fill": null,
+              "type": "dql",
+              "alias": "报表更新时间",
+              "field": [
+                "report_updated_at_seconds"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "E",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`updated_at_seconds`) AS `采集更新时间`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"spark\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "E",
+              "fill": null,
+              "type": "dql",
+              "alias": "采集更新时间",
+              "field": [
+                "updated_at_seconds"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_6f72204794325f87b785e85ddd104fbc",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "spark"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "stage",
+                "name": "stage",
+                "alias": "阶段",
+                "queryCode": ""
+              }
+            ],
+            "units": [
+              {
+                "key": "读取行数",
+                "name": "读取行数",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "行"
+                ]
+              },
+              {
+                "key": "产出行数",
+                "name": "产出行数",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "行"
+                ]
+              },
+              {
+                "key": "数据延迟",
+                "name": "数据延迟",
+                "unit": "",
+                "units": [
+                  "time",
+                  "s"
+                ]
+              },
+              {
+                "key": "报表更新时间",
+                "name": "报表更新时间",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "s"
+                ]
+              },
+              {
+                "key": "采集更新时间",
+                "name": "采集更新时间",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "s"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "行"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "table",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "slimit": 20,
+            "pageEnable": false,
+            "queryMode": "toGroupColumn",
+            "mainMeasurementField": "读取行数",
+            "showColumns": [
+              {
+                "name": "stage"
+              },
+              {
+                "name": "读取行数",
+                "queryCode": "A"
+              },
+              {
+                "name": "产出行数",
+                "queryCode": "B"
+              },
+              {
+                "name": "数据延迟",
+                "queryCode": "C"
+              },
+              {
+                "name": "报表更新时间",
+                "queryCode": "D"
+              },
+              {
+                "name": "采集更新时间",
+                "queryCode": "E"
+              }
+            ],
+            "valMappings": [
+              {
+                "field": "读取行数",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "读取行数",
+                "queryCode": "A",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "产出行数",
+                "queryCode": "B",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "产出行数",
+                "queryCode": "B",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "数据延迟",
+                "queryCode": "C",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "数据延迟",
+                "queryCode": "C",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "报表更新时间",
+                "queryCode": "D",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "报表更新时间",
+                "queryCode": "D",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "采集更新时间",
+                "queryCode": "E",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "采集更新时间",
+                "queryCode": "E",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Android",
+                "originalVal": [
+                  "android"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "EMQX",
+                "originalVal": [
+                  "emqx"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Kafka",
+                "originalVal": [
+                  "kafka"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Flink",
+                "originalVal": [
+                  "flink"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Spark SQL",
+                "originalVal": [
+                  "spark"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Parquet",
+                "originalVal": [
+                  "parquet"
+                ]
+              }
+            ],
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_1e98df0b1926599386bf43445c6df651",
+        "chartGroupUUID": "grp_e02e2b634bae5665a6bc4e054d27b30f",
+        "name": "Parquet · 今日已落盘",
+        "type": "table",
+        "group": {
+          "name": "阶段明细"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 18,
+          "w": 24,
+          "h": 8
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`committed_files`) AS `落盘文件数`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"parquet\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "落盘文件数",
+              "field": [
+                "committed_files"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_dd4373484bbd527abf3a337a0e0e5f0a",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "parquet"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "B",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`committed_bytes`) AS `落盘大小`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"parquet\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "落盘大小",
+              "field": [
+                "committed_bytes"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_dd4373484bbd527abf3a337a0e0e5f0a",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "parquet"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "C",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`updated_at_seconds`) AS `采集更新时间`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" AND `stage` = \"parquet\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "C",
+              "fill": null,
+              "type": "dql",
+              "alias": "采集更新时间",
+              "field": [
+                "updated_at_seconds"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                },
+                {
+                  "id": "chrt_dd4373484bbd527abf3a337a0e0e5f0a",
+                  "op": "=",
+                  "name": "stage",
+                  "type": "",
+                  "logic": "and",
+                  "value": "parquet"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "stage",
+                "name": "stage",
+                "alias": "阶段",
+                "queryCode": ""
+              }
+            ],
+            "units": [
+              {
+                "key": "落盘文件数",
+                "name": "落盘文件数",
+                "unit": "",
+                "units": [
+                  "custom",
+                  "个"
+                ]
+              },
+              {
+                "key": "落盘大小",
+                "name": "落盘大小",
+                "unit": "",
+                "units": [
+                  "digital",
+                  "B"
+                ]
+              },
+              {
+                "key": "采集更新时间",
+                "name": "采集更新时间",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "s"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "个"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "table",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "slimit": 20,
+            "pageEnable": false,
+            "queryMode": "toGroupColumn",
+            "mainMeasurementField": "落盘文件数",
+            "showColumns": [
+              {
+                "name": "stage"
+              },
+              {
+                "name": "落盘文件数",
+                "queryCode": "A"
+              },
+              {
+                "name": "落盘大小",
+                "queryCode": "B"
+              },
+              {
+                "name": "采集更新时间",
+                "queryCode": "C"
+              }
+            ],
+            "valMappings": [
+              {
+                "field": "落盘文件数",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "落盘文件数",
+                "queryCode": "A",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "落盘大小",
+                "queryCode": "B",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "落盘大小",
+                "queryCode": "B",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "采集更新时间",
+                "queryCode": "C",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "采集更新时间",
+                "queryCode": "C",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Android",
+                "originalVal": [
+                  "android"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "EMQX",
+                "originalVal": [
+                  "emqx"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Kafka",
+                "originalVal": [
+                  "kafka"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Flink",
+                "originalVal": [
+                  "flink"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Spark SQL",
+                "originalVal": [
+                  "spark"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Parquet",
+                "originalVal": [
+                  "parquet"
+                ]
+              }
+            ],
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_97444b0cef4a5491a78078a4c69d1e6c",
+        "chartGroupUUID": "grp_e02e2b634bae5665a6bc4e054d27b30f",
+        "name": "采集状态与更新时间",
+        "type": "table",
+        "group": {
+          "name": "阶段明细"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 26,
+          "w": 24,
+          "h": 12
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`available`) AS `采集状态`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "采集状态",
+              "field": [
+                "available"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "B",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`updated_at_seconds`) AS `最近有效观测`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "最近有效观测",
+              "field": [
+                "updated_at_seconds"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "C",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`vehicle_pipeline_stage`:(last(`collected_at_seconds`) AS `最近采集尝试`) { `pipeline` = \"#{pipeline}\" AND `cluster` = \"#{cluster}\" AND `topic` = \"#{topic}\" AND `consumer_group` = \"#{consumer_group}\" } BY `pipeline`, `cluster`, `topic`, `consumer_group`, `stage`",
+              "code": "C",
+              "fill": null,
+              "type": "dql",
+              "alias": "最近采集尝试",
+              "field": [
+                "collected_at_seconds"
+              ],
+              "filters": [
+                {
+                  "id": "chrt_a7b5708ef4b25f258d27d7abf0af7b5e",
+                  "op": "=",
+                  "name": "pipeline",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{pipeline}"
+                },
+                {
+                  "id": "chrt_e671d690525652538cee6da84f996b35",
+                  "op": "=",
+                  "name": "cluster",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{cluster}"
+                },
+                {
+                  "id": "chrt_88b865cf5f6055de8cc02a201a025d68",
+                  "op": "=",
+                  "name": "topic",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{topic}"
+                },
+                {
+                  "id": "chrt_97479e20ee155a35bb6cb23596bf1b54",
+                  "op": "=",
+                  "name": "consumer_group",
+                  "type": "",
+                  "logic": "and",
+                  "value": "#{consumer_group}"
+                }
+              ],
+              "groupBy": [
+                "pipeline",
+                "cluster",
+                "topic",
+                "consumer_group",
+                "stage"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "metric",
+              "dataSource": "vehicle_pipeline_stage",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "stage",
+                "name": "stage",
+                "alias": "阶段",
+                "queryCode": ""
+              }
+            ],
+            "units": [
+              {
+                "key": "采集状态",
+                "name": "采集状态",
+                "unit": "",
+                "units": [
+                  "custom",
+                  ""
+                ]
+              },
+              {
+                "key": "最近有效观测",
+                "name": "最近有效观测",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "s"
+                ]
+              },
+              {
+                "key": "最近采集尝试",
+                "name": "最近采集尝试",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "s"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              "条"
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "table",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "slimit": 20,
+            "pageEnable": false,
+            "queryMode": "toGroupColumn",
+            "mainMeasurementField": "采集状态",
+            "showColumns": [
+              {
+                "name": "stage"
+              },
+              {
+                "name": "采集状态",
+                "queryCode": "A"
+              },
+              {
+                "name": "最近有效观测",
+                "queryCode": "B"
+              },
+              {
+                "name": "最近采集尝试",
+                "queryCode": "C"
+              }
+            ],
+            "valMappings": [
+              {
+                "field": "采集状态",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "采集状态",
+                "queryCode": "A",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "最近有效观测",
+                "queryCode": "B",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "最近有效观测",
+                "queryCode": "B",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "最近采集尝试",
+                "queryCode": "C",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "-1"
+                ]
+              },
+              {
+                "field": "最近采集尝试",
+                "queryCode": "C",
+                "operation": "nodata",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "N/A"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Android",
+                "originalVal": [
+                  "android"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "EMQX",
+                "originalVal": [
+                  "emqx"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Kafka",
+                "originalVal": [
+                  "kafka"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Flink",
+                "originalVal": [
+                  "flink"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Spark SQL",
+                "originalVal": [
+                  "spark"
+                ]
+              },
+              {
+                "field": "stage",
+                "operation": "=",
+                "mappingVal": "Parquet",
+                "originalVal": [
+                  "parquet"
+                ]
+              },
+              {
+                "field": "采集状态",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "正常",
+                "originalVal": [
+                  "1"
+                ]
+              },
+              {
+                "field": "采集状态",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "未知",
+                "originalVal": [
+                  "0"
+                ]
+              }
+            ],
+            "disabledAlignTime": true
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_c0ddb55463bf591283c12073d61ee53f",
+        "chartGroupUUID": "grp_d19b35174c975a03be81fc5abb1f4bbe",
+        "name": "本次请求 · 各环节处理",
+        "type": "table",
+        "group": {
+          "name": "请求与运行关联"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 0,
+          "w": 24,
+          "h": 12
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "T::*:(count(*) AS `Span 数`) {trace_id='#{trace_id}' AND service IN ['vehicle-android-producer','emqx','vehicle-flink-consumer','vehicle-spark-summary']} BY service,resource,trace_id",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "Span 数",
+              "field": [
+                "*"
+              ],
+              "filters": [],
+              "groupBy": [
+                "service",
+                "resource",
+                "trace_id"
+              ],
+              "funcList": [],
+              "fieldFunc": "count",
+              "namespace": "tracing",
+              "dataSource": "*",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "service",
+                "name": "service",
+                "alias": "处理环节",
+                "queryCode": ""
+              },
+              {
+                "key": "resource",
+                "name": "resource",
+                "alias": "操作",
+                "queryCode": ""
+              }
+            ],
+            "units": [],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              ""
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "table",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "slimit": 20,
+            "pageEnable": false,
+            "queryMode": "toGroupColumn",
+            "mainMeasurementField": "Span 数",
+            "showColumns": [
+              {
+                "name": "service"
+              },
+              {
+                "name": "resource"
+              },
+              {
+                "name": "Span 数",
+                "queryCode": "A"
+              }
+            ],
+            "valMappings": [
+              {
+                "field": "service",
+                "operation": "=",
+                "mappingVal": "Android · 遥测发送",
+                "originalVal": [
+                  "vehicle-android-producer"
+                ]
+              },
+              {
+                "field": "service",
+                "operation": "=",
+                "mappingVal": "EMQX · 消息转发",
+                "originalVal": [
+                  "emqx"
+                ]
+              },
+              {
+                "field": "service",
+                "operation": "=",
+                "mappingVal": "Flink · 清洗与检测",
+                "originalVal": [
+                  "vehicle-flink-consumer"
+                ]
+              },
+              {
+                "field": "service",
+                "operation": "=",
+                "mappingVal": "Spark · 统计汇总",
+                "originalVal": [
+                  "vehicle-spark-summary"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "发送遥测消息",
+                "originalVal": [
+                  "mqtt.publish"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "接收并转发消息",
+                "originalVal": [
+                  "process_message"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "消费并清洗数据",
+                "originalVal": [
+                  "kafka.process"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "清洗并检测遥测数据",
+                "originalVal": [
+                  "flink.clean_and_detect"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "执行汇总批次",
+                "originalVal": [
+                  "spark.batch"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "初始化 Spark",
+                "originalVal": [
+                  "spark.initialize"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "确认输入快照",
+                "originalVal": [
+                  "spark.snapshot"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "读取明细数据",
+                "originalVal": [
+                  "spark.read"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "去重并检查数据",
+                "originalVal": [
+                  "spark.deduplicate"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "计算汇总结果",
+                "originalVal": [
+                  "spark.aggregate"
+                ]
+              },
+              {
+                "field": "resource",
+                "operation": "=",
+                "mappingVal": "提交报表批次",
+                "originalVal": [
+                  "spark.publish"
+                ]
+              }
+            ],
+            "disabledAlignTime": true,
+            "mappings": []
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      },
+      {
+        "uuid": "chrt_896b60c64e175d01bd055c729eaea85f",
+        "chartGroupUUID": "grp_d19b35174c975a03be81fc5abb1f4bbe",
+        "name": "作业运行 · 状态与上报时间",
+        "type": "table",
+        "group": {
+          "name": "请求与运行关联"
+        },
+        "prevGroupName": null,
+        "pos": {
+          "x": 0,
+          "y": 12,
+          "w": 24,
+          "h": 12
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "A",
+            "datasource": "dataflux",
+            "query": {
+              "q": "LN::run_event:(last(event_type) AS `最新事件`) {lineage_record_type='event' AND job_namespace='vehicle-demo.telemetry' AND wildcard(job_name,'#{job_name}') AND wildcard(run_id,'#{run_id}')} BY job_name,run_id,job_id",
+              "code": "A",
+              "fill": null,
+              "type": "dql",
+              "alias": "最新事件",
+              "field": [
+                "event_type"
+              ],
+              "filters": [],
+              "groupBy": [
+                "job_name",
+                "run_id",
+                "job_id"
+              ],
+              "funcList": [],
+              "fieldFunc": "last",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          },
+          {
+            "name": "",
+            "type": "table",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "queryGroup": "B",
+            "datasource": "dataflux",
+            "query": {
+              "q": "LN::run_event:(max(time) AS `最近上报时间`) {lineage_record_type='event' AND job_namespace='vehicle-demo.telemetry' AND wildcard(job_name,'#{job_name}') AND wildcard(run_id,'#{run_id}')} BY job_name,run_id,job_id",
+              "code": "B",
+              "fill": null,
+              "type": "dql",
+              "alias": "最近上报时间",
+              "field": [
+                "time"
+              ],
+              "filters": [],
+              "groupBy": [
+                "job_name",
+                "run_id",
+                "job_id"
+              ],
+              "funcList": [],
+              "fieldFunc": "max",
+              "namespace": "lineage",
+              "dataSource": "run_event",
+              "queryFuncs": [],
+              "groupByTime": "",
+              "interval": ""
+            }
+          }
+        ],
+        "extend": {
+          "settings": {
+            "alias": [
+              {
+                "key": "job_name",
+                "name": "job_name",
+                "alias": "作业",
+                "queryCode": ""
+              },
+              {
+                "key": "最新事件",
+                "name": "最新事件",
+                "alias": "运行状态",
+                "queryCode": "A"
+              }
+            ],
+            "units": [
+              {
+                "key": "最近上报时间",
+                "name": "最近上报时间",
+                "unit": "",
+                "units": [
+                  "timeStamp",
+                  "ms"
+                ]
+              }
+            ],
+            "colors": [],
+            "levels": [],
+            "unitType": "custom",
+            "globalUnit": [
+              "custom",
+              ""
+            ],
+            "fixedTime": "",
+            "isSampling": true,
+            "timeInterval": "auto",
+            "isCombineChart": false,
+            "isTimeInterval": false,
+            "changeWorkspace": false,
+            "scientificNotation": false,
+            "enablePreflightEstimate": false,
+            "showTitle": true,
+            "titleDesc": "按当前作业及运行上下文筛选；未指定时显示所选时间范围内的全部运行。最近上报时间是运行事件的上报时间。完整 Run/Job ID 保留用于定位，可在表格列设置中查看。",
+            "decimalPlaces": 0,
+            "precision": "0",
+            "showLegend": false,
+            "showFieldMapping": false,
+            "currentChartType": "table",
+            "mainMeasurementQueryCode": "A",
+            "aliasVersion": 2,
+            "openThousandsSeparator": true,
+            "slimit": 20,
+            "pageEnable": false,
+            "queryMode": "toGroupColumn",
+            "mainMeasurementField": "最新事件",
+            "showColumns": [
+              {
+                "name": "job_name"
+              },
+              {
+                "name": "最近上报时间",
+                "queryCode": "B"
+              },
+              {
+                "name": "最新事件",
+                "queryCode": "A"
+              }
+            ],
+            "valMappings": [
+              {
+                "field": "job_name",
+                "operation": "=",
+                "mappingVal": "EMQX · 消息转发",
+                "originalVal": [
+                  "emqx_telemetry_to_kafka"
+                ]
+              },
+              {
+                "field": "job_name",
+                "operation": "=",
+                "mappingVal": "Flink · 清洗与检测",
+                "originalVal": [
+                  "vehicle_clean_and_detect"
+                ]
+              },
+              {
+                "field": "job_name",
+                "operation": "=",
+                "mappingVal": "Spark · 统计汇总",
+                "originalVal": [
+                  "vehicle_summary"
+                ]
+              },
+              {
+                "field": "最新事件",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "已开始",
+                "originalVal": [
+                  "START"
+                ]
+              },
+              {
+                "field": "最新事件",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "运行中",
+                "originalVal": [
+                  "RUNNING"
+                ]
+              },
+              {
+                "field": "最新事件",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "成功",
+                "originalVal": [
+                  "COMPLETE"
+                ]
+              },
+              {
+                "field": "最新事件",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "失败",
+                "originalVal": [
+                  "FAIL"
+                ]
+              },
+              {
+                "field": "最新事件",
+                "queryCode": "A",
+                "operation": "=",
+                "mappingVal": "已中止",
+                "originalVal": [
+                  "ABORT"
+                ]
+              }
+            ],
+            "disabledAlignTime": true,
+            "mappings": []
+          },
+          "fixedTime": "",
+          "isRefresh": true
+        }
+      }
+    ]
+  },
+  "identifier": "vehicle-apm-correlation"
+}

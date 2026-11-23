@@ -1,0 +1,11 @@
+# Merge with the existing release values; preserve its Secrets and storage.
+# For an existing Flink graph, obtain a verified stop-with-savepoint first.
+# Set flinkClusterId to a fresh migration identity and flinkRestorePath to that
+# actual savepoint; retain both values on later upgrades. Do not discard HA data.
+apm:
+  enabled: true
+  otlpHttpEndpoint: http://vehicle-apm:9529/otel/v1/traces
+  cluster: c0eba4a54613c4adfb108e850e1c7c7d5
+  datakitImage: pubrepo.guance.com/datakit/datakit:2.14.3@sha256:e66f2c71390f1280f3c349ebc29b122a85fb259590bdb1c1ee271ec35f7c92b6
+  datawayEndpoint: https://openway.guance.com
+flinkImage: pubrepo.jiagouyun.com/demo/observability-demo-vehicle-flink:0.1.0-apm-1ad2a75fedf6@sha256:af1950658c7bac158a19db6b52a56bbb836d95e4a99fd60bb355ea4bba04868f

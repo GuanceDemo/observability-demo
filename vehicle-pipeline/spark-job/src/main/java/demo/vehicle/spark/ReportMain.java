@@ -37,6 +37,7 @@ public final class ReportMain {
       int catalogIndex = 0;
       for (String event : lineage.catalog()) enqueue(db, runId, "catalog:" + catalogIndex++, event);
       enqueue(db, runId, "START", lineage.event(runId, "START", null, null, null, null, null)); db.commit();
+      var tracing = BatchTracing.configured(settings.jobNamespace(), runId, started);
       SparkSession spark = null;
       long stageStarted = System.nanoTime();
       String currentStage = "initialize";
@@ -54,6 +55,7 @@ public final class ReportMain {
         spark.sparkContext().setLogLevel("WARN");
         stageStarted = stage(runId, "initialize", stageStarted);
         currentStage = "snapshot";
+        tracing.next(currentStage);
         var root = new Path("s3a://" + settings.lakeBucket() + "/clean");
         FileSystem fs = root.getFileSystem(spark.sparkContext().hadoopConfiguration());
         long startMs = dayStart(started);
@@ -63,12 +65,14 @@ public final class ReportMain {
             .digest(String.join("\n", objects).getBytes(StandardCharsets.UTF_8)));
         stageStarted = stage(runId, "snapshot", stageStarted);
         currentStage = "read";
+        tracing.next(currentStage);
         Dataset<Row> raw = spark.read().parquet(objects.toArray(String[]::new))
             .select("eventId", "vehicleId", "sequence", "eventTime", "speedKph", "odometerKm", "batterySocPct", "batteryTempC", "mode")
             .persist(StorageLevel.MEMORY_AND_DISK());
         long inputRows = raw.count();
         stageStarted = stage(runId, "read", stageStarted);
         currentStage = "deduplicate";
+        tracing.next(currentStage);
         Dataset<Row> unique = raw.filter(col("eventTime").geq(startMs).and(col("eventTime").lt(started.toEpochMilli())))
             .dropDuplicates("eventId").persist(StorageLevel.MEMORY_AND_DISK());
         Row range = unique.agg(count(lit(1)), min("eventTime"), max("eventTime")).first();
@@ -79,10 +83,12 @@ public final class ReportMain {
         if (started.toEpochMilli() - last > 900_000) throw new SourceUnavailable("SOURCE_STALE");
         stageStarted = stage(runId, "deduplicate", stageStarted);
         currentStage = "aggregate";
+        tracing.next(currentStage);
         SummarySql.prepare(spark, SummarySql.inputForMode(unique, mode));
         List<Row> five = spark.sql(SummarySql.FIVE_MINUTES).collectAsList(), daily = spark.sql(SummarySql.DAILY).collectAsList();
         stageStarted = stage(runId, "aggregate", stageStarted);
         currentStage = "publish";
+        tracing.next(currentStage);
         try (var delete = db.createStatement()) { delete.executeUpdate("DELETE FROM vehicle_summary_5m"); delete.executeUpdate("DELETE FROM vehicle_daily_summary"); }
         writeSummary(db, "vehicle_summary_5m", "bucket_start", five, runId);
         writeSummary(db, "vehicle_daily_summary", "day", daily, runId);
@@ -96,6 +102,7 @@ public final class ReportMain {
                 "sourceMaxEventMs", last, "fiveMinuteRows", five.size(), "dailyRows", daily.size())));
         enqueue(db, runId, "COMPLETE", lineage.event(runId, "COMPLETE", hash, inputRows, (long) five.size(), (long) daily.size(), null));
         db.commit();
+        tracing.success(inputRows, uniqueRows, five.size() + daily.size(), objects.size(), last);
         stage(runId, "publish", stageStarted);
         System.out.println(JSON.writeValueAsString(Map.of("event", "vehicle_report_complete", "runId", runId.toString(),
             "engine", "Apache Spark 3.5.8", "inputRows", inputRows, "uniqueRows", uniqueRows, "fiveMinuteRows", five.size(), "dailyRows", daily.size())));
@@ -106,12 +113,15 @@ public final class ReportMain {
         var failure = ReportFailure.capture(error, currentStage);
         finish(db, runId, state, null, null, failure.code(), JSON.writeValueAsString(failure.metadata()));
         enqueue(db, runId, state, lineage.failure(runId, state, failure)); db.commit();
+        tracing.failure(state, failure.code(), failure.errorType());
         System.err.println(JSON.writeValueAsString(Map.of("event", "vehicle_report_failed", "runId", runId.toString(), "state", state,
             "code", failure.code(), "stage", failure.failureStage(), "errorType", failure.errorType())));
         return 2;
       } finally {
-        if (spark != null) spark.stop();
-        try (var unlock = db.createStatement()) { unlock.executeQuery("SELECT RELEASE_LOCK('vehicle-summary')").close(); }
+        try {
+          if (spark != null) spark.stop();
+          try (var unlock = db.createStatement()) { unlock.executeQuery("SELECT RELEASE_LOCK('vehicle-summary')").close(); }
+        } finally { tracing.close(); }
       }
     }
   }

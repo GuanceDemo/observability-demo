@@ -1,0 +1,125 @@
+{{- if .Values.apm.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: vehicle-apm}
+data:
+  ENV_DEFAULT_ENABLED_INPUTS: opentelemetry
+  ENV_HTTP_LISTEN: "0.0.0.0:9529"
+  # Service identity belongs to the instrumented component, not its protocol.
+  ENV_INPUT_OTEL_SPLIT_SERVICE_NAME: "false"
+  ENV_INPUT_OTEL_COMPATIBLE_DDTRACE: "false"
+  ENV_INPUT_OTEL_CUSTOMER_TAGS_ALL: "true"
+  ENV_INPUT_OTEL_GRPC: '{"addr":"0.0.0.0:4317","max_payload":1048576}'
+  ENV_INPUT_OTEL_HTTP: '{"http_status_ok":200,"trace_api":"/otel/v1/traces","metric_api":"/otel/v1/metrics","logs_api":"/otel/v1/logs"}'
+{{- if .Values.apm.correlationEnabled }}
+  ENV_PIPELINE_HTTP_REQUEST_HOST_WHITELIST: "127.0.0.1"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: vehicle-apm-correlation}
+data:
+  context.py: |
+{{ .Files.Get "files/apm-context.py" | indent 4 }}
+  correlation.p: |
+{{ .Files.Get "files/apm-correlation.p" | indent 4 }}
+{{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: vehicle-apm}
+spec:
+  selector: {app: vehicle-apm}
+  ports:
+    - {name: otlp-grpc, port: 4317, targetPort: 4317}
+    - {name: otlp-http, port: 9529, targetPort: 9529}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: vehicle-apm-ingress}
+spec:
+  podSelector:
+    matchLabels: {app: vehicle-apm}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}
+      ports:
+        - {protocol: TCP, port: 4317}
+        - {protocol: TCP, port: 9529}
+    - from:
+        - ipBlock: {cidr: {{ .Values.apm.tunnelSourceCidr | quote }}}
+      ports:
+        - {protocol: TCP, port: 9529}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: vehicle-apm}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: vehicle-apm}
+  template:
+    metadata:
+      labels: {app: vehicle-apm}
+      annotations:
+        checksum/apm-config: {{ (ternary .Values.apm (omit .Values.apm "correlationEnabled") .Values.apm.correlationEnabled) | toJson | sha256sum | quote }}
+{{- if .Values.apm.correlationEnabled }}
+        checksum/apm-correlation: {{ print (.Files.Get "files/apm-context.py") (.Files.Get "files/apm-correlation.p") | sha256sum | quote }}
+{{- end }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: datakit
+          image: {{ .Values.apm.datakitImage | quote }}
+          envFrom:
+            - configMapRef: {name: vehicle-apm}
+          env:
+            - name: VEHICLE_APM_TOKEN
+              valueFrom:
+                secretKeyRef: {name: {{ .Values.secretName }}, key: openlineage-token}
+            - name: ENV_DATAWAY
+              value: {{ printf "%s?token=$(VEHICLE_APM_TOKEN)" .Values.apm.datawayEndpoint | quote }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            tcpSocket: {port: 9529}
+          resources:
+            requests: {cpu: 20m, memory: 64Mi}
+            limits: {cpu: 250m, memory: 192Mi}
+          volumeMounts:
+            - {name: cache, mountPath: /usr/local/datakit/cache}
+{{- if .Values.apm.correlationEnabled }}
+            {{- range $service := list "vehicle-android-producer" "emqx" "vehicle-flink-consumer" }}
+            - {name: correlation, mountPath: {{ printf "/usr/local/datakit/pipeline/tracing/%s.p" $service }}, subPath: correlation.p, readOnly: true}
+            {{- end }}
+        - name: context
+          image: {{ .Values.controlImage | quote }}
+          command: [/src/vehicle-pipeline/control/.venv/bin/python, /opt/apm-context/context.py]
+          env:
+            - {name: MYSQL_HOST, value: {{ .Values.mysqlHost | quote }}}
+            - {name: VEHICLE_CLUSTER, value: {{ required "apm.cluster is required for correlation" .Values.apm.cluster | quote }}}
+            - name: MYSQL_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: mysql-reader}}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 10m, memory: 24Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          readinessProbe:
+            exec:
+              command: [/src/vehicle-pipeline/control/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18092/healthz',timeout=1)"]
+          volumeMounts:
+            - {name: correlation, mountPath: /opt/apm-context, readOnly: true}
+{{- end }}
+      volumes:
+        - name: cache
+          emptyDir: {sizeLimit: 128Mi}
+{{- if .Values.apm.correlationEnabled }}
+        - name: correlation
+          configMap: {name: vehicle-apm-correlation}
+{{- end }}
+{{- end }}

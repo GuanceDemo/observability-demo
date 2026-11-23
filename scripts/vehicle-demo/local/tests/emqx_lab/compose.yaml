@@ -1,6 +1,6 @@
 services:
   kafka:
-    image: pubrepo.jiagouyun.com/demo/vehicle-kafka:4.1.2@sha256:5b861a170fa186969e12021dffdec4a81b7b9bda80ca9fdb08ce545de9eea8653
+    image: pubrepo.jiagouyun.com/demo/vehicle-kafka:4.1.2@sha256:5b861a170fa186969e12021dffdec4a81b7b9da80ca9fdb08ce545de9eea8653
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller

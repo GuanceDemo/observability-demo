@@ -4,6 +4,10 @@
   <parent><groupId>demo.observability</groupId><artifactId>vehicle-pipeline</artifactId><version>0.1.0</version></parent>
   <artifactId>vehicle-spark-job</artifactId>
   <dependencies>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-sdk</artifactId><version>1.54.0</version></dependency>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-exporter-otlp</artifactId><version>1.54.0</version><exclusions><exclusion><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-exporter-sender-okhttp</artifactId></exclusion></exclusions></dependency>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-exporter-sender-jdk</artifactId><version>1.54.0</version></dependency>
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-sdk-testing</artifactId><version>1.54.0</version><scope>test</scope></dependency>
     <dependency><groupId>org.apache.spark</groupId><artifactId>spark-sql_2.12</artifactId><version>${spark.version}</version></dependency>
     <dependency><groupId>org.apache.hadoop</groupId><artifactId>hadoop-aws</artifactId><version>3.3.4</version></dependency>
     <dependency><groupId>io.openlineage</groupId><artifactId>openlineage-java</artifactId><version>${openlineage.version}</version></dependency>

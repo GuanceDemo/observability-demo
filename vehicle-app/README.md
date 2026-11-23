@@ -45,3 +45,9 @@ HiveMQ 的 WebSocket 是显式可选依赖；R8 保留 Netty 泛型处理器的�
 部署、回滚及持续验收见 [运行说明](../scripts/vehicle-demo/README.md)。
 
 0.1.2 起，遥测数据库使用单连接 TRUNCATE journal 和 `synchronous=FULL`。采样事务完成落盘后才允许 MQTT 读取待发事件，避免 AVD 断电式停止后复用已发送序号；状态与 outbox 仍在同一事务中。
+
+APM opt-in (APK0.1.4): append `-PvehicleApm=true -PvehicleCluster=<cluster-id>`
+to the signed release Gradle command after configuring the authenticated broker-
+origin OTLP ingress described in vehicle-pipeline/README.md. MQTT5 User Properties
+carry traceparent; immutable outbox payloads are unchanged. No tracing token or
+publisher password is built into the APK.

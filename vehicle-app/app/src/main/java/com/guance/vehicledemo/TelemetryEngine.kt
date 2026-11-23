@@ -128,6 +128,7 @@ class TelemetryEngine(private val store: TelemetryStore, private val vault: Sett
         var backoff = 1000L
         while (scope.isActive) {
             var mqtt: Mqtt5AsyncClient? = null
+            var tracing: PublishTracing? = null
             try {
                 val config = settings
                 var state = requireNotNull(store.dao.state())
@@ -137,6 +138,7 @@ class TelemetryEngine(private val store: TelemetryStore, private val vault: Sett
                     continue
                 }
                 connection = "连接中"
+                tracing = PublishTracing(config)
                 mqtt = client(config, state.vehicleId)
                 val statusTopic = "vehicle/v1/${state.vehicleId}/status"
                 val connack = withTimeout(15_000) {
@@ -162,12 +164,23 @@ class TelemetryEngine(private val store: TelemetryStore, private val vault: Sett
                     }
                     val event = store.dao.oldest()
                     if (event == null) { delay(100); continue }
-                    val result = withTimeout(10_000) {
-                        mqtt.publishWith().topic("vehicle/v1/${state.vehicleId}/telemetry")
-                            .qos(MqttQos.AT_LEAST_ONCE).retain(false)
-                            .payload(event.payload.toByteArray(Charsets.UTF_8)).send().await()
-                    }
-                    result.error.ifPresent { throw it }
+                    val topic = "vehicle/v1/${state.vehicleId}/telemetry"
+                    val span = tracing.start(event, topic)
+                    try {
+                        val result = withTimeout(10_000) {
+                            val publish = mqtt.publishWith().topic(topic)
+                                .qos(MqttQos.AT_LEAST_ONCE).retain(false)
+                                .payload(event.payload.toByteArray(Charsets.UTF_8))
+                            PublishTracing.traceparent(span)?.let {
+                                publish.userProperties().add("traceparent", it).applyUserProperties()
+                            }
+                            publish.send().await()
+                        }
+                        result.error.ifPresent { throw it }
+                    } catch (failure: Exception) {
+                        PublishTracing.failed(span, failure)
+                        throw failure
+                    } finally { span.end() }
                     store.acknowledge(event, System.currentTimeMillis())
                 }
                 // An intentional disconnect must update retained online status as well.
@@ -188,6 +201,7 @@ class TelemetryEngine(private val store: TelemetryStore, private val vault: Sett
                     .put("type", failure.javaClass.name)
                     .put("cause", failure.cause?.javaClass?.name ?: "").toString())
             } finally {
+                tracing?.close()
                 try { if (mqtt?.state?.isConnected == true) withTimeout(2000) { mqtt.disconnect().await() } }
                 catch (_: Exception) { /* Connection may already be closed; outbox remains durable. */ }
             }

@@ -55,7 +55,10 @@ spec:
                 parallelism.default: 1
                 high-availability.type: kubernetes
                 high-availability.storageDir: s3://vehicle-lake/ha
-                kubernetes.cluster-id: vehicle-flink-v1
+                kubernetes.cluster-id: {{ $.Values.flinkClusterId }}
+                {{- if $.Values.flinkRestorePath }}
+                execution.savepoint.path: {{ $.Values.flinkRestorePath }}
+                {{- end }}
                 kubernetes.namespace: {{ $.Release.Namespace }}
                 state.checkpoints.num-retained: 3
                 restart-strategy.type: fixed-delay
@@ -68,6 +71,13 @@ spec:
             - {name: KAFKA_BOOTSTRAP_SERVERS, value: "vehicle-kafka:9092"}
             - {name: KAFKA_USER, value: flink}
             - {name: CHECKPOINT_INTERVAL_MS, value: "60000"}
+            {{- if $.Values.apm.enabled }}
+            - name: OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+              value: {{ required "apm.otlpHttpEndpoint is required" $.Values.apm.otlpHttpEndpoint | quote }}
+            - name: VEHICLE_CLUSTER
+              value: {{ required "apm.cluster is required" $.Values.apm.cluster | quote }}
+            - {name: VEHICLE_RUN_CONTEXT_URL, value: "http://vehicle-control:8080/api/report"}
+            {{- end }}
             - name: KAFKA_PASSWORD
               valueFrom: {secretKeyRef: {name: {{ $.Values.secretName }}, key: kafka-flink}}
             - name: AWS_ACCESS_KEY_ID

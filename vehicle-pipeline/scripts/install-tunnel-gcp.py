@@ -10,7 +10,11 @@ from pathlib import Path
 config = json.load(sys.stdin)
 for field in ["control_ip", "broker_ip" if config.get("broker_ip") else "kafka_ip"]:
     ipaddress.IPv4Address(config[field])
+if config.get("apm_http_host"):
+    ipaddress.IPv4Address(config["apm_http_host"])
 forwards = ["-L 127.0.0.1:18089:{}:8080".format(config["control_ip"])]
+if config.get("apm_http_host"):
+    forwards.append("-L 127.0.0.1:18090:{}:9529".format(config["apm_http_host"]))
 if config.get("broker_ip"):
     forwards.extend("-L 127.0.0.1:{0}:{1}:{0}".format(port, config["broker_ip"])
                     for port in (1883, 8083, 18083))

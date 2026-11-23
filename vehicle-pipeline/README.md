@@ -59,3 +59,105 @@ node --check vehicle-pipeline/web/reports.js
 ### Retention cleanup concurrency
 
 History cleanup commits the delivery snapshot, then uses `READ COMMITTED` for that one transaction. This avoids outbox gap locks racing a Spark START/catalog write; the public report reader keeps its default repeatable-read batch snapshot. The MySQL regression covers both the original error 1213 and the corrected concurrent writes. Run it against a disposable MySQL 8.4 instance with `VEHICLE_TEST_MYSQL_PORT=<loopback-port> uv run --project vehicle-pipeline/control pytest vehicle-pipeline/control/tests`. The tests create and drop only their randomly named test databases.
+
+## Vehicle APM
+
+APM is separate from OpenLineage and pipeline metrics. The optional integration
+uses OpenTelemetry Java SDK 1.54.0: Android `vehicle-android-producer` publishes
+a root `mqtt.publish` span per actual attempt, carries W3C `traceparent` in MQTT5
+User Properties, and finishes on PUBACK/error. EMQX exports its own native spans
+over OTLP/gRPC. Its owned Kafka action preserves the original context in a
+Kafka header. `vehicle-flink-consumer` extracts that header and records real
+validation/deduplication/collection in `flink.clean_and_detect`. EMQX and Flink can be
+sibling spans under the producer: the native Kafka sink forwards the original
+context, so do not describe Flink as a child of an EMQX internal span. Consumer
+completion does not claim Parquet checkpoint visibility or Spark completion.
+
+Enable `apm.enabled` with an explicit DataKit HTTP traces endpoint and cluster
+label. The private `vehicle-apm` trace-only DataKit receives EMQX gRPC and producer/
+consumer HTTP, explicitly preserves SDK service.name with split_service_name=false,
+and writes to the Demo workspace using the existing pipeline Secret. No workspace
+token belongs in the APK. Shared DataKit and DDTrace compatibility flags remain
+unchanged for other applications. Flink uses the JDK
+HTTP sender rather than OkHttp to avoid the older Kotlin libraries in Flink's
+parent classloader. Preserve its relocated SDK and service-provider resources.
+
+On the GCP host, add `apm_http_host` (the exact DataKit Service IPv4) to the
+private tunnel config (use the vehicle-apm Service IPv4) and run both tunnel
+installers to authorize only port9529
+and bind local18090. Restart that dedicated tunnel. Run `install-apm-ingress.py`
+(requires python3-bcrypt) to expose only POST protobuf at
+`/vehicle-otel/v1/traces`, with the existing vehicle-publisher Basic identity.
+Anonymous requests must return401. Keep its protected Caddy backup for rollback.
+
+Before `configure-apm.py --apply`, stop only the vehicle publisher under its
+maintenance guard and wait for native queue/inflight to reach zero. The script
+refuses active traffic, foreign ownership, unexpected SQL/header mappings or
+encoding. It saves a0600 original configuration backup, preserves payload/key/
+buffer settings, adds only trace context forwarding and native tracing, and
+verifies readback. Never use the full connector installer to retrofit APM while
+buffered deliveries exist. Resume the publisher even if configuration fails.
+
+Build the independent signed APK with `-PvehicleApm=true` and
+`-PvehicleCluster=<ACK cluster ID>`; default builds keep APM disabled. Install
+with `adb -s emulator-5556 install -r` so Room, sequence and encrypted credentials
+survive. A Flink upgrade that changes the RawEvent POJO must use a verified
+stop-with-savepoint and a fresh HA cluster identity (`flinkClusterId`,
+`flinkRestorePath`), retaining all operator UIDs and original HA/savepoint data.
+Verify actual same-trace spans in the intended workspace, restored counters,
+completed checkpoints and advancing report data before declaring acceptance.
+
+APM displays `vehicle-android-producer` (Android `mqtt.publish`), `emqx`
+(`process_message`) and `vehicle-flink-consumer` (Flink `flink.clean_and_detect`).
+The bound view also retains the legacy `kafka.process` mapping for historical spans.
+MQTT/Kafka are retained as `messaging.system` attributes, not substituted for
+component identities. The earlier shared receiver used protocol-based names;
+historical spans keep those old names. Verify new spans by matching trace and
+parent IDs. A deployable opt-in overlay is available at
+`deploy/values-apm.example.yaml`; preserve the deployed release values and
+verified Flink migration settings when applying it. The private receiver uses
+the existing openlineage-token Secret key through ENV expansion; never render
+the token into Helm values. Its private ingress permits same-namespace clients
+and only the exact SSH management-node CIDR on9529.
+
+Optional `apm.correlationEnabled=true` adds a receiver-only context cache using
+the existing control image and SELECT-only `vehicle_reader` Secret. It adds
+pipeline/cluster/topic/consumer_group/component context to the three owned
+services. Only EMQX and Flink have lineage job identities. A Span receives a
+`run_id` only within one observed Run interval; stale, missing or ambiguous
+evidence leaves it unset with `run_correlation=unknown`. A running interval
+ends at its latest engine observation, so very recent Spans can remain unknown.
+Android has `run_correlation=not_applicable` and no fabricated job or Run.
+
+Generate the private APM user view with
+`python3 vehicle-pipeline/metrics/dashboard/build_apm_view.py` from the repository
+root. Import `metrics/dashboard/vehicle-apm-correlation.json` as a user view,
+bind service IN `vehicle-android-producer`, `emqx`, `vehicle-flink-consumer`,
+and set visibility to self only. Import clears existing binding rules; restore
+and read back them after import. The native Span drawer passes matching scalar
+fields into view variables; charts follow that drawer's time range. Without
+job/run fields, the Run table shows all runs within that range and must not be
+described as an exact Run match. This view does not add an APM link to the native
+data-observability Job page or a Spark execution trace.
+
+The presentation view collapses its technical selectors and keeps their original
+values for context inheritance. Request rows show readable processing stages and
+operations; Run rows show job name, latest event timestamp and state. Full IDs
+remain available as diagnostic columns and query grouping identities. Native
+selectors render `*` literally, so do not rely on defaultVal.label to rename it.
+
+Flink's native SDK also supports `VEHICLE_RUN_CONTEXT_URL` pointing to the existing
+private control `/api/report`. Its export worker matches the actual Flink JobID
+and a unique observed interval, waiting at most25 seconds for the next control
+observation. Processing and checkpoint threads do not wait. Missing evidence
+keeps `run_correlation=unknown`; SDK processing timestamps and parents remain
+unchanged. This native path does not require receiver correlation scripts.
+
+With APM enabled, each Spark report process emits service `vehicle-spark-summary`:
+one `spark.batch` root and six actual execution-stage spans, all carrying the
+same job namespace/name and Run UUID as its database/OpenLineage batch. Counts
+describe the original successful commit; failed stages record safe classifications.
+The self-only APM view can bind this service and use its Run context directly.
+When migrating Flink images, preserve a fresh stop-with-savepoint and use a new
+HA cluster identity. A rollback must restore the old image from that fresh
+savepoint, rather than the historical restore path in earlier release values.
