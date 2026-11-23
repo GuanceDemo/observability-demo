@@ -8,6 +8,10 @@
 {{- $services = append $services (dict "name" "game-service" "port" 8084 "targetPort" 8084) -}}
 {{- end -}}
 {{- range $index, $service := $services }}
+{{- $serviceProject := $.Values.observability.project -}}
+{{- if eq $service.name "game-service" -}}
+{{- $serviceProject = default $.Values.observability.project $.Values.observability.gameProject -}}
+{{- end -}}
 {{- if $index }}
 ---
 {{- end }}
@@ -16,7 +20,7 @@ kind: Service
 metadata:
   name: {{ include "observability-demo.fullname" $ }}-{{ $service.name }}
   labels:
-    {{- include "observability-demo.labels" $ | nindent 4 }}
+    {{- include "observability-demo.projectLabels" (dict "root" $ "project" $serviceProject) | nindent 4 }}
     app.kubernetes.io/component: {{ $service.name }}
   {{- if eq $service.name "gateway-service" }}
   {{- with $.Values.gateway.service.annotations }}

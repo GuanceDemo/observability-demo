@@ -63,7 +63,7 @@ class GameController {
     config.put("datakitOrigin", "/rum-proxy");
     config.put("env", environment.getProperty("demo.environment", "demo"));
     config.put("version", environment.getProperty("demo.version", "1.0.0"));
-    config.put("project", environment.getProperty("demo.project", "mall-demo"));
+    config.put("project", environment.getProperty("demo.project", "game-demo"));
     config.put("datakitProvider", environment.getProperty("demo.datakit-provider", "guance"));
     config.put("traceType", "ddtrace");
     config.put("compressIntakeRequests", true);

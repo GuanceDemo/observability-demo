@@ -11,11 +11,15 @@
 {{- end }}
 
 {{- define "observability-demo.labels" -}}
-helm.sh/chart: {{ printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" }}
-app.kubernetes.io/name: {{ include "observability-demo.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-project: {{ required "observability.project is required" .Values.observability.project | quote }}
+{{- include "observability-demo.projectLabels" (dict "root" . "project" (required "observability.project is required" .Values.observability.project)) -}}
+{{- end }}
+
+{{- define "observability-demo.projectLabels" -}}
+helm.sh/chart: {{ printf "%s-%s" .root.Chart.Name .root.Chart.Version | replace "+" "_" }}
+app.kubernetes.io/name: {{ include "observability-demo.name" .root }}
+app.kubernetes.io/instance: {{ .root.Release.Name }}
+app.kubernetes.io/managed-by: {{ .root.Release.Service }}
+project: {{ required "project label is required" .project | quote }}
 {{- end }}
 
 {{- define "observability-demo.selectorLabels" -}}

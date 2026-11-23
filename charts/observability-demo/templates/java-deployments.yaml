@@ -24,14 +24,18 @@
   (dict "name" "inventory-service" "port" 8081)
   (dict "name" "payment-service" "port" 8082)
 -}}
-{{- $ddTags := printf "project:%s,pod_name:$(POD_NAME),pod_namespace:$(POD_NAMESPACE),host:$(NODE_NAME),container_name:$(CONTAINER_NAME)" .Values.observability.project -}}
-{{- if .Values.observability.clusterName -}}
-{{- $ddTags = printf "%s,cluster_name_k8s:%s" $ddTags .Values.observability.clusterName -}}
-{{- end -}}
 {{- if and .Values.game.enabled (ne .Values.ddtrace.mode "legacy") -}}
 {{- $services = append $services (dict "name" "game-service" "port" 8084) -}}
 {{- end -}}
 {{- range $index, $service := $services }}
+{{- $serviceProject := $.Values.observability.project -}}
+{{- if eq $service.name "game-service" -}}
+{{- $serviceProject = default $.Values.observability.project $.Values.observability.gameProject -}}
+{{- end -}}
+{{- $ddTags := printf "project:%s,pod_name:$(POD_NAME),pod_namespace:$(POD_NAMESPACE),host:$(NODE_NAME),container_name:$(CONTAINER_NAME)" $serviceProject -}}
+{{- if $.Values.observability.clusterName -}}
+{{- $ddTags = printf "%s,cluster_name_k8s:%s" $ddTags $.Values.observability.clusterName -}}
+{{- end -}}
 {{- if $index }}
 ---
 {{- end }}
@@ -40,7 +44,7 @@ kind: Deployment
 metadata:
   name: {{ include "observability-demo.fullname" $ }}-{{ $service.name }}
   labels:
-    {{- include "observability-demo.labels" $ | nindent 4 }}
+    {{- include "observability-demo.projectLabels" (dict "root" $ "project" $serviceProject) | nindent 4 }}
     app.kubernetes.io/component: {{ $service.name }}
 spec:
   replicas: {{ $.Values.replicaCount }}
@@ -56,7 +60,7 @@ spec:
         {{- if eq $.Values.ddtrace.mode "operator" }}
         admission.datakit/ddtrace-language: java
         {{- end }}
-        project: {{ required "observability.project is required" $.Values.observability.project | quote }}
+        project: {{ required "observability.project is required" $serviceProject | quote }}
       annotations:
         admission.datakit/ddtrace.enabled: {{ eq $.Values.ddtrace.mode "operator" | quote }}
         {{- if eq $.Values.ddtrace.mode "operator" }}
@@ -115,12 +119,14 @@ spec:
             {{- end }}
             - name: DD_SERVICE
               value: {{ $service.name | quote }}
+            - name: DD_SERVICE_MAPPING
+              value: {{ $.Values.ddtrace.serviceMapping | quote }}
             - name: DD_ENV
               value: {{ $.Values.environment | quote }}
             - name: DD_VERSION
               value: {{ $.Values.image.tag | quote }}
             - name: PROJECT_TAG
-              value: {{ $.Values.observability.project | quote }}
+              value: {{ $serviceProject | quote }}
             - name: DD_AGENT_HOST
               valueFrom:
                 fieldRef:

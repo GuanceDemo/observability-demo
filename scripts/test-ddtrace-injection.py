@@ -52,6 +52,13 @@ class InjectionContracts(unittest.TestCase):
             self.assertNotIn('name: ddtrace-agent', text)
         self.assertIn('java-lib.version: "v1.66.0-ext"', render('ddtrace.mode=operator', 'ddtrace.version=v1.66.0-ext')[0])
 
+    def test_database_service_identity_isolated_and_configurable(self):
+        for settings in [(), ('ddtrace.mode=operator',)]:
+            for text in render(*settings):
+                self.assertIn('name: DD_SERVICE_MAPPING\n              value: "mysql:mall-mysql"', text)
+        for text in render('ddtrace.serviceMapping=mysql:workshop-mysql'):
+            self.assertIn('name: DD_SERVICE_MAPPING\n              value: "mysql:workshop-mysql"', text)
+
     def test_reject_double_or_missing_agent(self):
         for settings in [('image.tag=2.3.12',), ('image.tag=2.3.12', 'ddtrace.mode=operator'), ('ddtrace.mode=legacy',), ('ddtrace.mode=typo',), ('ddtrace.version=bad:tag',), ('ddtrace.version=latest',)]:
             self.assertNotEqual(render(*settings, ok=False).returncode, 0)
@@ -70,6 +77,7 @@ class InjectionContracts(unittest.TestCase):
             item = services[service + '-service']
             self.assertEqual(item['depends_on']['ddtrace-init']['condition'], 'service_completed_successfully')
             self.assertEqual(item['environment']['JAVA_TOOL_OPTIONS'], '-javaagent:/datadog-lib/dd-java-agent.jar')
+            self.assertEqual(item['environment']['DD_SERVICE_MAPPING'], 'mysql:mall-mysql')
             mount = next(v for v in item['volumes'] if v['target'] == '/datadog-lib')
             self.assertTrue(mount['read_only'])
 

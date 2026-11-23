@@ -21,6 +21,7 @@ environment: demo
 
 observability:
   project: mall-demo
+  gameProject: game-demo
   # Set this to the DataKit cluster_name_k8s value so JVM StatsD metrics can
   # be correlated with Kubernetes monitor views.
   clusterName: ""
@@ -120,6 +121,8 @@ ddtrace:
   mode: initContainer # initContainer | operator | disabled | legacy
   version: v1.65.6-ext
   imageRepository: pubrepo.truewatch.com/datakit-operator/dd-lib-java-init
+  # Keep database spans separate from other projects using the generic mysql name.
+  serviceMapping: mysql:mall-mysql
   resources:
     requests:
       cpu: 100m

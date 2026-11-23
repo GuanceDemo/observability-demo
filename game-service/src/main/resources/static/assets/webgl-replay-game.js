@@ -261,7 +261,7 @@
     if (!sampledOut && window.DATAFLUX_RUM.startSessionReplayRecording) {
       window.DATAFLUX_RUM.startSessionReplayRecording()
     }
-    setRumContext('project', config.project || 'mall-demo')
+    setRumContext('project', config.project || 'game-demo')
     setRumContext('business_scene', SCENE_ID)
     setRumContext('preview_mode', 'web')
     setRumContext('page', 'game')

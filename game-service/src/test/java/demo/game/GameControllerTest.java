@@ -30,6 +30,7 @@ class GameControllerTest {
         .andExpect(status().isOk()).andExpect(jsonPath("$.gameApplicationId").value("game-test"))
         .andExpect(jsonPath("$.version").value("2.4.0"))
         .andExpect(jsonPath("$.gameService").value("game-web"))
+        .andExpect(jsonPath("$.project").value("game-demo"))
         .andExpect(jsonPath("$.env").value("test"));
     mvc.perform(get("/api/games/faults"))
         .andExpect(status().isOk()).andExpect(jsonPath("$.items.length()").value(2))

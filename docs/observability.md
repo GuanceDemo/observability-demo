@@ -23,6 +23,21 @@
 - Gateway 来源：`client_ip`、`user_agent`、`referer`，保留为高基数字段；`client_ip` 依次使用 `X-Forwarded-For` 首项、`X-Real-IP` 和连接对端 IP。
 - Java 错误：仅 `status=ERROR` 时生成 `error_type`、`error_message`，存在可识别的真实 Throwable 时再生成 `error_stack`；三个字段均保留为 Field。
 
+MySQL 调用的 APM 服务名默认为 `mall-mysql`，通过 Helm 的
+`ddtrace.serviceMapping: mysql:mall-mysql` 或 Compose 的
+`DD_SERVICE_MAPPING=mysql:mall-mysql` 设置。应用自身仍使用 `order-service` 等服务名，
+`project` 保持 `mall-demo`。其他项目应使用各自的数据库服务名；通用的 `mysql`
+名称会让统一目录把不同项目的数据库调用合并成同一服务实体，混入项目、语言和依赖关系。
+
+对于由 DataKit `split_service_name` 从 `db.system=mysql` 拆出的数据库调用，
+可使用 `observability/mysql-project-service.p`。在目标工作空间保存为本地 Pipeline，
+类别选 `tracing`、source 选 `mysql`，不设为默认规则。脚本同时匹配项目和调用方：
+`mall-demo / order-service` 映射为 `mall-mysql`，
+`wordpress-cve-lab / wordpress-cve-demo` 映射为 `wordpress-mysql`。
+它同步修改 `service` 和 measurement，保留 `db_system=mysql`、数据库地址、
+Trace/Span ID、时间及耗时；已映射的服务和其他调用方保持原值。
+部署后检查真实新 Span，并将商城系统的 MySQL 组件关联改为 `mall-mysql`。
+
 平台 Pipeline 的规则保存在 `observability/platform-log-pipeline.p`，用于 Workshop 中手工创建并测试中央 Pipeline。规则将业务正文提取到 `log_message`，不会覆盖完整的原始 `message`。
 
 ## Java 错误日志与平台 Pipeline

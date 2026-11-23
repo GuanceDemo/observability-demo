@@ -5,6 +5,7 @@ x-java-environment: &java-environment
   DD_ENV: ${DD_ENV:-demo}
   DD_VERSION: ${DD_VERSION:-local}
   DD_TAGS: project:${PROJECT_TAG:-mall-demo}
+  DD_SERVICE_MAPPING: ${DD_SERVICE_MAPPING:-mysql:mall-mysql}
   PROJECT_TAG: ${PROJECT_TAG:-mall-demo}
   DD_AGENT_HOST: ${DATAKIT_HOST:-host.docker.internal}
   DD_TRACE_AGENT_PORT: "9529"
@@ -169,9 +170,13 @@ services:
     build:
       context: .
       dockerfile: game-service/Dockerfile
+    labels:
+      project: ${GAME_PROJECT_TAG:-game-demo}
     environment:
       <<: *java-environment
       DD_SERVICE: game-service
+      DD_TAGS: project:${GAME_PROJECT_TAG:-game-demo}
+      PROJECT_TAG: ${GAME_PROJECT_TAG:-game-demo}
       RUM_ENABLED: ${RUM_ENABLED:-false}
       RUM_GAME_APPLICATION_ID: ${RUM_GAME_APPLICATION_ID:-}
       RUM_GAME_SERVICE: ${RUM_GAME_SERVICE:-mall-game-h5}
