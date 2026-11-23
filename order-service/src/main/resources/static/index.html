@@ -3,16 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>商城 demo</title>
+  <title>故障演练工作台 Demo</title>
   <link rel="icon" href="data:," />
   <script src="assets/selfheal-i18n.js?v=20260715-replay-cover-v20"></script>
   <style>
     :root {
-      --gc-primary: #1770e6;
-      --gc-page: #f5f7fb;
-      --gc-text: #1f2d3d;
-      --gc-muted: #65758b;
-      --gc-border: #dce3ee;
+      --gc-primary: #216be5;
+      --gc-violet: #5b55e7;
+      --gc-page: #f4f7fd;
+      --gc-text: #13213b;
+      --gc-muted: #66758d;
+      --gc-border: #dce5f3;
+      --gc-surface-soft: #f8faff;
+      --gc-green: #10a66a;
     }
 
     * { box-sizing: border-box; }
@@ -25,66 +28,177 @@
       padding: 24px;
       color: var(--gc-text);
       background:
-        radial-gradient(circle at 20% 0%, rgba(23, 112, 230, .16), transparent 34%),
-        linear-gradient(180deg, #fbfdff 0%, var(--gc-page) 100%);
-      font-family: Inter, "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+        radial-gradient(circle at 14% 8%, rgba(33, 107, 229, .15), transparent 32%),
+        radial-gradient(circle at 88% 16%, rgba(117, 89, 233, .11), transparent 28%),
+        linear-gradient(145deg, #f8faff 0%, #f1f6ff 52%, #f7f5ff 100%);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      -webkit-font-smoothing: antialiased;
     }
 
     .panel {
-      width: min(520px, 100%);
+      width: min(640px, 100%);
       display: grid;
-      gap: 16px;
-      padding: 24px;
-      border: 1px solid var(--gc-border);
-      border-radius: 8px;
-      background: #fff;
-      box-shadow: 0 18px 48px rgba(16, 24, 40, .12);
+      gap: 18px;
+      padding: 28px 28px 26px;
+      border: 1px solid rgba(200, 213, 235, .94);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, .94);
+      box-shadow: 0 24px 60px rgba(30, 64, 123, .13);
       text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-self: center;
+      gap: 8px;
+      padding: 5px 12px;
+      border: 1px solid var(--gc-border);
+      border-radius: 999px;
+      background: var(--gc-surface-soft);
+      color: var(--gc-primary);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--gc-green);
+      box-shadow: 0 0 0 3px rgba(16, 166, 106, .14);
     }
 
     h1 {
       margin: 0;
       font-size: 24px;
+      font-weight: 800;
       line-height: 1.25;
+      letter-spacing: -.02em;
     }
 
-    p {
+    .lead {
       margin: 0;
       color: var(--gc-muted);
       font-size: 14px;
       line-height: 1.7;
     }
 
-    a {
-      min-height: 42px;
+    .scene-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      text-align: left;
+    }
+
+    .scene-chip {
+      display: grid;
+      gap: 4px;
+      padding: 12px 14px;
+      border: 1px solid var(--gc-border);
+      border-radius: 12px;
+      background: var(--gc-surface-soft);
+      color: var(--gc-text);
+      text-decoration: none;
+      transition: border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+    }
+
+    .scene-chip:hover {
+      border-color: rgba(33, 107, 229, .45);
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(33, 107, 229, .09);
+    }
+
+    .scene-chip strong {
+      font-size: 13px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+
+    .scene-chip span {
+      color: var(--gc-muted);
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    .primary-link {
+      min-height: 44px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       justify-self: center;
-      padding: 10px 16px;
-      border-radius: 8px;
+      gap: 8px;
+      padding: 10px 22px;
+      border-radius: 12px;
       color: #fff;
-      background: var(--gc-primary);
-      font-weight: 900;
+      background: linear-gradient(135deg, var(--gc-primary) 0%, var(--gc-violet) 100%);
+      box-shadow: 0 12px 26px rgba(33, 107, 229, .24);
+      font-size: 14px;
+      font-weight: 800;
       text-decoration: none;
+      transition: transform .16s ease, box-shadow .16s ease;
+    }
+
+    .primary-link:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 16px 30px rgba(33, 107, 229, .3);
+    }
+
+    @media (max-width: 560px) {
+      .panel { padding: 22px 18px; }
+      .scene-grid { grid-template-columns: 1fr; }
+      .primary-link { width: 100%; }
     }
   </style>
 </head>
 <body>
   <main class="panel">
-    <h1 data-i18n="appTitle">商城 demo</h1>
-    <p data-i18n="parentLead">左侧商城运行在独立 iframe 中，RUM 只在商城页面初始化；右侧故障注入与日志面板不采集前端 RUM。</p>
-    <a id="entryLink" href="business.html" data-i18n="parentOpenShop">打开独立商城</a>
+    <div class="badge">
+      <span class="badge-dot" aria-hidden="true"></span>
+      <span data-i18n="workbenchBadge">业务场景演练</span>
+    </div>
+    <h1 data-i18n="workbenchTitle">故障演练工作台 Demo</h1>
+    <p class="lead" data-i18n="parentLead">业务场景运行在独立 iframe 或真机视图中，RUM 仅在场景内初始化；右侧故障注入与日志面板不采集前端 RUM。</p>
+    <div class="scene-grid" aria-label="业务场景">
+      <a class="scene-chip" data-scene-link="bookstore" href="business.html?scene=bookstore">
+        <strong data-i18n="sceneBookstoreTitle">商城 Demo</strong>
+        <span data-i18n="sceneBookstoreDescription">图书商城</span>
+      </a>
+      <a class="scene-chip" data-scene-link="android-storefront" href="business.html?scene=android-storefront">
+        <strong data-i18n="sceneAndroidTitle">商城 APP Demo</strong>
+        <span data-i18n="sceneAndroidDescription">Android 真机操作</span>
+      </a>
+      <a class="scene-chip" data-scene-link="webgl-game" href="business.html?scene=webgl-game">
+        <strong data-i18n="sceneGameTitle">游戏 Demo</strong>
+        <span data-i18n="sceneGameDescription">小游戏合集</span>
+      </a>
+      <a class="scene-chip" data-scene-link="vehicle-telemetry" href="business.html?scene=vehicle-telemetry">
+        <strong data-i18n="sceneVehicleTitle">车机 Demo</strong>
+        <span data-i18n="sceneVehicleDescription">真实车机与数据处理</span>
+      </a>
+    </div>
+    <a class="primary-link" id="entryLink" href="business.html" data-i18n="parentOpenShop">进入故障演练工作台</a>
   </main>
   <script>
     const I18N = window.SelfhealI18n;
     const language = I18N.setLanguage(I18N.detectLanguage(), { updateUrl: true });
+    document.title = I18N.t('workbenchTitle');
+    const currentUrl = new URL(window.location.href);
     const entryUrl = new URL('business.html', window.location.href);
     entryUrl.searchParams.set('lang', language);
     document.getElementById('entryLink').href = entryUrl.pathname + entryUrl.search;
-    window.setTimeout(() => {
-      window.location.replace(entryUrl.pathname + entryUrl.search);
-    }, 300);
+    document.querySelectorAll('[data-scene-link]').forEach((link) => {
+      const sceneUrl = new URL('business.html', window.location.href);
+      sceneUrl.searchParams.set('scene', link.dataset.sceneLink);
+      sceneUrl.searchParams.set('lang', language);
+      link.href = sceneUrl.pathname + sceneUrl.search;
+    });
+    if (currentUrl.searchParams.get('preview') !== '1') {
+      window.setTimeout(() => {
+        window.location.replace(entryUrl.pathname + entryUrl.search);
+      }, 300);
+    }
   </script>
 </body>
 </html>
