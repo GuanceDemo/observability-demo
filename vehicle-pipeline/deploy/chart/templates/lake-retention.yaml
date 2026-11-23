@@ -1,0 +1,67 @@
+{{- if .Values.lake.retention.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: vehicle-lake-retention}
+data:
+  retention.py: |
+{{ .Files.Get "files/lake-retention.py" | indent 4 }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata: {name: vehicle-lake-retention}
+spec:
+  schedule: {{ .Values.lake.retention.schedule | quote }}
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      activeDeadlineSeconds: 540
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels: {app: vehicle-lake-retention}
+          annotations:
+            checksum/script: {{ .Files.Get "files/lake-retention.py" | sha256sum }}
+        spec:
+          restartPolicy: Never
+          automountServiceAccountToken: false
+          nodeSelector:
+            kubernetes.io/hostname: {{ .Values.computeNode | quote }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+          containers:
+            - name: retention
+              image: {{ required "metrics.image must be pinned for lake retention" .Values.metrics.image | quote }}
+              command: [/src/metrics/.venv/bin/python, /opt/lake-maintenance/retention.py, --execute]
+              env:
+                - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+                - {name: S3_ENDPOINT, value: "http://vehicle-lake:8333"}
+                - name: S3_ACCESS_KEY
+                  valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: s3-writer-key}}
+                - name: S3_SECRET_KEY
+                  valueFrom: {secretKeyRef: {name: {{ .Values.secretName }}, key: s3-writer-secret}}
+                - {name: RETAIN_PRIOR_UTC_DAYS, value: {{ .Values.lake.retention.priorUtcDays | quote }}}
+                - {name: MAX_SCAN_OBJECTS, value: {{ .Values.lake.retention.maxScanObjects | quote }}}
+                - {name: MAX_DELETE_OBJECTS, value: {{ .Values.lake.retention.maxDeleteObjects | quote }}}
+                - {name: DEADLINE_SECONDS, value: {{ .Values.lake.retention.deadlineSeconds | quote }}}
+              resources:
+                requests: {cpu: 20m, memory: 64Mi}
+                limits: {cpu: 250m, memory: 192Mi}
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities: {drop: [ALL]}
+              volumeMounts:
+                - {name: script, mountPath: /opt/lake-maintenance, readOnly: true}
+                - {name: tmp, mountPath: /tmp}
+          volumes:
+            - name: script
+              configMap: {name: vehicle-lake-retention}
+            - name: tmp
+              emptyDir: {sizeLimit: 16Mi}
+{{- end }}

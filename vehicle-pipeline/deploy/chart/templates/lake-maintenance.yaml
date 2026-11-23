@@ -1,0 +1,21 @@
+{{- if or .Values.lake.pluginPolicyEnabled .Values.lake.retention.enabled }}
+{{- if not (regexMatch "@sha256:[a-f0-9]{64}$" .Values.metrics.image) }}
+{{- fail "lake maintenance requires metrics.image pinned by SHA256 digest" }}
+{{- end }}
+{{- end }}
+{{- if .Values.lake.pluginPolicyEnabled }}
+{{- $interval := int .Values.lake.vacuumIntervalSeconds }}
+{{- $threshold := float64 .Values.lake.garbageThreshold }}
+{{- if or (lt $interval 60) (gt $interval 600) (ne (mod $interval 60) 0) }}
+{{- fail "lake.vacuumIntervalSeconds must be a whole minute between 60 and 600" }}
+{{- end }}
+{{- if or (lt $threshold 0.05) (gt $threshold 0.5) }}
+{{- fail "lake.garbageThreshold must be between 0.05 and 0.5" }}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: vehicle-lake-maintenance}
+data:
+  vacuum-policy.py: |
+{{ .Files.Get "files/lake-vacuum-policy.py" | indent 4 }}
+{{- end }}

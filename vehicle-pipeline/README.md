@@ -30,9 +30,19 @@ anomalies <= clean
 
 Spark 每五分钟汇总北京时间今天的数据。只枚举从今天零点至本次开始时间对应的 UTC 小时目录，不递归扫描历史目录；冻结已完成、至少稳定 5 秒的 `part-*.parquet` 文件集合，以排序路径 SHA256 标识输入快照。再按事件时间筛选今天、按 eventId 去重后执行真实 Spark SQL。两张报表复用已缓存的里程计算结果。五分钟与日汇总同事务替换；START 在工作前提交，COMPLETE 与新结果同事务提交，FAIL 前回滚。里程取按车辆序列排列的里程表增量；首样本不推测之前的里程。充电样本数不等于充电秒数。
 
-源数据超过 900 秒、今天无已提交输入或今天快照文件数超过 12000 时中止并保留上一批结果。旧原始数据仍按原保留策略存储；报表只展示今天，跨零点不会把昨日数据算入今日。固定文件集合里的数据量、唯一行数、文件数、源时间和 Run ID 都保存在 `report_batches`。
+源数据超过 900 秒、今天无已提交输入或今天快照文件数超过 12000 时中止并保留上一批结果。报表只展示今天，跨零点不会把昨日数据算入今日。固定文件集合里的数据量、唯一行数、文件数、源时间和 Run ID 都保存在 `report_batches`。
 
 日志 `vehicle_report_stage` 分别记录 initialize、snapshot、read、deduplicate、aggregate、publish 的 `durationMs` 和 Run ID，便于核对实际耗时。
+
+## 对象存储回收
+
+SeaweedFS 保持 40 个 128 MB 卷的既有容量预算；删除对象后由原生压缩释放物理空间。默认每 120 秒检查垃圾比例，达到 10% 时压缩，限制并发并为压缩保留内存余量。这个固定版本的 `mini` 使用维护插件接管压缩，单改 Master 参数不会覆盖已保存的插件配置。`vacuum-policy` 辅助容器每 30 秒通过同 Pod 的回环 API 核对实际策略，设置 2 分钟、10%、单任务并发并确认回读，重启后自动恢复。管理 API 仅绑定回环地址，不新增公开入口。主机有空闲磁盘不代表这些卷仍可写，不能只看主机 `df` 判断容量。
+
+`lake.retention.enabled=true` 启用每小时的 `vehicle-lake-retention` CronJob，可参考 `deploy/values-lake-retention.example.yaml`。它仅清理 `clean/anomalies/quarantine` 下已完成的 `part-*.parquet`，保留当前 UTC 日期及前三天；日期和最后修改时间都过期才会删除。当前北京时间日报输入始终在保护范围内。检查点、HA、savepoint、进行中的文件及分段上传不参与年龄清理，检查点仍由 Flink 保留最近 3 个。
+
+首次启用前，使用固定版本 metrics 镜像中的 Python 3.12 运行 `deploy/chart/files/lake-retention.py`，配置现有 S3 环境变量，默认只预演，核对日志中的 cutoff、eligible 和 selected；只有 `--execute` 才删除。定时任务挂载同一脚本，使用现有 Secret 引用，不包含密钥明文。每次最多扫描 15 万个文件、删除 1 万个，脚本期限 240 秒，禁止定时任务重叠；超限或失败会保留 Kubernetes Job 和脱敏日志，下一次继续。
+
+部署后查看 `kubectl -n vehicle-pipeline get cronjob,jobs`，以及 `kubectl -n vehicle-pipeline logs job/<回收 Job 名称>` 的 completed/deleted 状态。初始历史较多时需要多个受限批次。清理成功后还要确认物理压缩、Flink 新检查点和报表源时间推进，不能仅以删除接口成功判断恢复。
 
 ## 血缘
 
@@ -47,6 +57,7 @@ EMQX/Flink 由显式适配器读取原生动作指标和 Flink REST 状态；Spa
 ```sh
 mvn -q -f vehicle-pipeline/pom.xml test
 uv run --project vehicle-pipeline/control pytest -q vehicle-pipeline/control/tests
+uv run --project vehicle-pipeline/control pytest -q vehicle-pipeline/scripts/tests/test_apm*.py
 uv run --project vehicle-pipeline/control ruff check vehicle-pipeline/control
 uv run --project vehicle-pipeline/control mypy vehicle-pipeline/control/src --config-file vehicle-pipeline/control/pyproject.toml
 uv run --project vehicle-pipeline/control ruff check --isolated --select E4,E7,E9,F,I,B vehicle-pipeline/scripts
@@ -119,6 +130,21 @@ verified Flink migration settings when applying it. The private receiver uses
 the existing openlineage-token Secret key through ENV expansion; never render
 the token into Helm values. Its private ingress permits same-namespace clients
 and only the exact SSH management-node CIDR on9529.
+
+Optional `apm.resourceIdentityEnabled=true` corrects the private receiver's
+default host for Android, EMQX, Flink and Spark without restarting the engines.
+A loopback resolver refreshes namespace Pod metadata every5s (expires after30s),
+matching source IP, component ownership and Pod lifetime; Flink/Spark additionally
+require their exact service instance/Pod name. Cluster spans get their actual
+node `host` and Pod name/namespace/UID/IP, including normalized OTel aliases.
+Android gets no invented host or Kubernetes Pod. Missing, stale or ambiguous
+metadata omits those fields with `resource_identity=unknown`; it never falls back
+to the receiver hostname. Only the resolver mounts a rotating API token, with
+pods/list permission in this namespace. The DataKit container has no token.
+Preserve this enabled value on subsequent upgrades. Verify fresh destination
+spans and a later Spark Pod before deleting an erroneous catalog host URN, then
+observe later ingestion/discovery cycles for recurrence. Historical spans retain
+their old identities. This feature can coexist with optional Run correlation.
 
 Optional `apm.correlationEnabled=true` adds a receiver-only context cache using
 the existing control image and SELECT-only `vehicle_reader` Secret. It adds

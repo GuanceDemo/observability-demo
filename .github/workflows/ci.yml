@@ -262,6 +262,11 @@ jobs:
         run: uv run --python 3.12 --with-requirements scripts/vehicle-demo/local/requirements.txt python -m unittest discover -s scripts/vehicle-demo/local/tests -p 'test_*.py'
       - name: Verify scene, token renewal, reports and player recovery
         run: node --test scripts/tests/vehicle-ack-scene.test.cjs scripts/vehicle-demo/local/tests/*.mjs
+      - name: Verify lake retention safety and metrics regressions
+        run: |
+          uv run --project vehicle-pipeline/metrics --python 3.12 pytest vehicle-pipeline/metrics/tests -q
+          uv run --project vehicle-pipeline/metrics --python 3.12 ruff check --config vehicle-pipeline/metrics/pyproject.toml vehicle-pipeline/deploy/chart/files/lake-*.py vehicle-pipeline/metrics/tests/test_lake_*.py
+          helm lint vehicle-pipeline/deploy/chart --values vehicle-pipeline/deploy/values-lake-retention.example.yaml
       - name: Build workbench with bundled vehicle player
         run: docker build -f scripts/vehicle-demo/local/Dockerfile.ack -t vehicle-workbench:ci .
       - name: Verify image startup and packaged player without cluster access

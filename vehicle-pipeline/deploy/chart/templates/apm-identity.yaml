@@ -1,0 +1,33 @@
+{{- if and .Values.apm.enabled .Values.apm.resourceIdentityEnabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata: {name: vehicle-apm-identity}
+data:
+  identity.py: |
+{{ .Files.Get "files/apm-identity.py" | indent 4 }}
+  enrichment.p: |
+{{ .Files.Get "files/apm-identity.p" | indent 4 }}
+{{- if .Values.apm.correlationEnabled }}
+{{ .Files.Get "files/apm-correlation.p" | indent 4 }}
+{{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: vehicle-apm-identity}
+automountServiceAccountToken: false
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: vehicle-apm-identity}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: vehicle-apm-identity}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: vehicle-apm-identity}
+subjects:
+  - {kind: ServiceAccount, name: vehicle-apm-identity, namespace: {{ .Release.Namespace }}}
+{{- end }}

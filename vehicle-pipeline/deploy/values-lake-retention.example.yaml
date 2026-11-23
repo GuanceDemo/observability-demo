@@ -1,0 +1,9 @@
+# Merge with the existing effective environment values; review a dry-run first.
+lake:
+  retention:
+    enabled: true
+    schedule: "17 * * * *"
+    priorUtcDays: 3
+    maxScanObjects: 150000
+    maxDeleteObjects: 10000
+    deadlineSeconds: 240

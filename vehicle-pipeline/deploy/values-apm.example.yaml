@@ -4,6 +4,7 @@
 # actual savepoint; retain both values on later upgrades. Do not discard HA data.
 apm:
   enabled: true
+  resourceIdentityEnabled: true
   otlpHttpEndpoint: http://vehicle-apm:9529/otel/v1/traces
   cluster: c0eba4a54613c4adfb108e850e1c7c7d5
   datakitImage: pubrepo.guance.com/datakit/datakit:2.14.3@sha256:e66f2c71390f1280f3c349ebc29b122a85fb259590bdb1c1ee271ec35f7c92b6

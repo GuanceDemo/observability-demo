@@ -11,8 +11,10 @@ data:
   ENV_INPUT_OTEL_CUSTOMER_TAGS_ALL: "true"
   ENV_INPUT_OTEL_GRPC: '{"addr":"0.0.0.0:4317","max_payload":1048576}'
   ENV_INPUT_OTEL_HTTP: '{"http_status_ok":200,"trace_api":"/otel/v1/traces","metric_api":"/otel/v1/metrics","logs_api":"/otel/v1/logs"}'
-{{- if .Values.apm.correlationEnabled }}
+{{- if or .Values.apm.correlationEnabled .Values.apm.resourceIdentityEnabled }}
   ENV_PIPELINE_HTTP_REQUEST_HOST_WHITELIST: "127.0.0.1"
+{{- end }}
+{{- if .Values.apm.correlationEnabled }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -62,12 +64,19 @@ spec:
     metadata:
       labels: {app: vehicle-apm}
       annotations:
-        checksum/apm-config: {{ (ternary .Values.apm (omit .Values.apm "correlationEnabled") .Values.apm.correlationEnabled) | toJson | sha256sum | quote }}
+        {{- $apm := ternary .Values.apm (omit .Values.apm "correlationEnabled") .Values.apm.correlationEnabled }}
+        checksum/apm-config: {{ (ternary $apm (omit $apm "resourceIdentityEnabled") .Values.apm.resourceIdentityEnabled) | toJson | sha256sum | quote }}
+{{- if .Values.apm.resourceIdentityEnabled }}
+        checksum/apm-identity: {{ print (.Files.Get "files/apm-identity.py") (.Files.Get "files/apm-identity.p") | sha256sum | quote }}
+{{- end }}
 {{- if .Values.apm.correlationEnabled }}
         checksum/apm-correlation: {{ print (.Files.Get "files/apm-context.py") (.Files.Get "files/apm-correlation.p") | sha256sum | quote }}
 {{- end }}
     spec:
       automountServiceAccountToken: false
+{{- if .Values.apm.resourceIdentityEnabled }}
+      serviceAccountName: vehicle-apm-identity
+{{- end }}
       containers:
         - name: datakit
           image: {{ .Values.apm.datakitImage | quote }}
@@ -89,10 +98,16 @@ spec:
             limits: {cpu: 250m, memory: 192Mi}
           volumeMounts:
             - {name: cache, mountPath: /usr/local/datakit/cache}
-{{- if .Values.apm.correlationEnabled }}
+{{- if .Values.apm.resourceIdentityEnabled }}
+            {{- range $service := list "vehicle-android-producer" "emqx" "vehicle-flink-consumer" "vehicle-spark-summary" }}
+            - {name: identity, mountPath: {{ printf "/usr/local/datakit/pipeline/tracing/%s.p" $service }}, subPath: enrichment.p, readOnly: true}
+            {{- end }}
+{{- else if .Values.apm.correlationEnabled }}
             {{- range $service := list "vehicle-android-producer" "emqx" "vehicle-flink-consumer" }}
             - {name: correlation, mountPath: {{ printf "/usr/local/datakit/pipeline/tracing/%s.p" $service }}, subPath: correlation.p, readOnly: true}
             {{- end }}
+{{- end }}
+{{- if .Values.apm.correlationEnabled }}
         - name: context
           image: {{ .Values.controlImage | quote }}
           command: [/src/vehicle-pipeline/control/.venv/bin/python, /opt/apm-context/context.py]
@@ -115,11 +130,47 @@ spec:
           volumeMounts:
             - {name: correlation, mountPath: /opt/apm-context, readOnly: true}
 {{- end }}
+{{- if .Values.apm.resourceIdentityEnabled }}
+        - name: identity
+          image: {{ .Values.controlImage | quote }}
+          command: [/src/vehicle-pipeline/control/.venv/bin/python, /opt/apm-identity/identity.py]
+          env:
+            - name: POD_NAMESPACE
+              valueFrom: {fieldRef: {fieldPath: metadata.namespace}}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 10m, memory: 24Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+          readinessProbe:
+            exec:
+              command: [/src/vehicle-pipeline/control/.venv/bin/python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:18093/healthz',timeout=1)"]
+            timeoutSeconds: 5
+          volumeMounts:
+            - {name: identity, mountPath: /opt/apm-identity, readOnly: true}
+            - {name: identity-api, mountPath: /var/run/vehicle-identity, readOnly: true}
+{{- end }}
       volumes:
         - name: cache
           emptyDir: {sizeLimit: 128Mi}
 {{- if .Values.apm.correlationEnabled }}
         - name: correlation
           configMap: {name: vehicle-apm-correlation}
+{{- end }}
+{{- if .Values.apm.resourceIdentityEnabled }}
+        - name: identity
+          configMap: {name: vehicle-apm-identity}
+        - name: identity-api
+          projected:
+            defaultMode: 0444
+            sources:
+              - serviceAccountToken: {path: token, expirationSeconds: 3600}
+              - configMap:
+                  name: kube-root-ca.crt
+                  items: [{key: ca.crt, path: ca.crt}]
 {{- end }}
 {{- end }}

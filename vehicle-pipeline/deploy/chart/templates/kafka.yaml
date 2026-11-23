@@ -57,6 +57,10 @@ spec:
   template:
     metadata:
       labels: {app: vehicle-lake}
+{{- if .Values.lake.pluginPolicyEnabled }}
+      annotations:
+        checksum/maintenance: {{ .Files.Get "files/lake-vacuum-policy.py" | sha256sum }}
+{{- end }}
     spec:
       nodeSelector:
         kubernetes.io/hostname: {{ .Values.storageNode | quote }}
@@ -69,24 +73,55 @@ spec:
             - -dir=/data
             - -bucket=vehicle-lake
             - -s3.config=/config/s3.json
-            - -admin.ui=false
+            # The native config API is served with the UI, on loopback only.
+            - -admin.ui={{ .Values.lake.pluginPolicyEnabled }}
             - -webdav=false
             - -s3.port.iceberg=0
             - -s3.port.lance=0
             - -s3.readerCacheSizeMB=32
-            - -volume.max=40
-            - -master.volumeSizeLimitMB=128
-          env: [{name: GOMEMLIMIT, value: 320MiB}]
+            - -volume.max={{ .Values.lake.maxVolumes }}
+            - -master.volumeSizeLimitMB={{ .Values.lake.volumeSizeLimitMB }}
+            - -master.garbageThreshold={{ .Values.lake.garbageThreshold }}
+            - -master.vacuumIntervalSeconds={{ .Values.lake.vacuumIntervalSeconds }}
+            - -volume.compactionMaxParallelCommits=1
+          env: [{name: GOMEMLIMIT, value: {{ .Values.lake.goMemoryLimit | quote }}}]
           ports: [{containerPort: 8333}]
           resources:
-            requests: {cpu: 100m, memory: 192Mi}
-            limits: {cpu: "1", memory: 512Mi}
+{{ toYaml .Values.lake.resources | indent 12 }}
           readinessProbe:
             tcpSocket: {port: 8333}
             initialDelaySeconds: 10
           volumeMounts:
             - {name: data, mountPath: /data}
             - {name: config, mountPath: /config, readOnly: true}
+{{- if .Values.lake.pluginPolicyEnabled }}
+        - name: vacuum-policy
+          image: {{ required "metrics.image must be pinned for lake maintenance" .Values.metrics.image | quote }}
+          command: [/src/metrics/.venv/bin/python, /opt/lake-maintenance/vacuum-policy.py]
+          env:
+            - {name: PYTHONDONTWRITEBYTECODE, value: "1"}
+            - {name: VACUUM_INTERVAL_SECONDS, value: {{ .Values.lake.vacuumIntervalSeconds | quote }}}
+            - {name: GARBAGE_THRESHOLD, value: {{ .Values.lake.garbageThreshold | quote }}}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 5m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 96Mi}
+          readinessProbe:
+            exec:
+              command: [/src/metrics/.venv/bin/python, -c, "import os; assert os.path.isfile('/tmp/vacuum-policy-ready')"]
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 3
+          volumeMounts:
+            - {name: maintenance, mountPath: /opt/lake-maintenance, readOnly: true}
+            - {name: maintenance-tmp, mountPath: /tmp}
+{{- end }}
       volumes:
         - name: data
           persistentVolumeClaim: {claimName: vehicle-lake}
@@ -94,3 +129,9 @@ spec:
           secret:
             secretName: {{ .Values.secretName }}
             items: [{key: s3-config, path: s3.json}]
+{{- if .Values.lake.pluginPolicyEnabled }}
+        - name: maintenance
+          configMap: {name: vehicle-lake-maintenance}
+        - name: maintenance-tmp
+          emptyDir: {sizeLimit: 16Mi}
+{{- end }}
