@@ -192,6 +192,8 @@ spec:
             - name: DATAKIT_PROVIDER
               value: {{ $.Values.datakit.provider | quote }}
             {{- else if eq $service.name "order-service" }}
+            - name: SPRING_WEB_RESOURCES_CACHE_CACHECONTROL_NO_CACHE
+              value: "true"
             - name: MYSQL_URL
               value: jdbc:mysql://{{ include "observability-demo.fullname" $ }}-mysql:3306/{{ $.Values.mysql.database }}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC&connectTimeout=3000&socketTimeout=5000
             - name: MYSQL_USER
