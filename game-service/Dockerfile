@@ -17,13 +17,13 @@ RUN --mount=type=cache,id=m2-repo,target=/root/.m2 \
 
 COPY game-service/src game-service/src
 RUN --mount=type=cache,id=m2-repo,target=/root/.m2 \
-    mvn -B -pl game-service -am package -DskipTests
+    mvn -B -pl game-service -am package -DskipTests && \
+    mkdir -p /tmp/empty-log-dir
 
 FROM ${JRE_BASE_IMAGE}
 WORKDIR /app
-RUN groupadd --system app && useradd --system --gid app --uid 10001 app && \
-    mkdir -p /var/log/observability-demo && chown -R app:app /app /var/log/observability-demo
+COPY --from=build --chown=10001:10001 /tmp/empty-log-dir /var/log/observability-demo
 COPY --from=build --chown=10001:10001 /workspace/game-service/target/game-service-1.0.0.jar /app/app.jar
-USER app
+USER 10001:10001
 EXPOSE 8084
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

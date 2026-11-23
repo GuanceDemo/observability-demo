@@ -17,6 +17,7 @@ permissions:
 jobs:
   publish:
     if: github.repository == 'cherrycove/observability-demo'
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
@@ -68,7 +69,49 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
-      - uses: docker/build-push-action@v6
+      - name: Build and push (attempt 1)
+        id: build1
+        continue-on-error: true
+        timeout-minutes: 7
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.service }}
+          sbom: true
+          provenance: mode=max
+      - name: Backoff before retry 2
+        if: steps.build1.outcome != 'success'
+        run: sleep 15
+      - name: Build and push (attempt 2)
+        id: build2
+        if: steps.build1.outcome != 'success'
+        continue-on-error: true
+        timeout-minutes: 7
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=min,scope=${{ matrix.service }}
+          sbom: true
+          provenance: mode=max
+      - name: Backoff before retry 3
+        if: steps.build1.outcome != 'success' && steps.build2.outcome != 'success'
+        run: sleep 30
+      - name: Build and push (attempt 3)
+        if: steps.build1.outcome != 'success' && steps.build2.outcome != 'success'
+        timeout-minutes: 7
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ${{ matrix.dockerfile }}
