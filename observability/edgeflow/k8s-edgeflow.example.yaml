@@ -1,0 +1,161 @@
+# Optional Kubernetes EdgeFlow 1.0.1 manifest for Single-Sampling Mode in the `datakit` namespace.
+# Before applying, create the runtime credentials Secret (never commit real tokens):
+#
+#   kubectl -n datakit create secret generic edgeflow-credentials \
+#     --from-literal=EDGEFLOW_ADMIN_TOKEN="$(openssl rand -hex 24)" \
+#     --from-literal=EDGEFLOW_DEMO_TOKEN="<WORKSPACE_TOKEN>" \
+#     --dry-run=client -o yaml | kubectl apply -f -
+#
+#   kubectl -n datakit create secret generic datakit-edgeflow-endpoints \
+#     --from-literal=endpoints="http://edgeflow-0.edgeflow.datakit.svc.cluster.local:9529?token=<WORKSPACE_TOKEN>" \
+#     --dry-run=client -o yaml | kubectl apply -f -
+#
+# Adjust `upstream_url` in ConfigMap `edgeflow-config` if your Dataway endpoint is regional or private.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: edgeflow-config
+  namespace: datakit
+  labels:
+    app.kubernetes.io/name: edgeflow
+    project: mall-demo
+data:
+  edgeflow.toml: |
+    listen = "0.0.0.0:9529"
+    admin_listen = "127.0.0.1:9530"
+    upstream_url = "https://openway.guance.com"
+    admin_token_env = "EDGEFLOW_ADMIN_TOKEN"
+
+    [state]
+    mode = "memory_spill"
+    path = "/app/data/edgeflow.state"
+    max_bytes = 2147483648
+
+    [workspaces.demo]
+    token_env = "EDGEFLOW_DEMO_TOKEN"
+  tracing.dsl: |
+    version 1;
+
+    schema tracing {
+      field.trace_id: string;
+      field.resource: string;
+      field.duration: number;
+      tag.status: string;
+      tag.route_class: string;
+      tag.fault_id: string;
+      tag.user_tier: string;
+    }
+
+    tail "mall_demo_tail_sampling" on tracing {
+      group by field.trace_id;
+      idle 5s max_wait 30s decision_ttl 2m;
+
+      keep when any(tag.status == "error");
+      keep when any(field.duration > 1000000);
+      keep when any(tag.fault_id in ["order_slow", "redis_timeout", "payment_slow", "payment_error", "payment_cpu_burn"]);
+      keep when any(tag.user_tier == "vip");
+
+      drop when any(tag.route_class in ["unmatched", "static_asset"]);
+      drop when any(field.resource in ["/health", "/healthz", "/ready", "/readyz", "/actuator/health"]);
+
+      sample 0.1 otherwise seed "mall-demo-edgeflow-v1";
+    }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: edgeflow
+  namespace: datakit
+  labels:
+    app.kubernetes.io/name: edgeflow
+    project: mall-demo
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: edgeflow
+  ports:
+    - name: http-data
+      port: 9529
+      targetPort: http-data
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: edgeflow
+  namespace: datakit
+  labels:
+    app.kubernetes.io/name: edgeflow
+    project: mall-demo
+spec:
+  serviceName: edgeflow
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: edgeflow
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: edgeflow
+        project: mall-demo
+    spec:
+      terminationGracePeriodSeconds: 180
+      nodeSelector:
+        kubernetes.io/os: linux
+        kubernetes.io/arch: amd64
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: edgeflow
+          image: pubrepo.guance.com/guance/edgeflow:1.0.1
+          imagePullPolicy: IfNotPresent
+          args: ["--config", "/app/edgeflow.toml", "run"]
+          ports:
+            - name: http-data
+              containerPort: 9529
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: edgeflow-credentials
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http-data
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-data
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: edgeflow-config
+              mountPath: /app/edgeflow.toml
+              subPath: edgeflow.toml
+              readOnly: true
+            - name: edgeflow-config
+              mountPath: /app/local-rules/tracing.dsl
+              subPath: tracing.dsl
+              readOnly: true
+            - name: edgeflow-state
+              mountPath: /app/data
+      volumes:
+        - name: edgeflow-config
+          configMap:
+            name: edgeflow-config
+        - name: edgeflow-state
+          emptyDir:
+            sizeLimit: 4Gi

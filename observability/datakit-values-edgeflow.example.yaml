@@ -1,0 +1,136 @@
+# Values for the official DataKit chart >= 2.11 (recommended: 2.19.2) with EdgeFlow Single-Sampling Mode.
+# Supply the real DataWay URL only at install time, and create `datakit-edgeflow-endpoints` Secret first:
+#
+#   helm upgrade --install datakit datakit/datakit \
+#     --version 2.19.2 \
+#     --namespace datakit \
+#     --create-namespace \
+#     -f observability/datakit-values-edgeflow.example.yaml \
+#     --set-string datakit.dataway_url="$DATAWAY_URL" \
+#     --set-string datakit.cluster_name_k8s="$EKS_CLUSTER_NAME"
+datakit:
+  dataway_url: ""
+  dataway_secret_enabled: true
+  dataway_secret_name: datakit-dataway-secret
+  dataway_secret_key: ENV_DATAWAY
+  cluster_name_k8s: observability-demo
+  global_tags: host=__datakit_hostname,host_ip=__datakit_ip,project=mall-demo
+  default_enabled_inputs: statsd,dk,cpu,disk,diskio,mem,swap,system,hostobject,net,host_processes,container,kubernetesprometheus,ebpf,ddtrace,profile,rum
+  http_listen: 0.0.0.0:9529
+  log_level: info
+
+extraEnvs:
+  - name: ENV_INPUT_CONTAINER_ENABLE_POD_METRIC
+    value: "true"
+  - name: ENV_INPUT_HOST_PROCESSES_OPEN_METRIC
+    value: "true"
+  - name: ENV_INPUT_HOST_PROCESSES_ONLY_CONTAINER_PROCESSES
+    value: "true"
+  - name: ENV_INPUT_EBPF_ENABLED_PLUGINS
+    value: "ebpf-net,ebpf-conntrack"
+  - name: ENV_INPUT_EBPF_L7NET_ENABLED
+    value: "httpflow,httpflow-tls"
+  - name: ENV_INPUT_EBPF_WORKLOAD_LABELS
+    value: "project"
+  # Pre-sampling service metrics: 100% accurate RED metrics even when EdgeFlow samples 10% of healthy traces.
+  - name: ENV_INPUT_DDTRACE_TRACING_METRIC_ENABLE
+    value: "true"
+  - name: ENV_INPUT_DDTRACE_TRACING_METRIC_TAG_WHITELIST
+    value: '["project","env","service","version","status","http_status_code","http_status_class","pod_name","pod_namespace","cluster_name_k8s"]'
+  # Route only tracing tail-sampling batches to EdgeFlow; metrics/logs/RUM/profiling stay on direct Dataway.
+  - name: ENV_AGGREGATOR_ENDPOINTS
+    valueFrom:
+      secretKeyRef:
+        name: datakit-edgeflow-endpoints
+        key: endpoints
+  - name: ENV_AGGREGATOR_TIMEOUT
+    value: "30s"
+  - name: ENV_AGGREGATOR_MAX_RAW_BODY_SIZE
+    value: "1048576"
+  - name: ENV_AGGREGATOR_USE_LOCAL_CONFIG
+    value: "true"
+  - name: ENV_AGGREGATOR_LOCAL_CONFIG_DIR
+    value: "/usr/local/datakit/conf.d/aggr"
+  - name: ENV_AGGREGATOR_LOCAL_METRIC_CONFIG_FILE
+    value: "aggr.toml"
+  - name: ENV_AGGREGATOR_LOCAL_TAIL_SAMPLING_CONFIG_FILE
+    value: "tail-sampling.toml"
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+dkconfig:
+  - path: /usr/local/datakit/conf.d/ddtrace/ddtrace.conf
+    name: ddtrace.conf
+    value: |-
+      [[inputs.ddtrace]]
+        endpoints = ["/v0.3/traces", "/v0.4/traces", "/v0.5/traces"]
+        tracing_metric_enable = true
+        tracing_metric_interval = "10s"
+        customer_tags = ["project", "demo", "component", "release", "key_request", "biz_chain", "biz_request_id", "visitor_id", "user_id", "user_tier", "auth_state", "language", "fault_id", "fault_layer", "fault_kind", "fault_target", "process_id", "host_process_id", "container_process_id", "host", "host_name", "pod_name", "pod_namespace", "container_name", "container_id", "route_class", "traffic_type", "client_ip", "user_agent", "referer"]
+        # Exclude health probes and internal demo control endpoints so service request counts match business traffic.
+        [inputs.ddtrace.close_resource]
+          "*" = ["GET /actuator/health", "GET /actuator/health/**"]
+          "order-service" = ["GET /api/demo/status", "GET /api/demo/faults", "POST /api/demo/faults/**", "POST /api/demo/edgeflow/drill", "GET /admin/fault", "POST /admin/fault/**"]
+          "inventory-service" = ["GET /admin/fault", "POST /admin/fault/**"]
+          "payment-service" = ["GET /admin/fault", "POST /admin/fault/**"]
+  - path: /usr/local/datakit/conf.d/aggr/aggr.toml
+    name: aggr.toml
+    value: |-
+      default_window = "15s"
+      action = ""
+      delete_rules_point = false
+      aggregate_rules = []
+  - path: /usr/local/datakit/conf.d/aggr/tail-sampling.toml
+    name: tail-sampling.toml
+    value: |-
+      version = 1
+
+      [trace]
+      data_ttl = "1m"
+      group_key = "trace_id"
+
+      [[trace.sampling_pipeline]]
+      name = "send-traces-to-edgeflow"
+      type = "condition"
+      condition = '{ 1 = 1 }'
+      action = "keep"
+  - path: /usr/local/datakit/conf.d/profile/profile.conf
+    name: profile.conf
+    value: |-
+      [[inputs.profile]]
+        endpoints = ["/profiling/v1/input"]
+        election = false
+        body_size_limit_mb = 64
+        generate_metrics = true
+  - path: /usr/local/datakit/conf.d/rum/rum.conf
+    name: rum.conf
+    value: |-
+      [[inputs.rum]]
+        endpoints = ["/v1/write/rum"]
+        session_replay_endpoints = ["/v1/write/rum/replay"]
+        measurements = ["view", "resource", "action", "long_task", "error", "telemetry"]
+  - path: /usr/local/datakit/conf.d/statsd/ddtrace-jvm-statsd.conf
+    name: ddtrace-jvm-statsd.conf
+    value: |-
+      [[inputs.statsd]]
+        protocol = "udp"
+        service_address = ":8125"
+        metric_separator = "_"
+        drop_tags = ["runtime-id"]
+        metric_mapping = ["jvm_:jvm", "datadog_tracer_:ddtrace"]
+        delete_gauges = true
+        delete_counters = true
+        delete_sets = true
+        delete_timings = true
+        percentiles = [50.0, 90.0, 99.0, 99.9, 99.95, 100.0]
+        parse_data_dog_tags = true
+        datadog_extensions = true
+        datadog_distributions = true
+        allowed_pending_messages = 10000
+        percentile_limit = 1000

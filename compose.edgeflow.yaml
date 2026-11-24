@@ -1,0 +1,30 @@
+# Optional Docker Compose overlay: deploy EdgeFlow 1.0.1 on the shared DataKit Docker network.
+# Usage:
+#   docker compose -f compose.yaml -f compose.datakit.yaml -f compose.edgeflow.yaml up -d --build
+#   scripts/edgeflow-rules.sh apply-docker
+#
+# EdgeFlow 1.0.1 publishes a linux/amd64 image; `platform: linux/amd64` keeps Apple Silicon hosts compatible.
+services:
+  edgeflow:
+    image: ${EDGEFLOW_IMAGE:-pubrepo.guance.com/guance/edgeflow:1.0.1}
+    platform: linux/amd64
+    container_name: ${EDGEFLOW_CONTAINER_NAME:-observability-demo-edgeflow}
+    restart: unless-stopped
+    stop_grace_period: 180s
+    command: ["--config", "/app/edgeflow.toml", "run"]
+    labels:
+      project: ${PROJECT_TAG:-mall-demo}
+    environment:
+      EDGEFLOW_ADMIN_TOKEN: ${EDGEFLOW_ADMIN_TOKEN:?set EDGEFLOW_ADMIN_TOKEN in .env}
+      EDGEFLOW_DEMO_TOKEN: ${EDGEFLOW_DEMO_TOKEN:?set EDGEFLOW_DEMO_TOKEN in .env}
+    volumes:
+      - ${EDGEFLOW_CONFIG_PATH:-./observability/edgeflow/edgeflow.toml}:/app/edgeflow.toml:ro
+      - ./observability/edgeflow/rules:/app/local-rules:ro
+      - edgeflow-state:/app/data
+    networks:
+      - default
+      - datakit
+
+volumes:
+  edgeflow-state:
+    name: ${COMPOSE_PROJECT_NAME:-observability-demo}-edgeflow-state

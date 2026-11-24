@@ -1,0 +1,5 @@
+# DataKit Aggregator metric rules (kept empty so only tracing tail-sampling is routed to EdgeFlow).
+default_window = "15s"
+action = ""
+delete_rules_point = false
+aggregate_rules = []

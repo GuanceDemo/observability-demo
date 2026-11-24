@@ -1,0 +1,14 @@
+# DataKit Aggregator trace forwarding config for EdgeFlow Single-Sampling Mode.
+# `action = "keep"` here means forward all trace groups to EdgeFlow; actual retention/drop/sampling
+# decisions are governed by EdgeFlow's local `rules/tracing.dsl`.
+version = 1
+
+[trace]
+data_ttl = "1m"
+group_key = "trace_id"
+
+[[trace.sampling_pipeline]]
+name = "send-traces-to-edgeflow"
+type = "condition"
+condition = '{ 1 = 1 }'
+action = "keep"

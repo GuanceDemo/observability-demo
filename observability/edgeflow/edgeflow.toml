@@ -1,0 +1,20 @@
+# EdgeFlow 1.0.1 runtime configuration for Observability Demo (Single-Sampling Mode).
+# Secret tokens are supplied exclusively via environment variables (never committed here):
+#   EDGEFLOW_ADMIN_TOKEN  -> local admin credential for `edgeflow rules apply`
+#   EDGEFLOW_DEMO_TOKEN   -> workspace Dataway token (same token as DataKit dataway_url)
+#
+# For private or regional Dataway endpoints (e.g. https://cn4-openway.guance.com),
+# copy this file locally and adjust upstream_url without adding path or ?token=...
+
+listen = "0.0.0.0:9529"
+admin_listen = "127.0.0.1:9530"
+upstream_url = "https://openway.guance.com"
+admin_token_env = "EDGEFLOW_ADMIN_TOKEN"
+
+[state]
+mode = "memory_spill"
+path = "/app/data/edgeflow.state"
+max_bytes = 2147483648
+
+[workspaces.demo]
+token_env = "EDGEFLOW_DEMO_TOKEN"
