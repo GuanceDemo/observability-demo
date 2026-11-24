@@ -311,7 +311,21 @@ class DemoController {
               180,
               false,
               List.of("web", "android", "ios"),
-              List.of("bookstore", "mobile-storefront")));
+              List.of("bookstore", "mobile-storefront")),
+          new FaultScenario(
+              "edgeflow_tail_sampling",
+              "EdgeFlow 尾采样对比压测",
+              "telemetry",
+              "tail_sampling_drill",
+              "edgeflow",
+              "gateway → datakit → edgeflow",
+              "edgeflow_drill",
+              "一键发送 20 次未注册扫描探测（404）、100 次正常健康下单与 5 次第 4 跳支付 5xx 故障下单，压测后自动恢复无故障状态。",
+              "公网扫描 0 入库、普通健康链路仅存约 10 条（省 90% 流量与存储）、5 条支付故障链路 100% 完整保留，且 APM 服务监控总请求数精确显示 105 次。",
+              0,
+              false,
+              List.of("web"),
+              List.of("bookstore")));
 
   private final RestTemplate restTemplate;
   private final String orderUrl;
@@ -340,6 +354,9 @@ class DemoController {
   private final String mobileDeviceApkMinAndroidVersion;
   @Value("${demo.vehicle.enabled:false}")
   private boolean vehicleEnabled;
+  @Value("${demo.gateway-url:http://127.0.0.1:8080}")
+  private String gatewayUrl = "http://127.0.0.1:8080";
+  private EdgeFlowDrillRunner edgeFlowDrillRunner = new EdgeFlowDrillRunner();
   private final boolean kubernetesLogReaderEnabled;
   private final BackendLogReader backendLogReader;
 
@@ -559,6 +576,10 @@ class DemoController {
       response.put("message", "client-side scenario must be triggered by a supported client");
       return response;
     }
+    if ("edgeflow_tail_sampling".equals(scenario.id())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "use POST /api/demo/edgeflow/drill to run this drill");
+    }
 
     response.put("cleared", disableBackendFaults());
     String url =
@@ -647,6 +668,24 @@ class DemoController {
             .toList());
     response.put("timestamp", Instant.now().toString());
     return response;
+  }
+
+  @PostMapping("/edgeflow/drill")
+  Map<String, Object> runEdgeFlowDrill() {
+    String langCode = DemoLanguage.current().code();
+    return edgeFlowDrillRunner.execute(
+        gatewayUrl,
+        langCode,
+        this::disableBackendFaults,
+        () -> forwardPost(paymentUrl + "/admin/fault/payment_error?ttlSeconds=60"));
+  }
+
+  void setGatewayUrl(String gatewayUrl) {
+    this.gatewayUrl = gatewayUrl;
+  }
+
+  void setEdgeFlowDrillRunner(EdgeFlowDrillRunner edgeFlowDrillRunner) {
+    this.edgeFlowDrillRunner = edgeFlowDrillRunner;
   }
 
   private Map<String, Object> forwardPost(String url) {

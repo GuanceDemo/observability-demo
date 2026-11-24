@@ -178,6 +178,8 @@ class PublicRoutePolicyTest {
             new RouteExpectation("GET", "/api/demo/logs", "demo.logs", "demo_api"),
             new RouteExpectation("POST", "/api/demo/warmup", "demo.warmup", "demo_api"),
             new RouteExpectation(
+                "POST", "/api/demo/edgeflow/drill", "demo.edgeflow.drill", "demo_api"),
+            new RouteExpectation(
                 "POST", "/rum-proxy/v1/write/rum", "rum.write", "rum_intake"),
             new RouteExpectation(
                 "PUT", "/rum-proxy/v1/write/rum/replay", "rum.replay", "rum_intake"),

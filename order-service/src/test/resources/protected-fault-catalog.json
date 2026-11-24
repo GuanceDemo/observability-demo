@@ -234,5 +234,25 @@
       "bookstore",
       "mobile-storefront"
     ]
+  },
+  {
+    "id": "edgeflow_tail_sampling",
+    "title": "EdgeFlow 尾采样对比压测",
+    "layer": "telemetry",
+    "kind": "tail_sampling_drill",
+    "service": "edgeflow",
+    "target": "gateway → datakit → edgeflow",
+    "mode": "edgeflow_drill",
+    "description": "一键发送 20 次未注册扫描探测（404）、100 次正常健康下单与 5 次第 4 跳支付 5xx 故障下单，压测后自动恢复无故障状态。",
+    "expectedObservation": "公网扫描 0 入库、普通健康链路仅存约 10 条（省 90% 流量与存储）、5 条支付故障链路 100% 完整保留，且 APM 服务监控总请求数精确显示 105 次。",
+    "ttlSeconds": 0,
+    "clientSide": false,
+    "execution": "server",
+    "platforms": [
+      "web"
+    ],
+    "scenes": [
+      "bookstore"
+    ]
   }
 ]

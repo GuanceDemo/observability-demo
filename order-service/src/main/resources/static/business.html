@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>商城 Demo 与故障注入 Demo</title>
   <link rel="icon" href="data:," />
-  <script src="assets/selfheal-i18n.js?v=20260916-android-errors-v1"></script>
+  <script src="assets/selfheal-i18n.js?v=20261124-edgeflow-v1"></script>
   <script>
     (() => {
       try {
@@ -700,6 +700,11 @@
     .trace-link.rum-view-link {
       background: #6554c0;
       box-shadow: 0 10px 22px rgba(101, 84, 192, .18);
+    }
+
+    .trace-link.apm-service-link {
+      background: #0f766e;
+      box-shadow: 0 10px 22px rgba(15, 118, 110, .18);
     }
 
     .trace-link.disabled {
@@ -2668,6 +2673,7 @@
                 <div id="observabilityDelayHint" class="observability-delay-hint" data-i18n="parentObservabilityDelayHint" hidden>数据写入平台约有 1 分钟延迟，请稍后查看。</div>
                 <a id="observabilityRumViewLink" class="trace-link rum-view-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="parentRumViewLinkOpen" hidden>打开 RUM View</a>
                 <a id="observabilityTraceLink" class="trace-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" data-i18n="parentTraceLinkOpen" hidden>打开链路详情</a>
+                <a id="observabilityApmServiceLink" class="trace-link apm-service-link disabled" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true" hidden>打开 APM 服务监控</a>
               </div>
             </section>
           </div>
@@ -2763,12 +2769,13 @@
     const FAULT_LAYER_GROUPS = [
       { id: 'frontend', layers: ['frontend'], labelKey: 'layerFrontend' },
       { id: 'backend', layers: ['service'], labelKey: 'layerBackend' },
-      { id: 'infrastructure', layers: ['dependency', 'jvm'], labelKey: 'layerInfrastructure' },
+      { id: 'infrastructure', layers: ['dependency', 'jvm', 'telemetry'], labelKey: 'layerInfrastructure' },
     ];
     const FAULT_KIND_LABEL_KEYS = Object.freeze({
       long_task: 'faultKindLongTask',
       render_overload: 'faultKindRenderOverload',
       resource_error: 'faultKindResourceError',
+      tail_sampling_drill: 'faultKindTailSamplingDrill',
     });
 
     function initialSceneId() {
@@ -2800,6 +2807,7 @@
       activeGameId: null,
       sceneRumContext: null,
       lastTraceIds: [],
+      lastEdgeflowDrill: null,
       lastRumViewContext: null,
       traceLookupSeq: 0,
       faultRecords: [],
@@ -2918,6 +2926,7 @@
       observabilityDelayHint: document.getElementById('observabilityDelayHint'),
       observabilityRumViewLink: document.getElementById('observabilityRumViewLink'),
       observabilityTraceLink: document.getElementById('observabilityTraceLink'),
+      observabilityApmServiceLink: document.getElementById('observabilityApmServiceLink'),
       faultLayerTabs: document.getElementById('faultLayerTabs'),
       faultScenarioTabs: document.getElementById('faultScenarioTabs'),
       faultDetailTitle: document.getElementById('faultDetailTitle'),
@@ -4262,8 +4271,11 @@
 
     function updateObservabilityDelayHint() {
       if (!els.observabilityDelayHint) return;
-      const hasReadyLink = [els.observabilityRumViewLink, els.observabilityTraceLink]
+      const hasReadyLink = [els.observabilityRumViewLink, els.observabilityTraceLink, els.observabilityApmServiceLink]
         .some((link) => link && !link.hidden && link.getAttribute('aria-disabled') !== 'true');
+      els.observabilityDelayHint.textContent = state.lastEdgeflowDrill
+        ? t('parentEdgeflowDelayHint')
+        : t('parentObservabilityDelayHint');
       els.observabilityDelayHint.hidden = !hasReadyLink;
     }
 
@@ -4310,9 +4322,138 @@
       return url.toString();
     }
 
+    function normalizeEdgeflowDrillContext(body) {
+      if (!body || typeof body !== 'object') return null;
+      const batchId = String(body.batchId || '').trim();
+      const traceQuery = String(body.traceQuery || '').trim();
+      if (!batchId || !traceQuery) return null;
+      const windowStartSec = Number(body.windowStartSec);
+      const windowEndSec = Number(body.windowEndSec);
+      return {
+        batchId,
+        traceQuery,
+        serviceName: String(body.serviceName || 'order-service').trim() || 'order-service',
+        scannerProbeCount: Number(body.scannerProbeCount) || 20,
+        scannerRejected404Count: Number(body.scannerRejected404Count) || 0,
+        healthyOrderCount: Number(body.healthyOrderCount) || 100,
+        healthySuccessCount: Number(body.healthySuccessCount) || 0,
+        paymentErrorOrderCount: Number(body.paymentErrorOrderCount) || 5,
+        paymentError5xxCount: Number(body.paymentError5xxCount) || 0,
+        businessOrderTotal: Number(body.businessOrderTotal) || 105,
+        windowStartSec: Number.isFinite(windowStartSec) && windowStartSec > 0 ? Math.floor(windowStartSec) : 0,
+        windowEndSec: Number.isFinite(windowEndSec) && windowEndSec > 0 ? Math.floor(windowEndSec) : 0,
+      };
+    }
+
+    function formatObservabilityTimeWindow(drill) {
+      if (drill && drill.windowStartSec > 0 && drill.windowEndSec >= drill.windowStartSec) {
+        return `${drill.windowStartSec},${drill.windowEndSec}`;
+      }
+      return '15m';
+    }
+
+    function buildObservabilityEdgeflowTraceUrl(drill) {
+      if (!drill || !state.demoConfig.observabilityConsoleUrl || !state.demoConfig.workspaceId) return '';
+      const url = new URL('/tracing/link', state.demoConfig.observabilityConsoleUrl);
+      Object.entries({
+        lak: 'Tracing',
+        activeName: 'LinkToTrackLink',
+        w: state.demoConfig.workspaceId,
+        time: formatObservabilityTimeWindow(drill),
+        mode: 'traceid',
+        cols: 'time,trace_id,service,resource,status,duration',
+        viewType: 'view',
+        refresh: '10',
+        query: encodeObservabilityQuery(drill.traceQuery),
+      }).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+      return url.toString();
+    }
+
+    function buildObservabilityApmServiceUrl(drill) {
+      if (!drill || !state.demoConfig.observabilityConsoleUrl || !state.demoConfig.workspaceId) return '';
+      const url = new URL('/tracing/service/detail/dashboard', state.demoConfig.observabilityConsoleUrl);
+      Object.entries({
+        lak: 'Tracing',
+        w: state.demoConfig.workspaceId,
+        fixed_query: `service:${drill.serviceName}`,
+        time: formatObservabilityTimeWindow(drill),
+      }).forEach(([key, value]) => {
+        url.searchParams.set(key, value);
+      });
+      return url.toString();
+    }
+
+    function hideObservabilityApmServiceLink() {
+      if (!els.observabilityApmServiceLink) return;
+      els.observabilityApmServiceLink.hidden = true;
+      els.observabilityApmServiceLink.href = '#';
+      els.observabilityApmServiceLink.classList.add('disabled');
+      els.observabilityApmServiceLink.setAttribute('aria-disabled', 'true');
+    }
+
+    function updateObservabilityEdgeflowLinks(context) {
+      if (arguments.length > 0) {
+        state.lastEdgeflowDrill = normalizeEdgeflowDrillContext(context);
+      }
+      const drill = state.lastEdgeflowDrill;
+      if (!drill) {
+        hideObservabilityApmServiceLink();
+        updateObservabilityDelayHint();
+        return;
+      }
+      state.lastTraceIds = [];
+      const traceUrl = buildObservabilityEdgeflowTraceUrl(drill);
+      const apmUrl = buildObservabilityApmServiceUrl(drill);
+      const hasConsole = Boolean(traceUrl && apmUrl);
+
+      if (els.observabilityTraceLink) {
+        els.observabilityTraceLink.hidden = false;
+        els.observabilityTraceLink.href = traceUrl || '#';
+        els.observabilityTraceLink.dataset.copyTrace = traceUrl ? 'false' : 'true';
+        els.observabilityTraceLink.dataset.copyValue = traceUrl ? '' : drill.traceQuery;
+        els.observabilityTraceLink.textContent = t('parentEdgeflowTraceLinkOpen', {
+          errorCount: drill.paymentErrorOrderCount,
+        });
+        els.observabilityTraceLink.classList.remove('disabled');
+        els.observabilityTraceLink.setAttribute('aria-disabled', 'false');
+      }
+
+      if (els.observabilityApmServiceLink) {
+        els.observabilityApmServiceLink.hidden = !hasConsole;
+        els.observabilityApmServiceLink.href = apmUrl || '#';
+        els.observabilityApmServiceLink.textContent = t('parentEdgeflowApmLinkOpen', {
+          total: drill.businessOrderTotal,
+        });
+        els.observabilityApmServiceLink.classList.toggle('disabled', !hasConsole);
+        els.observabilityApmServiceLink.setAttribute('aria-disabled', hasConsole ? 'false' : 'true');
+      }
+
+      if (els.traceLinkHint) {
+        els.traceLinkHint.textContent = hasConsole
+          ? t('parentEdgeflowLinksReady', {
+              batchId: drill.batchId,
+              errorCount: drill.paymentErrorOrderCount,
+              businessTotal: drill.businessOrderTotal,
+            })
+          : t('parentEdgeflowLinksCopyFallback', {
+              batchId: drill.batchId,
+              businessTotal: drill.businessOrderTotal,
+              query: drill.traceQuery,
+            });
+      }
+      updateObservabilityDelayHint();
+    }
+
     function updateObservabilityTraceLink(traceIds) {
       if (arguments.length > 0) {
+        state.lastEdgeflowDrill = null;
+        hideObservabilityApmServiceLink();
         state.lastTraceIds = normalizeTraceIds(traceIds);
+      } else if (state.lastEdgeflowDrill) {
+        updateObservabilityEdgeflowLinks();
+        return;
       }
       const ids = normalizeTraceIds(state.lastTraceIds);
       const hasTrace = ids.length > 0;
@@ -4321,6 +4462,8 @@
         els.observabilityTraceLink.hidden = !hasTrace;
         els.observabilityTraceLink.href = traceUrl || '#';
         els.observabilityTraceLink.dataset.copyTrace = traceUrl ? 'false' : 'true';
+        els.observabilityTraceLink.dataset.copyValue = '';
+        els.observabilityTraceLink.textContent = t('parentTraceLinkOpen');
         els.observabilityTraceLink.classList.toggle('disabled', !hasTrace);
         els.observabilityTraceLink.setAttribute('aria-disabled', hasTrace ? 'false' : 'true');
       }
@@ -4337,6 +4480,8 @@
     }
 
     function resetObservabilityLinks() {
+      state.lastEdgeflowDrill = null;
+      hideObservabilityApmServiceLink();
       updateObservabilityRumViewLink(null);
       updateObservabilityTraceLink([]);
     }
@@ -4635,6 +4780,9 @@
 
     function renderFaultDetail(scenario) {
       const item = localizedScenario(scenario);
+      if (els.faultBtn) {
+        els.faultBtn.textContent = t('parentInjectFault');
+      }
       if (!item) {
         const gameHome = state.selectedSceneId === 'webgl-game' && state.activeGameId !== 'air-battle';
         els.faultDetailTitle.textContent = t(gameHome ? 'parentGameFaultEnterTitle' : 'parentFaultLoadingTitle');
@@ -4647,12 +4795,19 @@
         return;
       }
 
+      if (els.faultBtn) {
+        els.faultBtn.textContent = item.id === 'edgeflow_tail_sampling'
+          ? t('parentRunEdgeflowDrill')
+          : t('parentInjectFault');
+      }
       els.faultDetailTitle.textContent = item.localizedTitle;
       els.faultDetailKind.textContent = `${item.localizedLayer} · ${item.localizedKind}`;
       els.faultDetailDesc.textContent = item.localizedDescription;
       els.faultDetailService.textContent = `service=${item.service || '-'}`;
       els.faultDetailTarget.textContent = `target=${item.target || '-'}`;
-      els.faultDetailTtl.textContent = item.clientSide ? 'ttl=browser' : `ttl=${item.ttlSeconds || 0}s`;
+      els.faultDetailTtl.textContent = item.id === 'edgeflow_tail_sampling'
+        ? 'batch=125'
+        : (item.clientSide ? 'ttl=browser' : `ttl=${item.ttlSeconds || 0}s`);
       els.faultObservation.textContent = item.localizedObservation;
     }
 
@@ -4762,9 +4917,50 @@
       log(clientFaultHint(scenario), { title: t('parentLogPanel'), status: 'warn' });
     }
 
+    async function runEdgeflowDrill(scenario) {
+      const item = localizedScenario(scenario);
+      const recordId = startFaultRecord(scenario);
+      setBusy(true);
+      try {
+        state.activeClientFault = null;
+        state.activeClientFaultTriggeredAt = 0;
+        resetObservabilityLinks();
+        sendShopMessage('clear-client-fault');
+        setFaultStatus('none');
+
+        const { response, body } = await requestJson('/api/demo/edgeflow/drill', { method: 'POST' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        updateObservabilityEdgeflowLinks(body);
+        updateFaultRecord(recordId, {
+          status: 'closed',
+          triggerCount: Number(body?.totalRequests) || 125,
+        });
+        log(t('parentEdgeflowDrillDone', {
+          batchId: body?.batchId || '-',
+          scanner404: body?.scannerRejected404Count ?? 0,
+          healthyOk: body?.healthySuccessCount ?? 0,
+          error5xx: body?.paymentError5xxCount ?? 0,
+          businessTotal: body?.businessOrderTotal ?? 105,
+        }), { title: t('parentFaultPanel'), status: 'info' });
+      } catch (error) {
+        updateFaultRecord(recordId, { status: 'failed', error: error.message });
+        log(t('parentFaultInjectFailed', {
+          title: item?.localizedTitle || scenario.id,
+          message: error.message,
+        }), { status: 'error' });
+      } finally {
+        setBusy(false);
+        refreshStatus();
+      }
+    }
+
     async function enableFaultScenario(scenarioId) {
       if (state.selectedSceneId === 'webgl-game' && state.activeGameId !== 'air-battle') return;
       const scenario = state.faults.find((item) => item.id === scenarioId) || { id: scenarioId, title: scenarioId };
+      if (scenario.id === 'edgeflow_tail_sampling') {
+        await runEdgeflowDrill(scenario);
+        return;
+      }
       const item = localizedScenario(scenario);
       const recordId = startFaultRecord(scenario);
       setBusy(true);
@@ -5264,7 +5460,9 @@
         }
         if (els.observabilityTraceLink.dataset.copyTrace === 'true') {
           event.preventDefault();
-          await navigator.clipboard.writeText(normalizeTraceIds(state.lastTraceIds).join('\n'));
+          const copyText = els.observabilityTraceLink.dataset.copyValue
+            || normalizeTraceIds(state.lastTraceIds).join('\n');
+          if (copyText) await navigator.clipboard.writeText(copyText);
         }
       });
     }

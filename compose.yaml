@@ -131,6 +131,7 @@ services:
       INVENTORY_URL: http://inventory-service:8081
       PAYMENT_URL: http://payment-service:8082
       ORDER_URL: http://order-service:8080
+      GATEWAY_URL: http://gateway-service:8080
       KUBERNETES_LOG_READER_ENABLED: "false"
       DEMO_LOG_DIRECTORY: /var/log/observability-demo
       RUM_ENABLED: ${RUM_ENABLED:-false}

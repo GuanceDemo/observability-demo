@@ -356,6 +356,12 @@ final class PublicRoutePolicy {
               "demo.warmup",
               "demo_api"),
           RouteRule.exact(
+              Set.of("POST"),
+              "/api/demo/edgeflow/drill",
+              Action.FORWARD,
+              "demo.edgeflow.drill",
+              "demo_api"),
+          RouteRule.exact(
               RUM_METHODS,
               "/rum-proxy/v1/write/rum",
               Action.FORWARD,

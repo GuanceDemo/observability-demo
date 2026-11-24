@@ -5,6 +5,7 @@
 - `POST /api/demo/faults/{scenarioId}/enable`
 - `POST /api/demo/faults/off`
 - `POST /api/demo/warmup`
+- `POST /api/demo/edgeflow/drill`
 
 
 | scenarioId | 执行 | 平台 | 场景 | 层级 / 目标 | 预期观察 |
@@ -23,6 +24,7 @@
 | `payment_slow` | server | web, android, ios | bookstore, mobile-storefront | 服务 / payment-service | 慢 Span、慢方法与 Profile |
 | `payment_error` | server | web, android, ios | bookstore, mobile-storefront | 服务 / payment-service | HTTP 5xx、ERROR 日志、错误中心、错误率和失败 Trace |
 | `payment_cpu_burn` | server | web, android, ios | bookstore, mobile-storefront | JVM / payment-service | CPU、JVM 与 Profile 热点 |
+| `edgeflow_tail_sampling` | server | web | bookstore | 基础设施 / gateway → datakit → edgeflow | 20 次扫描 0 入库、100 次健康存约 10 条、5 次支付 5xx 100% 保留，且 APM 服务监控总请求精确 105 次 |
 | `game_render_overload` | client | web | webgl-game | 前端 / WebGL 主线程 | 约 10 秒粒子风暴、12 FPS 持续掉帧、开始/恢复 Action、多段 Long Task 与 Replay 画面 |
 | `game_asset_load_failure` | client | web | webgl-game | 前端 / 资源加载 | 缺失护盾纹理产生两次 404 Resource、一条 handled Error、失败/重试/恢复 Action 与约 10 秒 Replay 可见降级材质 |
 

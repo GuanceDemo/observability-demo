@@ -749,7 +749,7 @@ class OrderControllerTest {
         .contains("const SHOP_BUILD_ID = '20260817-bookstore-v44'")
         .contains("const GAME_BUILD_ID = '20260915-game-hub-v2'")
         .contains("scene.id === 'webgl-game' ? GAME_BUILD_ID : SHOP_BUILD_ID")
-        .contains("assets/selfheal-i18n.js?v=20260916-android-errors-v1")
+        .contains("assets/selfheal-i18n.js?v=20261124-edgeflow-v1")
         .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
         .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
         .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")
@@ -822,6 +822,13 @@ class OrderControllerTest {
         .contains("id=\"observabilityRumViewLink\"")
         .contains("data-i18n=\"parentRumViewLinkOpen\" hidden")
         .contains("id=\"observabilityTraceLink\"")
+        .contains("id=\"observabilityRumViewLink\"")
+        .contains("id=\"observabilityTraceLink\"")
+        .contains("id=\"observabilityApmServiceLink\"")
+        .contains("new URL('/tracing/service/detail/dashboard', state.demoConfig.observabilityConsoleUrl)")
+        .contains("fixed_query: `service:${drill.serviceName}`")
+        .contains("/api/demo/edgeflow/drill")
+        .contains("edgeflow_tail_sampling")
         .contains("data-i18n=\"parentTraceLinkOpen\" hidden")
         .contains("id=\"observabilityDelayHint\"")
         .contains("data-i18n=\"parentObservabilityDelayHint\" hidden")
@@ -1008,7 +1015,7 @@ class OrderControllerTest {
     demoMvc
         .perform(get("/api/demo/faults"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items.length()").value(20))
+        .andExpect(jsonPath("$.items.length()").value(21))
         .andExpect(jsonPath("$.items[*].scenes").value(everyItem(not(empty()))))
         .andExpect(jsonPath("$.items[0].id").value("frontend_click_error"))
         .andExpect(jsonPath("$.items[0].service").value("mall-h5"))
@@ -1024,7 +1031,10 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.items[16].execution").value("server"))
         .andExpect(jsonPath("$.items[16].platforms[2]").value("ios"))
         .andExpect(jsonPath("$.items[16].expectedObservation").isNotEmpty())
-;
+        .andExpect(jsonPath("$.items[20].id").value("edgeflow_tail_sampling"))
+        .andExpect(jsonPath("$.items[20].layer").value("telemetry"))
+        .andExpect(jsonPath("$.items[20].platforms[0]").value("web"))
+        .andExpect(jsonPath("$.items[20].scenes[0]").value("bookstore"));
   }
 
   @Test
@@ -1096,6 +1106,109 @@ class OrderControllerTest {
     demoMvc
         .perform(post("/api/demo/warmup"))
         .andExpect(status().isOk());
+  }
+
+  @Test
+  void edgeFlowDrillSendsExact125RequestsWithoutParentTraceAndRestoresFaults() throws Exception {
+    java.util.concurrent.atomic.AtomicBoolean paymentFaultActive =
+        new java.util.concurrent.atomic.AtomicBoolean(false);
+    java.util.List<String> receivedPaths =
+        java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+    java.util.List<String> receivedBizIds =
+        java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+    java.util.List<String> leakedTraceHeaders =
+        java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+
+    com.sun.net.httpserver.HttpServer gatewayStub =
+        com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress("127.0.0.1", 0), 0);
+    gatewayStub.setExecutor(java.util.concurrent.Executors.newFixedThreadPool(6));
+    gatewayStub.createContext(
+        "/",
+        exchange -> {
+          String path = exchange.getRequestURI().getPath();
+          receivedPaths.add(path);
+          String bizId = exchange.getRequestHeaders().getFirst("X-Business-Request-Id");
+          if (bizId != null) {
+            receivedBizIds.add(bizId);
+          }
+          for (String header : List.of("x-datadog-trace-id", "x-datadog-parent-id", "traceparent")) {
+            if (exchange.getRequestHeaders().containsKey(header)) {
+              leakedTraceHeaders.add(header);
+            }
+          }
+          int code;
+          byte[] payload;
+          if (path.startsWith("/edgeflow-probe/unmatched-")) {
+            code = 404;
+            payload = "{\"error\":\"not_found\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+          } else if ("/api/orders/demo".equals(path)) {
+            code = paymentFaultActive.get() ? 503 : 200;
+            payload =
+                (paymentFaultActive.get() ? "{\"status\":\"FAILED\"}" : "{\"status\":\"CONFIRMED\"}")
+                    .getBytes(java.nio.charset.StandardCharsets.UTF_8);
+          } else {
+            code = 400;
+            payload = "{}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+          }
+          exchange.getResponseHeaders().set("Content-Type", "application/json");
+          exchange.sendResponseHeaders(code, payload.length);
+          exchange.getResponseBody().write(payload);
+          exchange.close();
+        });
+    gatewayStub.start();
+
+    try {
+      RestTemplate controlRestTemplate =
+          new RestTemplate() {
+            @Override
+            public <T> T postForObject(String url, Object request, Class<T> responseType, Object... uriVariables) {
+              if (url.contains("/admin/fault/payment_error")) {
+                paymentFaultActive.set(true);
+              } else if (url.endsWith("/admin/fault/off") && url.contains("payment-service")) {
+                paymentFaultActive.set(false);
+              }
+              return responseType.cast(java.util.Map.of("status", "OK", "url", url));
+            }
+          };
+
+      DemoController controller = newDemoController(controlRestTemplate);
+      controller.setGatewayUrl("http://127.0.0.1:" + gatewayStub.getAddress().getPort());
+      controller.setEdgeFlowDrillRunner(new EdgeFlowDrillRunner(() -> 1_795_509_000_000L));
+      MockMvc demoMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+      demoMvc
+          .perform(post("/api/demo/faults/edgeflow_tail_sampling/enable"))
+          .andExpect(status().isBadRequest());
+
+      demoMvc
+          .perform(post("/api/demo/edgeflow/drill").header("X-Demo-Language", "en"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.status").value("COMPLETED"))
+          .andExpect(jsonPath("$.scannerProbeCount").value(20))
+          .andExpect(jsonPath("$.scannerRejected404Count").value(20))
+          .andExpect(jsonPath("$.healthyOrderCount").value(100))
+          .andExpect(jsonPath("$.healthySuccessCount").value(100))
+          .andExpect(jsonPath("$.paymentErrorOrderCount").value(5))
+          .andExpect(jsonPath("$.paymentError5xxCount").value(5))
+          .andExpect(jsonPath("$.businessOrderTotal").value(105))
+          .andExpect(jsonPath("$.totalRequests").value(125))
+          .andExpect(jsonPath("$.serviceName").value("order-service"))
+          .andExpect(jsonPath("$.windowStartSec").value(1_795_508_995L))
+          .andExpect(jsonPath("$.windowEndSec").value(1_795_509_035L))
+          .andExpect(jsonPath("$.faultsRestored").value(true));
+
+      assertThat(paymentFaultActive.get()).isFalse();
+      assertThat(leakedTraceHeaders).isEmpty();
+      assertThat(receivedPaths).hasSize(125);
+      assertThat(receivedPaths.stream().filter(p -> p.startsWith("/edgeflow-probe/unmatched-")).count())
+          .isEqualTo(20L);
+      assertThat(receivedPaths.stream().filter("/api/orders/demo"::equals).count())
+          .isEqualTo(105L);
+      assertThat(receivedBizIds).hasSize(125);
+      assertThat(new java.util.HashSet<>(receivedBizIds)).hasSize(125);
+    } finally {
+      gatewayStub.stop(0);
+    }
   }
 
   @Test

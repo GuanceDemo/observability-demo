@@ -79,6 +79,29 @@ class GatewayMvcIntegrationTest {
   }
 
   @Test
+  void forwardsEdgeFlowDrillAndRejectsScannerProbeAsUnmatched() throws Exception {
+    downstream
+        .expect(requestTo("http://order-service.test/api/demo/edgeflow/drill"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withSuccess("{\"status\":\"COMPLETED\"}", MediaType.APPLICATION_JSON));
+
+    mockMvc
+        .perform(post("/api/demo/edgeflow/drill"))
+        .andExpect(status().isOk())
+        .andExpect(
+            request()
+                .attribute(
+                    HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE,
+                    "/api/demo/edgeflow/drill"));
+
+    mockMvc
+        .perform(get("/edgeflow-probe/unmatched-01"))
+        .andExpect(status().isNotFound());
+
+    downstream.verify();
+  }
+
+  @Test
   void leavesActuatorRequestsToActuatorHandlerMappings() throws Exception {
     mockMvc
         .perform(get("/actuator/health"))
