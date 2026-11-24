@@ -121,8 +121,8 @@ test('EdgeFlow drill populates exact Trace batch link and APM service monitoring
   }, 'zh');
 
   vm.runInContext(`updateObservabilityEdgeflowLinks({
-    batchId: 'ef-6b0a1-123456',
-    traceQuery: 'key_request:ef-6b0a1-123456',
+    batchId: 'ef-demo',
+    traceQuery: 'key_request:ef-demo',
     serviceName: 'order-service',
     scannerProbeCount: 20,
     healthyOrderCount: 100,
@@ -141,7 +141,7 @@ test('EdgeFlow drill populates exact Trace batch link and APM service monitoring
   assert.equal(traceUrl.searchParams.get('time'), '1795508995,1795509035');
   assert.equal(
     Buffer.from(traceUrl.searchParams.get('query').replace(/^b64-/, ''), 'base64').toString('utf8'),
-    'key_request:ef-6b0a1-123456',
+    'key_request:ef-demo',
   );
 
   assert.equal(els.observabilityApmServiceLink.hidden, false);
