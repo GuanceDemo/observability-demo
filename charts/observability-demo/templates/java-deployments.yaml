@@ -225,7 +225,9 @@ spec:
             - name: ORDER_URL
               value: http://{{ include "observability-demo.fullname" $ }}-order-service:8080
             - name: GATEWAY_URL
-              value: http://{{ include "observability-demo.fullname" $ }}-gateway-service:8080
+              value: http://{{ include "observability-demo.fullname" $ }}-gateway-service:80
+            - name: DEMO_GATEWAY_URL
+              value: http://{{ include "observability-demo.fullname" $ }}-gateway-service:80
             - name: KUBERNETES_LOG_READER_ENABLED
               value: {{ $.Values.logViewer.enabled | quote }}
             - name: RUM_ENABLED

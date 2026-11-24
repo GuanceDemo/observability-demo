@@ -354,7 +354,7 @@ class DemoController {
   private final String mobileDeviceApkMinAndroidVersion;
   @Value("${demo.vehicle.enabled:false}")
   private boolean vehicleEnabled;
-  @Value("${demo.gateway-url:http://127.0.0.1:8080}")
+  @Value("${gateway.url:${demo.gateway-url:http://127.0.0.1:8080}}")
   private String gatewayUrl = "http://127.0.0.1:8080";
   private EdgeFlowDrillRunner edgeFlowDrillRunner = new EdgeFlowDrillRunner();
   private final boolean kubernetesLogReaderEnabled;
