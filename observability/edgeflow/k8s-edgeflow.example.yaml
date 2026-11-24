@@ -110,7 +110,7 @@ spec:
         - name: edgeflow
           image: pubrepo.guance.com/guance/edgeflow:1.0.1
           imagePullPolicy: IfNotPresent
-          args: ["--config", "/app/edgeflow.toml", "run"]
+          args: ["run"]
           ports:
             - name: http-data
               containerPort: 9529
