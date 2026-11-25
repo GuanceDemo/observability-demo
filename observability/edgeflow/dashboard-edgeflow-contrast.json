@@ -1,0 +1,543 @@
+{
+  "title": "EdgeFlow 尾采样效果对比（全量指标 vs 抽样链路）",
+  "dashboardType": "CUSTOM",
+  "dashboardExtend": {
+    "groupUnfoldStatus": {
+      "核心对比概览": true,
+      "采样前全量指标 vs 采样后入库链路": true
+    }
+  },
+  "dashboardMapping": [],
+  "dashboardOwnerType": "node",
+  "iconSet": {
+    "url": "",
+    "icon": ""
+  },
+  "dashboardBindSet": [],
+  "thumbnail": "",
+  "tagInfo": [],
+  "summary": "对比 EdgeFlow 尾采样前（M::tracing_metrics 预聚合全量指标）与尾采样后（T:: 实际入库 Trace 明细），验证公网扫描 404 丢弃、健康链路 10% 抽样、支付错误 100% 保留及真实错误率不失真。",
+  "main": {
+    "vars": [],
+    "groups": [
+      {
+        "uuid": "chgp_edgeflow_overview_0001",
+        "name": "核心对比概览",
+        "extend": {
+          "isExpanded": true,
+          "bgColor": "#60A5FA"
+        }
+      },
+      {
+        "uuid": "chgp_edgeflow_contrast_0002",
+        "name": "采样前全量指标 vs 采样后入库链路",
+        "extend": {
+          "isExpanded": true,
+          "bgColor": "#22D3EE"
+        }
+      }
+    ],
+    "charts": [
+      {
+        "uuid": "chrt_ef_kpi_total_http_01",
+        "name": "采样前 · 网关 HTTP 全量请求 (M::tracing_metrics)",
+        "type": "singlestat",
+        "group": "核心对比概览",
+        "chartGroupUUID": "chgp_edgeflow_overview_0001",
+        "prevGroupName": "",
+        "pos": {
+          "x": 0,
+          "y": 0,
+          "w": 6,
+          "h": 6
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "singlestat",
+            "showTitle": true,
+            "showLegend": false,
+            "precision": "0",
+            "decimalPlaces": 0,
+            "openThousandsSeparator": true,
+            "fontColor": "#2563EB",
+            "bgColor": "rgba(37,99,235,0.06)",
+            "borderColor": "#E5E7EB",
+            "units": [
+              [
+                "custom",
+                ""
+              ]
+            ],
+            "downsample": "sum",
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "queryGroup": "A",
+            "query": {
+              "q": "M::`tracing_metrics`:(sum(`hits_by_http_status`)) { `project` = 'mall-demo' AND `service` = 'gateway-service' AND `http_status_code` = exists() }",
+              "code": "A",
+              "field": "hits_by_http_status",
+              "fieldFunc": "sum",
+              "fieldType": "float",
+              "namespace": "metric",
+              "dataSource": "tracing_metrics",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": null,
+              "type": "dql"
+            }
+          }
+        ]
+      },
+      {
+        "uuid": "chrt_ef_kpi_404_scan_02",
+        "name": "采样前 · 网关 404 扫描全量计数 (M::tracing_metrics)",
+        "type": "singlestat",
+        "group": "核心对比概览",
+        "chartGroupUUID": "chgp_edgeflow_overview_0001",
+        "prevGroupName": "",
+        "pos": {
+          "x": 6,
+          "y": 0,
+          "w": 6,
+          "h": 6
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "singlestat",
+            "showTitle": true,
+            "showLegend": false,
+            "precision": "0",
+            "decimalPlaces": 0,
+            "openThousandsSeparator": true,
+            "fontColor": "#D97706",
+            "bgColor": "rgba(217,119,6,0.06)",
+            "borderColor": "#E5E7EB",
+            "units": [
+              [
+                "custom",
+                ""
+              ]
+            ],
+            "downsample": "sum",
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "queryGroup": "A",
+            "query": {
+              "q": "M::`tracing_metrics`:(sum(`hits_by_http_status`)) { `project` = 'mall-demo' AND `service` = 'gateway-service' AND `http_status_code` = '404' }",
+              "code": "A",
+              "field": "hits_by_http_status",
+              "fieldFunc": "sum",
+              "fieldType": "float",
+              "namespace": "metric",
+              "dataSource": "tracing_metrics",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": null,
+              "type": "dql"
+            }
+          }
+        ]
+      },
+      {
+        "uuid": "chrt_ef_kpi_kept_trace_03",
+        "name": "采样后 · 实际入库 Trace 总数 (T::)",
+        "type": "singlestat",
+        "group": "核心对比概览",
+        "chartGroupUUID": "chgp_edgeflow_overview_0001",
+        "prevGroupName": "",
+        "pos": {
+          "x": 12,
+          "y": 0,
+          "w": 6,
+          "h": 6
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "singlestat",
+            "showTitle": true,
+            "showLegend": false,
+            "precision": "0",
+            "decimalPlaces": 0,
+            "openThousandsSeparator": true,
+            "fontColor": "#059669",
+            "bgColor": "rgba(5,150,105,0.06)",
+            "borderColor": "#E5E7EB",
+            "units": [
+              [
+                "custom",
+                ""
+              ]
+            ],
+            "downsample": "sum",
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "queryGroup": "A",
+            "query": {
+              "q": "T::*:(count_distinct(`trace_id`)) { `project` = 'mall-demo' AND `service` = 'gateway-service' }",
+              "code": "A",
+              "field": "trace_id",
+              "fieldFunc": "count_distinct",
+              "fieldType": "string",
+              "namespace": "tracing",
+              "dataSource": "*",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": null,
+              "type": "dql"
+            }
+          }
+        ]
+      },
+      {
+        "uuid": "chrt_ef_kpi_err_trace_04",
+        "name": "采样后 · 故障 Trace 100% 保留数 (T::)",
+        "type": "singlestat",
+        "group": "核心对比概览",
+        "chartGroupUUID": "chgp_edgeflow_overview_0001",
+        "prevGroupName": "",
+        "pos": {
+          "x": 18,
+          "y": 0,
+          "w": 6,
+          "h": 6
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "singlestat",
+            "showTitle": true,
+            "showLegend": false,
+            "precision": "0",
+            "decimalPlaces": 0,
+            "openThousandsSeparator": true,
+            "fontColor": "#DC2626",
+            "bgColor": "rgba(220,38,38,0.06)",
+            "borderColor": "#E5E7EB",
+            "units": [
+              [
+                "custom",
+                ""
+              ]
+            ],
+            "downsample": "sum",
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "singlestat",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "queryGroup": "A",
+            "query": {
+              "q": "T::*:(count_distinct(`trace_id`)) { `project` = 'mall-demo' AND `service` = 'gateway-service' AND `status` = 'error' }",
+              "code": "A",
+              "field": "trace_id",
+              "fieldFunc": "count_distinct",
+              "fieldType": "string",
+              "namespace": "tracing",
+              "dataSource": "*",
+              "filters": [],
+              "groupBy": [],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": null,
+              "type": "dql"
+            }
+          }
+        ]
+      },
+      {
+        "uuid": "chrt_ef_tr_http_status_05",
+        "name": "采样前 · 网关 HTTP 状态码全量分布 (M::tracing_metrics)",
+        "type": "sequence",
+        "group": "采样前全量指标 vs 采样后入库链路",
+        "chartGroupUUID": "chgp_edgeflow_contrast_0002",
+        "prevGroupName": "核心对比概览",
+        "pos": {
+          "x": 0,
+          "y": 0,
+          "w": 12,
+          "h": 10
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "area",
+            "chartType": "areaLine",
+            "showTitle": true,
+            "showLegend": true,
+            "legend": true,
+            "legendPostion": "bottom",
+            "colors": [],
+            "units": [
+              [
+                "custom",
+                ""
+              ]
+            ],
+            "decimalPlaces": 0,
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "sequence",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`tracing_metrics`:(sum(`hits_by_http_status`)) { `project` = 'mall-demo' AND `service` = 'gateway-service' AND `http_status_code` = exists() } BY `http_status_code`",
+              "code": "A",
+              "field": "hits",
+              "fieldFunc": "sum",
+              "fieldType": "float",
+              "namespace": "metric",
+              "dataSource": "tracing_metrics",
+              "filters": [],
+              "groupBy": [
+                "http_status_code"
+              ],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": "linear",
+              "type": "dql"
+            }
+          }
+        ]
+      },
+      {
+        "uuid": "chrt_ef_tr_trace_status_06",
+        "name": "采样后 · 网关入库 Trace 状态趋势 (T::)",
+        "type": "sequence",
+        "group": "采样前全量指标 vs 采样后入库链路",
+        "chartGroupUUID": "chgp_edgeflow_contrast_0002",
+        "prevGroupName": "核心对比概览",
+        "pos": {
+          "x": 12,
+          "y": 0,
+          "w": 12,
+          "h": 10
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "area",
+            "chartType": "areaLine",
+            "showTitle": true,
+            "showLegend": true,
+            "legend": true,
+            "legendPostion": "bottom",
+            "colors": [],
+            "units": [
+              [
+                "custom",
+                ""
+              ]
+            ],
+            "decimalPlaces": 0,
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "sequence",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "query": {
+              "q": "T::*:(count_distinct(`trace_id`)) { `project` = 'mall-demo' AND `service` = 'gateway-service' } BY `status`",
+              "code": "A",
+              "field": "hits",
+              "fieldFunc": "count_distinct",
+              "fieldType": "string",
+              "namespace": "tracing",
+              "dataSource": "*",
+              "filters": [],
+              "groupBy": [
+                "status"
+              ],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": "linear",
+              "type": "dql"
+            }
+          }
+        ]
+      },
+      {
+        "uuid": "chrt_ef_tr_svc_hits_07",
+        "name": "采样前 · 各微服务全量请求量 (M::tracing_metrics)",
+        "type": "sequence",
+        "group": "采样前全量指标 vs 采样后入库链路",
+        "chartGroupUUID": "chgp_edgeflow_contrast_0002",
+        "prevGroupName": "核心对比概览",
+        "pos": {
+          "x": 0,
+          "y": 10,
+          "w": 12,
+          "h": 10
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "area",
+            "chartType": "areaLine",
+            "showTitle": true,
+            "showLegend": true,
+            "legend": true,
+            "legendPostion": "bottom",
+            "colors": [],
+            "units": [
+              [
+                "custom",
+                ""
+              ]
+            ],
+            "decimalPlaces": 0,
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "sequence",
+            "unit": "",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "query": {
+              "q": "M::`tracing_metrics`:(sum(`hits`)) { `project` = 'mall-demo' } BY `service`",
+              "code": "A",
+              "field": "hits",
+              "fieldFunc": "sum",
+              "fieldType": "float",
+              "namespace": "metric",
+              "dataSource": "tracing_metrics",
+              "filters": [],
+              "groupBy": [
+                "service"
+              ],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": "linear",
+              "type": "dql"
+            }
+          }
+        ]
+      },
+      {
+        "uuid": "chrt_ef_tr_err_rate_08",
+        "name": "采样前 · 各微服务真实错误率 % (M::tracing_metrics)",
+        "type": "sequence",
+        "group": "采样前全量指标 vs 采样后入库链路",
+        "chartGroupUUID": "chgp_edgeflow_contrast_0002",
+        "prevGroupName": "核心对比概览",
+        "pos": {
+          "x": 12,
+          "y": 10,
+          "w": 12,
+          "h": 10
+        },
+        "extend": {
+          "fixedTime": "",
+          "settings": {
+            "currentChartType": "area",
+            "chartType": "areaLine",
+            "showTitle": true,
+            "showLegend": true,
+            "legend": true,
+            "legendPostion": "bottom",
+            "colors": [],
+            "units": [
+              [
+                "percent",
+                "percent"
+              ]
+            ],
+            "decimalPlaces": 2,
+            "levels": []
+          }
+        },
+        "queries": [
+          {
+            "name": "",
+            "type": "sequence",
+            "unit": "percent",
+            "color": "",
+            "qtype": "dql",
+            "datasource": "dataflux",
+            "query": {
+              "q": "eval(A/B*100, A=\"M::`tracing_metrics`:(sum(`hits`)) { `project` = 'mall-demo' AND `status` = 'error' } BY `service`\", B=\"M::`tracing_metrics`:(sum(`hits`)) { `project` = 'mall-demo' } BY `service`\").fill(0)",
+              "code": "A",
+              "field": "hits",
+              "fieldFunc": "sum",
+              "fieldType": "float",
+              "namespace": "metric",
+              "dataSource": "tracing_metrics",
+              "filters": [],
+              "groupBy": [
+                "service"
+              ],
+              "funcList": [],
+              "queryFuncs": [],
+              "groupByTime": "",
+              "fill": "linear",
+              "type": "dql"
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

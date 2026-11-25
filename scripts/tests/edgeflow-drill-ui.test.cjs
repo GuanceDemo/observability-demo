@@ -159,3 +159,31 @@ test('EdgeFlow drill populates exact Trace batch link and APM service monitoring
   assert.equal(els.observabilityApmServiceLink.hidden, true);
   assert.equal(els.observabilityTraceLink.textContent, '打开链路详情');
 });
+
+test('EdgeFlow drill links directly to contrast dashboard when edgeflowDashboardId is configured', () => {
+  const { ctx, els } = buildWorkbenchContext({
+    observabilityConsoleUrl: 'https://console.guance.com',
+    workspaceId: 'wksp_demo123',
+    edgeflowDashboardId: 'dsbd_demo123',
+  }, 'zh');
+
+  vm.runInContext(`updateObservabilityEdgeflowLinks({
+    batchId: 'ef-demo',
+    traceQuery: 'key_request:ef-demo',
+    serviceName: 'order-service',
+    scannerProbeCount: 20,
+    healthyOrderCount: 100,
+    paymentErrorOrderCount: 5,
+    businessOrderTotal: 105,
+    windowStartSec: 1795508995,
+    windowEndSec: 1795509035
+  })`, ctx);
+
+  assert.equal(els.observabilityApmServiceLink.hidden, false);
+  assert.equal(els.observabilityApmServiceLink.textContent, '打开全量指标对比看板（M::tracing_metrics vs T::）');
+  const dashUrl = new URL(els.observabilityApmServiceLink.href);
+  assert.equal(dashUrl.origin + dashUrl.pathname, 'https://console.guance.com/scene/dashboard/dashboardDetail');
+  assert.equal(dashUrl.searchParams.get('dashboard_id'), 'dsbd_demo123');
+  assert.equal(dashUrl.searchParams.get('w'), 'wksp_demo123');
+  assert.equal(dashUrl.searchParams.get('time'), '1795508995,1795509035');
+});

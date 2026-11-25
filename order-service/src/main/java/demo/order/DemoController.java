@@ -354,6 +354,8 @@ class DemoController {
   private final String mobileDeviceApkMinAndroidVersion;
   @Value("${demo.vehicle.enabled:false}")
   private boolean vehicleEnabled;
+  @Value("${demo.observability-edgeflow-dashboard-id:}")
+  private String observabilityEdgeflowDashboardId = "";
   @Value("${gateway.url:${demo.gateway-url:http://127.0.0.1:8080}}")
   private String gatewayUrl = "http://127.0.0.1:8080";
   private EdgeFlowDrillRunner edgeFlowDrillRunner = new EdgeFlowDrillRunner();
@@ -447,6 +449,9 @@ class DemoController {
     response.put("observabilityConsoleUrl", observabilityConsoleUrl);
     if (!observabilityWorkspaceId.isBlank()) {
       response.put("workspaceId", observabilityWorkspaceId);
+    }
+    if (observabilityEdgeflowDashboardId != null && !observabilityEdgeflowDashboardId.isBlank()) {
+      response.put("edgeflowDashboardId", observabilityEdgeflowDashboardId.trim());
     }
     response.put("vehicleEnabled", vehicleEnabled);
     response.put("mobileDeviceEnabled", !mobileDevicePlayerUrl.isBlank());

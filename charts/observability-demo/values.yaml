@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   registry: pubrepo.jiagouyun.com
   owner: demo
-  tag: "2.4.7"
+  tag: "2.4.8"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -71,6 +71,7 @@ observabilityConsole:
   # Empty uses the provider default (Guance or TrueWatch). Set a URL to override it.
   url: ""
   workspaceId: ""
+  edgeflowDashboardId: ""
 
 logViewer:
   enabled: true
