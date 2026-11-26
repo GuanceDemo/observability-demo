@@ -362,6 +362,30 @@ final class PublicRoutePolicy {
               "demo.edgeflow.drill",
               "demo_api"),
           RouteRule.exact(
+              Set.of("POST"),
+              "/api/demo/flowports/drill",
+              Action.FORWARD,
+              "demo.flowports.drill",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("GET"),
+              "/api/demo/flowports/state",
+              Action.FORWARD,
+              "demo.flowports.state",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("POST"),
+              "/api/demo/flowports/downstream-fault",
+              Action.FORWARD,
+              "demo.flowports.downstream-fault",
+              "demo_api"),
+          RouteRule.exact(
+              Set.of("POST"),
+              "/api/demo/flowports/reset",
+              Action.FORWARD,
+              "demo.flowports.reset",
+              "demo_api"),
+          RouteRule.exact(
               RUM_METHODS,
               "/rum-proxy/v1/write/rum",
               Action.FORWARD,

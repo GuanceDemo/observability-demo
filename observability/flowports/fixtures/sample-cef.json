@@ -1,0 +1,11 @@
+[
+  {
+    "message": "CEF:0|MallGateway|WAF|2.0|300|Risky Checkout|8|shost=mall-prod-01 cs2=192.0.2.1 deviceFacility=Fraud Detection msg=Checkout triggered a high risk rule verify_id=fp-demo env=production risk_level=high user_id=vip-001 event_type=checkout_risk phone=13800138000"
+  },
+  {
+    "message": "CEF:0|MallGateway|WAF|2.0|200|Order Submitted|3|shost=mall-staging-01 cs2=192.0.2.2 deviceFacility=Order Processing msg=Book order submitted successfully verify_id=fp-demo env=staging risk_level=low user_id=std-001 event_type=order"
+  },
+  {
+    "message": "CEF:0|MallGateway|WAF|2.0|100|Health Check|0|shost=ops-bot-01 cs2=192.0.2.3 deviceFacility=Platform Operations msg=Readiness probe returned OK verify_id=fp-demo env=production risk_level=low user_id=ops-bot event_type=healthcheck"
+  }
+]

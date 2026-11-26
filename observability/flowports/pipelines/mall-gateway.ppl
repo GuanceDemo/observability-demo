@@ -1,0 +1,39 @@
+# FlowPorts Platypus Pipeline for observability-demo
+# Source: Socket (UDP/TCP 1515, text line) receiving MallGateway WAF/checkout CEF lines
+# 1) Parse CEF header + extension fields (handles spaces in deviceFacility and msg)
+grok(message, "CEF:%{INT:cef_version}[|]%{DATA:vendor}[|]%{DATA:product}[|]%{DATA:product_version}[|]%{DATA:event_id}[|]%{DATA:event_name}[|]%{INT:severity}[|]%{GREEDYDATA:cef_extension}")
+
+grok(cef_extension, "(?:^| )shost=%{NOTSPACE:endpoint_host}")
+grok(cef_extension, "(?:^| )cs2=%{IP:endpoint_ip}")
+grok(cef_extension, "(?:^| )deviceFacility=%{DATA:device_facility} msg=")
+grok(cef_extension, "(?:^| )msg=%{DATA:event_message} verify_id=")
+grok(cef_extension, "(?:^| )verify_id=%{NOTSPACE:verify_id}")
+grok(cef_extension, "(?:^| )env=%{NOTSPACE:env}")
+grok(cef_extension, "(?:^| )risk_level=%{NOTSPACE:risk_level}")
+grok(cef_extension, "(?:^| )user_id=%{NOTSPACE:user_id}")
+grok(cef_extension, "(?:^| )event_type=%{NOTSPACE:event_type}")
+grok(cef_extension, "(?:^| )phone=%{NOTSPACE:phone}")
+
+# 2) Pre-cloud noise reduction: drop healthcheck probes before leaving IDC/cluster
+if event_type == "healthcheck" {
+    drop()
+}
+
+# 3) Local PII masking: mask phone number in-place so plaintext never leaves internal network
+if phone != "" {
+    replace(phone, "^(\\d{3})\\d{4}(\\d{4})$", "$1****$2")
+}
+
+# 4) Local Lookup enrichment using observability/flowports/lookups/mall_vip_catalog.csv
+lookup("mall_vip_catalog", user_id)
+
+# 5) Promote routing & correlation tags for downstream conditional fan-out and Guance Log Explorer
+set_tag("project", "mall-demo")
+set_tag("service", "mall-flowports-gateway")
+set_tag("env", env)
+set_tag("risk_level", risk_level)
+set_tag("verify_id", verify_id)
+set_tag("event_type", event_type)
+if user_tier != "" {
+    set_tag("user_tier", user_tier)
+}

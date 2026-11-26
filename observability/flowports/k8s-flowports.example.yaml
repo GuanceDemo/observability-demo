@@ -1,0 +1,93 @@
+# Build and publish the accompanying Dockerfile, then replace the image if needed.
+# Create the flowports-credentials Secret with key COLLECTWAY_ADMIN_PASSWORD in datakit.
+apiVersion: v1
+kind: Service
+metadata:
+  name: flowports
+  namespace: datakit
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: flowports
+  ports:
+    - name: admin
+      port: 8080
+      targetPort: admin
+    - name: ingest
+      port: 8081
+      targetPort: ingest
+    - name: socket-udp
+      port: 1515
+      targetPort: socket-udp
+      protocol: UDP
+    - name: socket-tcp
+      port: 1515
+      targetPort: socket-tcp
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: flowports
+  namespace: datakit
+spec:
+  serviceName: flowports
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: flowports
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: flowports
+        project: mall-demo
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: flowports
+          image: pubrepo.jiagouyun.com/demo/observability-demo-flowports:2.4.9
+          env:
+            - name: COLLECTWAY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: flowports-credentials
+                  key: COLLECTWAY_ADMIN_PASSWORD
+          ports:
+            - name: admin
+              containerPort: 8080
+            - name: ingest
+              containerPort: 8081
+            - name: socket-udp
+              containerPort: 1515
+              protocol: UDP
+            - name: socket-tcp
+              containerPort: 1515
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: admin
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: admin
+            initialDelaySeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: flowports-state
+              mountPath: /var/lib/flowport
+  volumeClaimTemplates:
+    - metadata:
+        name: flowports-state
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: 2Gi

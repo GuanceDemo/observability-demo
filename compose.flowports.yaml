@@ -1,0 +1,54 @@
+# Opt-in overlay used with compose.yaml and compose.datakit.yaml.
+services:
+  flowports:
+    image: observability-demo-flowports:0.5.13
+    build:
+      context: ./observability/flowports
+      dockerfile: Dockerfile
+    container_name: ${FLOWPORTS_CONTAINER_NAME:-observability-demo-flowports}
+    restart: unless-stopped
+    environment:
+      COLLECTWAY_ADMIN_PASSWORD: ${FLOWPORTS_ADMIN_PASSWORD:-}
+    ports:
+      - "${FLOWPORTS_ADMIN_PORT:-18082}:8080"
+      - "${FLOWPORTS_INGEST_PORT:-18083}:8081"
+      - "${FLOWPORTS_SOCKET_PORT:-1515}:1515/udp"
+      - "${FLOWPORTS_SOCKET_PORT:-1515}:1515/tcp"
+    volumes:
+      - flowports-state:/var/lib/flowport
+    networks:
+      - default
+      - datakit
+
+  order-service:
+    environment:
+      FLOWPORTS_ENABLED: "true"
+      FLOWPORTS_SOCKET_HOST: flowports
+      FLOWPORTS_SOCKET_PORT: "1515"
+      FLOWPORTS_SOCKET_PROTOCOL: ${FLOWPORTS_SOCKET_PROTOCOL:-udp}
+      FLOWPORTS_UI_URL: ${FLOWPORTS_UI_URL:-http://127.0.0.1:${FLOWPORTS_ADMIN_PORT:-18082}}
+
+  flowports-kafka:
+    image: apache/kafka:3.9.0
+    profiles: ["kafka"]
+    restart: unless-stopped
+    expose:
+      - "9092"
+    environment:
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://flowports-kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@flowports-kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+    networks:
+      - default
+
+volumes:
+  flowports-state:

@@ -254,5 +254,25 @@
     "scenes": [
       "bookstore"
     ]
+  },
+  {
+    "id": "flowports_data_gateway",
+    "title": "FlowPorts 数据处理与分流",
+    "layer": "telemetry",
+    "kind": "data_gateway_drill",
+    "service": "flowports",
+    "target": "order-service → flowports → dataway + sink",
+    "mode": "flowports_drill",
+    "description": "发送 35 条 CEF 事件，在 FlowPorts 解析、过滤、脱敏并补充用户等级和归属团队。",
+    "expectedObservation": "20 条健康检查预计丢弃，5 条生产高风险事件发送到观测云和下游，10 条 staging 订单进入归档。",
+    "ttlSeconds": 0,
+    "clientSide": false,
+    "execution": "server",
+    "platforms": [
+      "web"
+    ],
+    "scenes": [
+      "bookstore"
+    ]
   }
 ]

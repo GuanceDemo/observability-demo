@@ -260,6 +260,16 @@ spec:
               value: {{ $.Values.observabilityConsole.workspaceId | quote }}
             - name: OBSERVABILITY_EDGEFLOW_DASHBOARD_ID
               value: {{ $.Values.observabilityConsole.edgeflowDashboardId | default "" | quote }}
+            - name: FLOWPORTS_ENABLED
+              value: {{ $.Values.flowports.enabled | quote }}
+            - name: FLOWPORTS_SOCKET_HOST
+              value: {{ $.Values.flowports.socketHost | default "flowports.datakit.svc.cluster.local" | quote }}
+            - name: FLOWPORTS_SOCKET_PORT
+              value: {{ $.Values.flowports.socketPort | default 1515 | quote }}
+            - name: FLOWPORTS_SOCKET_PROTOCOL
+              value: {{ $.Values.flowports.socketProtocol | default "udp" | quote }}
+            - name: FLOWPORTS_UI_URL
+              value: {{ $.Values.flowports.uiUrl | default "" | quote }}
             - name: MOBILE_DEVICE_PLAYER_URL
               value: {{ $.Values.mobileDevice.playerUrl | quote }}
             - name: MOBILE_DEVICE_PLAYER_VERSION

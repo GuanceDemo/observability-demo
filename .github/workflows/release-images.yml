@@ -28,6 +28,7 @@ jobs:
           - {service: payment, image: payment-service, dockerfile: payment-service/Dockerfile}
           - {service: game, image: game-service, dockerfile: game-service/Dockerfile}
           - {service: vehicle-workbench, image: vehicle-workbench, dockerfile: scripts/vehicle-demo/local/Dockerfile.ack}
+          - {service: flowports, image: flowports, dockerfile: observability/flowports/Dockerfile}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

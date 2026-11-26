@@ -749,7 +749,7 @@ class OrderControllerTest {
         .contains("const SHOP_BUILD_ID = '20260817-bookstore-v44'")
         .contains("const GAME_BUILD_ID = '20260915-game-hub-v2'")
         .contains("scene.id === 'webgl-game' ? GAME_BUILD_ID : SHOP_BUILD_ID")
-        .contains("assets/selfheal-i18n.js?v=20261125-edgeflow-v2")
+        .contains("assets/selfheal-i18n.js?v=20261125-flowports-v1")
         .contains("data-i18n=\"browserAddress\">https://demo.dataflux.cn</span>")
         .contains("<polyline points=\"23 4 23 10 17 10\"></polyline>")
         .contains("<path d=\"M20.49 15a9 9 0 1 1-2.12-9.36L23 10\"></path>")
@@ -1015,7 +1015,7 @@ class OrderControllerTest {
     demoMvc
         .perform(get("/api/demo/faults"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.items.length()").value(21))
+        .andExpect(jsonPath("$.items.length()").value(22))
         .andExpect(jsonPath("$.items[*].scenes").value(everyItem(not(empty()))))
         .andExpect(jsonPath("$.items[0].id").value("frontend_click_error"))
         .andExpect(jsonPath("$.items[0].service").value("mall-h5"))
@@ -1034,7 +1034,11 @@ class OrderControllerTest {
         .andExpect(jsonPath("$.items[20].id").value("edgeflow_tail_sampling"))
         .andExpect(jsonPath("$.items[20].layer").value("telemetry"))
         .andExpect(jsonPath("$.items[20].platforms[0]").value("web"))
-        .andExpect(jsonPath("$.items[20].scenes[0]").value("bookstore"));
+        .andExpect(jsonPath("$.items[20].scenes[0]").value("bookstore"))
+        .andExpect(jsonPath("$.items[21].id").value("flowports_data_gateway"))
+        .andExpect(jsonPath("$.items[21].layer").value("telemetry"))
+        .andExpect(jsonPath("$.items[21].platforms[0]").value("web"))
+        .andExpect(jsonPath("$.items[21].scenes[0]").value("bookstore"));
   }
 
   @Test
@@ -1208,6 +1212,101 @@ class OrderControllerTest {
       assertThat(new java.util.HashSet<>(receivedBizIds)).hasSize(125);
     } finally {
       gatewayStub.stop(0);
+    }
+  }
+
+  @Test
+  void flowPortsDrillTransmits35CefLinesAndSupportsDownstream503Recovery() throws Exception {
+    java.util.List<String> receivedLines = java.util.Collections.synchronizedList(new java.util.ArrayList<>());
+    try (java.net.ServerSocket listener = new java.net.ServerSocket(0, 16, java.net.InetAddress.getByName("127.0.0.1"))) {
+      Thread readerThread = new Thread(() -> {
+        try (java.net.Socket accepted = listener.accept();
+            java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(accepted.getInputStream(), java.nio.charset.StandardCharsets.UTF_8))) {
+          String line;
+          while ((line = reader.readLine()) != null) {
+            receivedLines.add(line);
+          }
+        } catch (java.io.IOException ignored) {
+          // Test socket closed on cleanup
+        }
+      });
+      readerThread.setDaemon(true);
+      readerThread.start();
+
+      DemoController controller = newDemoController();
+      controller.configureFlowPorts(
+          true,
+          "127.0.0.1",
+          listener.getLocalPort(),
+          "tcp",
+          "http://127.0.0.1:18082",
+          new FlowPortsDrillRunner(() -> 1_795_509_000_000L));
+      MockMvc demoMvc = MockMvcBuilders.standaloneSetup(controller).build();
+
+      demoMvc
+          .perform(post("/api/demo/faults/flowports_data_gateway/enable"))
+          .andExpect(status().isBadRequest());
+
+      String drillResponse = demoMvc
+          .perform(post("/api/demo/flowports/drill"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.totalMessages").value(35))
+          .andExpect(jsonPath("$.healthcheckNoiseCount").value(20))
+          .andExpect(jsonPath("$.stagingOrderCount").value(10))
+          .andExpect(jsonPath("$.prodHighRiskCount").value(5))
+          .andExpect(jsonPath("$.sentCount").value(35))
+          .andExpect(jsonPath("$.protocol").value("tcp"))
+          .andReturn()
+          .getResponse()
+          .getContentAsString();
+      readerThread.join(3000);
+
+      String verifyId = new com.fasterxml.jackson.databind.ObjectMapper().readTree(drillResponse).get("verifyId").asText();
+      assertThat(verifyId).startsWith("fp-");
+      assertThat(receivedLines).hasSize(35);
+      assertThat(receivedLines.stream().filter(l -> l.contains("event_type=healthcheck")).count()).isEqualTo(20L);
+      assertThat(receivedLines.stream().filter(l -> l.contains("env=staging")).count()).isEqualTo(10L);
+      assertThat(receivedLines.stream().filter(l -> l.contains("risk_level=high") && l.contains("phone=13800138000")).count())
+          .isEqualTo(5L);
+
+      demoMvc
+          .perform(
+              post("/api/demo/flowports/downstream-fault")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"down\":true}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.downstreamDown").value(true));
+
+      String eventJson = "{\"fields\":{\"verify_id\":\"" + verifyId + "\",\"phone\":\"138****8000\",\"user_tier\":\"VIP\"}}";
+      demoMvc
+          .perform(post("/api/demo/flowports/sink").contentType(MediaType.APPLICATION_JSON).content(eventJson))
+          .andExpect(status().isServiceUnavailable());
+
+      demoMvc
+          .perform(
+              post("/api/demo/flowports/downstream-fault")
+                  .contentType(MediaType.APPLICATION_JSON)
+                  .content("{\"down\":false}"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.downstreamDown").value(false))
+          .andExpect(jsonPath("$.downstreamRejected503Total").value(1));
+
+      demoMvc
+          .perform(post("/api/demo/flowports/sink").contentType(MediaType.APPLICATION_JSON).content(eventJson))
+          .andExpect(status().isNoContent());
+      demoMvc
+          .perform(post("/api/demo/flowports/archive").contentType(MediaType.APPLICATION_JSON).content(eventJson))
+          .andExpect(status().isNoContent());
+
+      demoMvc
+          .perform(get("/api/demo/flowports/state"))
+          .andExpect(status().isOk())
+          .andExpect(jsonPath("$.downstreamReceivedTotal").value(1))
+          .andExpect(jsonPath("$.downstreamMatchedCount").value(1))
+          .andExpect(jsonPath("$.downstreamRejected503Total").value(1))
+          .andExpect(jsonPath("$.archiveReceivedTotal").value(1))
+          .andExpect(jsonPath("$.archiveMatchedCount").value(1));
     }
   }
 

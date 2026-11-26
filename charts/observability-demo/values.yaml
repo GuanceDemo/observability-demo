@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   registry: pubrepo.jiagouyun.com
   owner: demo
-  tag: "2.4.8"
+  tag: "2.4.9"
   pullPolicy: IfNotPresent
 
 imagePullSecrets: []
@@ -149,3 +149,11 @@ vehicleWorkbench:
   enabled: false
   url: http://vehicle-workbench.vehicle-pipeline.svc.cluster.local:8767
   gatewaySecretName: vehicle-workbench-gateway
+
+# Optional FlowPorts data processing & routing gateway overlay (installed separately in datakit).
+flowports:
+  enabled: false
+  socketHost: flowports.datakit.svc.cluster.local
+  socketPort: 1515
+  socketProtocol: udp
+  uiUrl: ""

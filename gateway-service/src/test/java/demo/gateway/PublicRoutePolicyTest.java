@@ -180,6 +180,17 @@ class PublicRoutePolicyTest {
             new RouteExpectation(
                 "POST", "/api/demo/edgeflow/drill", "demo.edgeflow.drill", "demo_api"),
             new RouteExpectation(
+                "POST", "/api/demo/flowports/drill", "demo.flowports.drill", "demo_api"),
+            new RouteExpectation(
+                "GET", "/api/demo/flowports/state", "demo.flowports.state", "demo_api"),
+            new RouteExpectation(
+                "POST",
+                "/api/demo/flowports/downstream-fault",
+                "demo.flowports.downstream-fault",
+                "demo_api"),
+            new RouteExpectation(
+                "POST", "/api/demo/flowports/reset", "demo.flowports.reset", "demo_api"),
+            new RouteExpectation(
                 "POST", "/rum-proxy/v1/write/rum", "rum.write", "rum_intake"),
             new RouteExpectation(
                 "PUT", "/rum-proxy/v1/write/rum/replay", "rum.replay", "rum_intake"),

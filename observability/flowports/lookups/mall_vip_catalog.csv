@@ -1,0 +1,5 @@
+user_id,user_tier,owner_team,cost_center
+vip-001,VIP,checkout-risk,cc-retail-01
+vip-002,VIP,payments-core,cc-retail-02
+std-001,STANDARD,mall-orders,cc-retail-03
+ops-bot,SYSTEM,platform-ops,cc-infra-00

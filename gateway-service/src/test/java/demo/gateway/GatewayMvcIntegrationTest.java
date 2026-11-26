@@ -102,6 +102,62 @@ class GatewayMvcIntegrationTest {
   }
 
   @Test
+  void forwardsFlowPortsControlRoutesAndRejectsInternalSinks() throws Exception {
+    downstream
+        .expect(requestTo("http://order-service.test/api/demo/flowports/drill"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withSuccess("{\"verifyId\":\"fp-demo\"}", MediaType.APPLICATION_JSON));
+    downstream
+        .expect(requestTo("http://order-service.test/api/demo/flowports/state"))
+        .andExpect(method(HttpMethod.GET))
+        .andRespond(withSuccess("{\"downstreamDown\":false}", MediaType.APPLICATION_JSON));
+    downstream
+        .expect(requestTo("http://order-service.test/api/demo/flowports/downstream-fault"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withSuccess("{\"downstreamDown\":true}", MediaType.APPLICATION_JSON));
+    downstream
+        .expect(requestTo("http://order-service.test/api/demo/flowports/reset"))
+        .andExpect(method(HttpMethod.POST))
+        .andRespond(withSuccess("{\"downstreamDown\":false}", MediaType.APPLICATION_JSON));
+
+    mockMvc
+        .perform(post("/api/demo/flowports/drill"))
+        .andExpect(status().isOk())
+        .andExpect(
+            request()
+                .attribute(
+                    HandlerMapping.BEST_MATCHING_PATTERN_ATTRIBUTE,
+                    "/api/demo/flowports/drill"));
+    mockMvc
+        .perform(get("/api/demo/flowports/state"))
+        .andExpect(status().isOk());
+    mockMvc
+        .perform(
+            post("/api/demo/flowports/downstream-fault")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"down\":true}"))
+        .andExpect(status().isOk());
+    mockMvc
+        .perform(post("/api/demo/flowports/reset"))
+        .andExpect(status().isOk());
+
+    mockMvc
+        .perform(
+            post("/api/demo/flowports/sink")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"verify_id\":\"fp-demo\"}"))
+        .andExpect(status().isNotFound());
+    mockMvc
+        .perform(
+            post("/api/demo/flowports/archive")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"verify_id\":\"fp-demo\"}"))
+        .andExpect(status().isNotFound());
+
+    downstream.verify();
+  }
+
+  @Test
   void leavesActuatorRequestsToActuatorHandlerMappings() throws Exception {
     mockMvc
         .perform(get("/actuator/health"))

@@ -1,0 +1,83 @@
+{
+  "name": "mall-demo-cef-gateway",
+  "description": "Receive MallGateway CEF lines over Socket (UDP/TCP 1515), parse + mask PII + enrich via Lookup, drop healthcheck noise, fan-out production high-risk events to Guance DataWay and downstream sink (HTTP or optional Kafka), and route staging events to archive fallback.",
+  "source": {
+    "type": "socket",
+    "config": {
+      "protocol": "udp",
+      "listen": "0.0.0.0:1515",
+      "codec": "text_line"
+    }
+  },
+  "lookups": [
+    {
+      "name": "mall_vip_catalog",
+      "file": "observability/flowports/lookups/mall_vip_catalog.csv",
+      "key_column": "user_id"
+    }
+  ],
+  "pipeline": {
+    "category": "logging",
+    "script_ref": "observability/flowports/pipelines/mall-gateway.ppl"
+  },
+  "destinations": [
+    {
+      "id": "guance-dataway",
+      "type": "dataway",
+      "config": {
+        "url": "${FLOWPORTS_DATAWAY_URL:-https://openway.guance.com}",
+        "token": "${FLOWPORTS_DATAWAY_TOKEN}"
+      }
+    },
+    {
+      "id": "demo-downstream-http",
+      "type": "http",
+      "config": {
+        "url": "http://order-service:8080/api/demo/flowports/sink",
+        "encoding": "ndjson",
+        "note": "Requires allowing Docker/K8s private CIDR in FlowPorts System Settings -> Network Reads."
+      }
+    },
+    {
+      "id": "demo-archive-http",
+      "type": "http",
+      "config": {
+        "url": "http://order-service:8080/api/demo/flowports/archive",
+        "encoding": "ndjson"
+      }
+    },
+    {
+      "id": "demo-downstream-kafka-optional",
+      "type": "kafka",
+      "enabled": false,
+      "config": {
+        "brokers": ["flowports-kafka:9092"],
+        "topic": "mall-flowports-events",
+        "acks": "all",
+        "encoding": "ndjson",
+        "note": "Start compose.flowports.yaml with --profile kafka and attach this destination alongside guance-dataway."
+      }
+    }
+  ],
+  "routing": {
+    "rules": [
+      {
+        "name": "prod-high-risk-dual-delivery",
+        "when": {
+          "match": "all",
+          "conditions": [
+            { "tag": "env", "value": "production" },
+            { "tag": "risk_level", "value": "high" }
+          ]
+        },
+        "destination_ids": [
+          "guance-dataway",
+          "demo-downstream-http"
+        ]
+      }
+    ],
+    "default_destination_ids": [
+      "demo-archive-http"
+    ]
+  }
+}

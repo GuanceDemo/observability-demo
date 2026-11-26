@@ -1,5 +1,6 @@
 package demo.order;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -13,12 +14,15 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
@@ -325,6 +329,20 @@ class DemoController {
               0,
               false,
               List.of("web"),
+              List.of("bookstore")),
+          new FaultScenario(
+              "flowports_data_gateway",
+              "FlowPorts 数据处理与分流",
+              "telemetry",
+              "data_gateway_drill",
+              "flowports",
+              "order-service → flowports → dataway + sink",
+              "flowports_drill",
+              "发送 35 条 CEF 事件，在 FlowPorts 解析、过滤、脱敏并补充用户等级和归属团队。",
+              "20 条健康检查预计丢弃，5 条生产高风险事件发送到观测云和下游，10 条 staging 订单进入归档。",
+              0,
+              false,
+              List.of("web"),
               List.of("bookstore")));
 
   private final RestTemplate restTemplate;
@@ -359,6 +377,18 @@ class DemoController {
   @Value("${gateway.url:${demo.gateway-url:http://127.0.0.1:8080}}")
   private String gatewayUrl = "http://127.0.0.1:8080";
   private EdgeFlowDrillRunner edgeFlowDrillRunner = new EdgeFlowDrillRunner();
+  @Value("${demo.flowports-enabled:false}")
+  private boolean flowportsEnabled;
+  @Value("${demo.flowports-socket-host:flowports}")
+  private String flowportsSocketHost = "flowports";
+  @Value("${demo.flowports-socket-port:1515}")
+  private int flowportsSocketPort = 1515;
+  @Value("${demo.flowports-socket-protocol:udp}")
+  private String flowportsSocketProtocol = "udp";
+  @Value("${demo.flowports-ui-url:}")
+  private String flowportsUiUrl = "";
+  private final FlowPortsSinkStore flowportsSinks = new FlowPortsSinkStore();
+  private FlowPortsDrillRunner flowportsDrillRunner = new FlowPortsDrillRunner();
   private final boolean kubernetesLogReaderEnabled;
   private final BackendLogReader backendLogReader;
 
@@ -453,6 +483,8 @@ class DemoController {
     if (observabilityEdgeflowDashboardId != null && !observabilityEdgeflowDashboardId.isBlank()) {
       response.put("edgeflowDashboardId", observabilityEdgeflowDashboardId.trim());
     }
+    response.put("flowportsEnabled", flowportsEnabled);
+    response.put("flowportsUiUrl", flowportsUiUrl.trim());
     response.put("vehicleEnabled", vehicleEnabled);
     response.put("mobileDeviceEnabled", !mobileDevicePlayerUrl.isBlank());
     if (!mobileDevicePlayerUrl.isBlank()) {
@@ -585,6 +617,10 @@ class DemoController {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "use POST /api/demo/edgeflow/drill to run this drill");
     }
+    if ("flowports_data_gateway".equals(scenario.id())) {
+      throw new ResponseStatusException(
+          HttpStatus.BAD_REQUEST, "use POST /api/demo/flowports/drill to run this drill");
+    }
 
     response.put("cleared", disableBackendFaults());
     String url =
@@ -691,6 +727,68 @@ class DemoController {
 
   void setEdgeFlowDrillRunner(EdgeFlowDrillRunner edgeFlowDrillRunner) {
     this.edgeFlowDrillRunner = edgeFlowDrillRunner;
+  }
+
+  void configureFlowPorts(
+      boolean enabled, String host, int port, String protocol, String uiUrl, FlowPortsDrillRunner runner) {
+    this.flowportsEnabled = enabled;
+    this.flowportsSocketHost = host;
+    this.flowportsSocketPort = port;
+    this.flowportsSocketProtocol = protocol;
+    this.flowportsUiUrl = uiUrl;
+    this.flowportsDrillRunner = runner;
+  }
+
+  @PostMapping("/flowports/drill")
+  FlowPortsDrillRunner.Summary runFlowPortsDrill() {
+    requireFlowPortsEnabled();
+    return flowportsDrillRunner.execute(
+        flowportsSocketHost.trim(), flowportsSocketPort, flowportsSocketProtocol,
+        flowportsUiUrl.trim(), flowportsSinks);
+  }
+
+  @GetMapping("/flowports/state")
+  FlowPortsSinkStore.Snapshot flowPortsState() {
+    requireFlowPortsEnabled();
+    return flowportsSinks.snapshot();
+  }
+
+  @PostMapping(value = "/flowports/downstream-fault", consumes = MediaType.APPLICATION_JSON_VALUE)
+  FlowPortsSinkStore.Snapshot setFlowPortsDownstreamFault(@RequestBody JsonNode body) {
+    requireFlowPortsEnabled();
+    JsonNode down = body.path("down");
+    if (!down.isBoolean()) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "down must be a JSON boolean");
+    }
+    return flowportsSinks.setDownstreamDown(down.booleanValue());
+  }
+
+  @PostMapping("/flowports/reset")
+  FlowPortsSinkStore.Snapshot resetFlowPorts() {
+    requireFlowPortsEnabled();
+    return flowportsDrillRunner.reset(flowportsSinks);
+  }
+
+  @PostMapping(value = "/flowports/sink", consumes = {
+      MediaType.APPLICATION_JSON_VALUE, "application/x-ndjson", MediaType.TEXT_PLAIN_VALUE})
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  void recordFlowPortsDownstream(@RequestBody String payload) {
+    requireFlowPortsEnabled();
+    flowportsSinks.recordDownstream(payload);
+  }
+
+  @PostMapping(value = "/flowports/archive", consumes = {
+      MediaType.APPLICATION_JSON_VALUE, "application/x-ndjson", MediaType.TEXT_PLAIN_VALUE})
+  @ResponseStatus(HttpStatus.NO_CONTENT)
+  void recordFlowPortsArchive(@RequestBody String payload) {
+    requireFlowPortsEnabled();
+    flowportsSinks.recordArchive(payload);
+  }
+
+  private void requireFlowPortsEnabled() {
+    if (!flowportsEnabled) {
+      throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "FlowPorts overlay is disabled");
+    }
   }
 
   private Map<String, Object> forwardPost(String url) {

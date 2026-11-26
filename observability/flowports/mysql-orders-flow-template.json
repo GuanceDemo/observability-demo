@@ -1,0 +1,36 @@
+{
+  "name": "mall-demo-mysql-orders-incremental",
+  "description": "Zero-code incremental MySQL Query capture from observability-demo selfheal.demo_orders table using composite (created_at, order_id) cursor, enriched with mall_vip_catalog and fanned out to Guance DataWay + downstream sink.",
+  "source": {
+    "type": "mysql_query",
+    "config": {
+      "url": "mysql://mysql:3306/selfheal",
+      "username": "selfheal",
+      "password": "${MYSQL_PASSWORD}",
+      "interval": "15s",
+      "page_size": 200,
+      "cursor_column": "created_at",
+      "cursor_start": "1970-01-01 00:00:00.000",
+      "tie_breaker_column": "order_id",
+      "tie_breaker_start": "",
+      "query": "SELECT order_id, sku, quantity, amount_cent, status, key_request, business_request_id, user_id, created_at, updated_at FROM demo_orders WHERE (created_at > {{cursor}}) OR (created_at = {{cursor}} AND order_id > {{tie_breaker}}) ORDER BY created_at ASC, order_id ASC LIMIT {{limit}}"
+    }
+  },
+  "lookups": [
+    {
+      "name": "mall_vip_catalog",
+      "file": "observability/flowports/lookups/mall_vip_catalog.csv",
+      "key_column": "user_id"
+    }
+  ],
+  "pipeline": {
+    "category": "logging",
+    "script": "lookup(\"mall_vip_catalog\", user_id)\nset_tag(\"project\", \"mall-demo\")\nset_tag(\"service\", \"mall-mysql-orders\")\nset_tag(\"order_status\", status)\nif user_tier != \"\" {\n    set_tag(\"user_tier\", user_tier)\n}\n"
+  },
+  "routing": {
+    "default_destination_ids": [
+      "guance-dataway",
+      "demo-downstream-http"
+    ]
+  }
+}
